@@ -1,11 +1,12 @@
 module RecurrenceAnalysis
 
-export RecurrenceMatrix
+export recurrencematrix
 
 # vnorm function can be redefined
 vnorm = x -> norm(x, Inf)
 
-function RecurrenceMatrix(x::Array{Float64,1}, d::Integer, k::Integer, radius::Real)
+"""Create a recurrence matrix from a time series"""
+function recurrencematrix(x::Array{Float64,1}, d::Integer, k::Integer, radius::Real)
     halfradius = 0.5radius
     n = length(x)
     # Create k-vectors with delay d
@@ -50,14 +51,15 @@ function RecurrenceMatrix(x::Array{Float64,1}, d::Integer, k::Integer, radius::R
     rmat[ix_inv, ix_inv]
 end
 
-function RecurrenceMatrix(x::AbstractVecOrMat, d::Real, k::Real, radius::Real)
+function recurrencematrix(x::AbstractVecOrMat, d::Real, k::Real, radius::Real)
     if length(x) != maximum(size(x))
         error("`x` must be a row or column vector")
     end
-    RecurrenceMatrix(float(x[:]), Int(d), Int(k), radius)
+    recurrencematrix(float(x[:]), Int(d), Int(k), radius)
 end
 
-function RecurrenceMatrixBruteForce(x::Array{Float64,1}, d::Integer, k::Integer, radius::Real)
+"""Brute force algorithm for computation of the recurrence matrix"""
+function recurrencematrix_bruteforce(x::Array{Float64,1}, d::Integer, k::Integer, radius::Real)
     n = length(x)
     # Create k-vectors with delay d
     # Each k-vector is in a row
@@ -80,12 +82,11 @@ end
 # The optimized algorithm is about 3 times faster and takes about 9.5 times less
 # memory than the brute force algorithm, for a matrix with sparsity ratio ~ 0.06
 
-function diagonalstructure(x::SparseMatrixCSC{Bool})
+function diagonalhistogram(x::AbstractMatrix{Bool})
     bins = [0]
     nbins = 1
     current_diag = 0
     n = minimum(size(x))
-    npoints = zeros(n-1)
     # Iterate over diagonals
     for d = 1:n-2
         previous_cell = false
@@ -106,55 +107,169 @@ function diagonalstructure(x::SparseMatrixCSC{Bool})
                     current_diag = 0
                 end
             end
-            (previous_cell = x[c-d,c]) && (npoints[d] += 1) 
+            previous_cell = x[c-d,c] 
         end
     end
     # Add isolated points in first bin
-    bins = [nnz(triu(x,1)) - collect(2:nbins+1)'*bins; bins]
-    npoints[n-1] = (x[1,n] ? 1 : 0)
-    (bins, npoints)
+    [nnz(triu(x,1)) - collect(2:nbins+1)'*bins; bins]
 end
 
-recurrence_rate(x::SparseMatrixCSC{Bool}) = nnz(x)/prod(size(R))
+# Alternative definition for full matrices
+function diagonalhistogram(x::AbstractMatrix{Bool})
+    bins = [0]
+    nbins = 1
+    n = minimum(size(x))
+    # Iterate over diagonals
+    for d = 1:n-2
+        current_diag = 0
+        # Look for continuous sequences (cells where diff .== 1)
+        diff_vals = diff(find(diag(x,d)))
+        nv = length(diff_vals)
+        for v = 1:nv
+            # Increment length of current_diag if the diagonal is being extended 
+            (extend = (diff_vals[v] == 1)) && (current_diag += 1)
+            # If arrived to the end of a line
+            # add the current length to the corresponding bin
+            if (!extend || (v == nv)) && (current_diag > 0)
+                # Make the histogram longer if needed
+                if current_diag > nbins
+                    append!(bins, zeros(current_diag - nbins))
+                    nbins = current_diag
+                end
+                bins[current_diag] += 1
+                current_diag = 0
+            end
+        end
+    end
+    # Add isolated points in first bin
+    [countnz(triu(x,1)) - collect(2:nbins+1)'*bins; bins]
+end
 
-function determinism(diag_bins::Array{Int}, lmin::Int)
+
+localrecurrence(x::SparseMatrixCSC{Bool}) =
+    [sum(diag(x,d)) for d in (1:minimum(size(x))-1)]
+
+
+# Definitions by Marwan et al. (2007)
+
+recurrencerate(x::SparseMatrixCSC) = nnz(x)/prod(size(R))
+
+function determinism(diag_hist::AbstractVector, lmin)
     if lmin < 2
         error("lmin must be 2 or higher")
     end
-    nbins = length(diag_bins)
-    (lmin > nbins) ? 0.0 : collect(lmin:nbins)'*bins[lmin:end]/sum(diag_bins) 
+    nbins = length(diag_hist)
+    diag_points = collect(1:nbins) .* diag_hist
+    (lmin > nbins) ? 0.0 : sum(diag_points[lmin:nbins])/sum(diag_points) 
 end
 
-determinism(x::SparseMatrixCSC{Bool}, lmin) = determinism(diagonal_bins(x), lmin)
+determinism(x::AbstractMatrix, lmin) = determinism(diagonalhistogram(x), lmin)
 
-avgdiag(diag_bins::Array{Int}) = mean(diag_bins)
-avgdiag(x::SparseMatrixCSC{Bool}) = avgdiag(diagonal_bins(x))
+function avgdiag(diag_hist::AbstractVector, lmin)
+    if lmin < 2
+        error("lmin must be 2 or higher")
+    end
+    nbins = length(diag_hist)
+    diag_points = collect(1:nbins) .* diag_hist
+    (lmin > nbins) ? 0.0 : sum(diag_points[lmin:nbins])/sum(diag_hist[lmin:nbins]) 
+end
 
-maxdiag(diag_bins::Array{Int}) = length(diag_bins)
-maxdiag(x::SparseMatrixCSC{Bool}) = maxdiag(diagonal_bins(x))
+avgdiag(x::AbstractMatrix, lmin) = avgdiag(diagonalhistogram(x), lmin)
+
+maxdiag(diag_hist::AbstractVector) = length(diag_hist)
+maxdiag(x::AbstractMatrix) = maxdiag(diagonalhistogram(x))
 
 divergence(x) = 1/maxdiag(x)
 
-function entropy(diag_bins::Array{Integer}, lmin::Int)
+function entropy(diag_hist::AbstractVector, lmin)
     if lmin < 2
         error("lmin must be 2 or higher")
     end
-    nbins = length(diag_bins)
+    nbins = length(diag_hist)
     if lmin <= nbins
-        prob_bins = diag_bins[lmin:end]/sum(diag_bins[lmin:end])
+        prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist  [lmin:nbins])
+        prob_bins = prob_bins[find(prob_bins)]
         -sum(prob_bins .* log2(prob_bins))
     else
         0.0
     end
 end
 
-# Marwan
-function trend(npoints::Integer, border::Integer)
+entropy(x::AbstractMatrix, lmin) = entropy(diagonalhistogram(x))
+
+function trend(npoints::AbstractVector, border)
   nmax = length(npoints)
   rrk = npoints./collect(nmax:-1:1)
   m = n-border
-  w = (1:m-m/2)
+  w = collect(1:m)-m/2
   w'*(rrk[1:m]-mean(rrk[1:m])) / (w'*w)
 end
+
+trend(x::AbstractMatrix, border) = trend(localrecurrence(x), border)
+
+function verticalhistogram(x::SparseMatrixCSC{Bool})
+    bins = [0]
+    nbins = 1
+    current_vert = 0
+    n = minimum(size(x))
+    npoints = zeros(n-1)
+    # Iterate over columns
+    for c = 1:n
+        previous_cell = false
+        for r = 1:n
+            if previous_cell
+                (extend = x[r,c]) && (current_vert += 1)
+                if (!extend || (r == n)) && (current_vert > 0)
+                    if current_vert > nbins
+                        append!(bins, zeros(current_vert - nbins))
+                        nbins = current_vert
+                    end
+                    bins[current_vert] += 1
+                    current_vert = 0
+                end
+            end
+            previous_cell = x[r,c] 
+        end
+    end
+    # Add isolated points in first bin
+    [nnz(x) - collect(2:nbins+1)'*bins; bins]
+end
+
+# Alternative definition for full matrices
+
+function verticalhistogram(x::AbstractMatrix{Bool})
+    bins = [0]
+    nbins = 1
+    n = minimum(size(x))
+    # Iterate over columns
+    for c = 1:n
+        current_vert = 0
+        diff_vals = diff(find(x[r,c]))
+        nv = length(diff_vals)
+        for v = 1:nv
+            (extend = (diff_vals[v] == 1)) && (current_vert += 1)
+            if (!extend || (v == nv)) && (current_vert > 0)
+                if current_vert > nbins
+                    append!(bins, zeros(current_vert - nbins))
+                    nbins = current_vert
+                end
+                bins[current_vert] += 1
+                current_vert = 0
+            end
+        end
+    end
+    # Add isolated points in first bin
+    [countnz(x) - collect(2:nbins+1)'*bins; bins]
+end
+
+
+laminarity(vert_hist::AbstractVector, lmin) = determinism(vert_hist, lmin)
+laminarity(x::AbstractMatrix, lmin) = laminarity(verticalhistogram(x), lmin)
+
+trappingtime(vert_hist::AbstractVector, lmin) = avgdiag(vert_hist, lmin)
+trappingtime(x::AbstractMatrix, lmin) = trappingtime(verticalhistogram(x), lmin)
+
+maxvert(vert_hist::AbstractVector) = length(vert_hist)
+maxvert(x::AbstractMatrix) = maxvert(vertical_histogram(x))
 
 end
