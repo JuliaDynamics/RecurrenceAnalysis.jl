@@ -1,9 +1,13 @@
 module RecurrenceAnalysis
 
 export recurrencematrix
+export recurrencerate, determinism, avgdiag, maxdiag, divergence, entropy
+export trend, laminarity, trappingtime, maxvert
 
 # vnorm function can be redefined
 vnorm = x -> norm(x, Inf)
+
+# Recurrence matrix creation
 
 """Create a recurrence matrix from a time series"""
 function recurrencematrix(x::Array{Float64,1}, d::Integer, k::Integer, radius::Real)
@@ -78,11 +82,11 @@ function recurrencematrix_bruteforce(x::Array{Float64,1}, d::Integer, k::Integer
     rmat
 end
 
-# Benchmark: 
-# The optimized algorithm is about 3 times faster and takes about 9.5 times less
-# memory than the brute force algorithm, for a matrix with sparsity ratio ~ 0.06
+# Recurrence parameters as defined by Marwan et al. (2007)
 
-function diagonalhistogram(x::AbstractMatrix{Bool})
+# 1. Based on diagonal lines
+
+function diagonalhistogram(x::SparseMatrixCSC{Bool})
     bins = [0]
     nbins = 1
     current_diag = 0
@@ -145,14 +149,10 @@ function diagonalhistogram(x::AbstractMatrix{Bool})
     [countnz(triu(x,1)) - collect(2:nbins+1)'*bins; bins]
 end
 
-
 localrecurrence(x::SparseMatrixCSC{Bool}) =
-    [sum(diag(x,d)) for d in (1:minimum(size(x))-1)]
+    [nnz(diag(x,d)) for d in (1:minimum(size(x))-1)]
 
-
-# Definitions by Marwan et al. (2007)
-
-recurrencerate(x::SparseMatrixCSC) = nnz(x)/prod(size(R))
+recurrencerate(x::SparseMatrixCSC) = nnz(x)/prod(size(x))
 
 function determinism(diag_hist::AbstractVector, lmin)
     if lmin < 2
@@ -187,7 +187,7 @@ function entropy(diag_hist::AbstractVector, lmin)
     end
     nbins = length(diag_hist)
     if lmin <= nbins
-        prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist  [lmin:nbins])
+        prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist[lmin:nbins])
         prob_bins = prob_bins[find(prob_bins)]
         -sum(prob_bins .* log2(prob_bins))
     else
@@ -195,24 +195,25 @@ function entropy(diag_hist::AbstractVector, lmin)
     end
 end
 
-entropy(x::AbstractMatrix, lmin) = entropy(diagonalhistogram(x))
+entropy(x::AbstractMatrix, lmin) = entropy(diagonalhistogram(x), lmin)
 
 function trend(npoints::AbstractVector, border)
   nmax = length(npoints)
   rrk = npoints./collect(nmax:-1:1)
-  m = n-border
+  m = nmax-border
   w = collect(1:m)-m/2
   w'*(rrk[1:m]-mean(rrk[1:m])) / (w'*w)
 end
 
 trend(x::AbstractMatrix, border) = trend(localrecurrence(x), border)
 
+# 2. Based on vertical lines
+
 function verticalhistogram(x::SparseMatrixCSC{Bool})
     bins = [0]
     nbins = 1
     current_vert = 0
     n = minimum(size(x))
-    npoints = zeros(n-1)
     # Iterate over columns
     for c = 1:n
         previous_cell = false
@@ -270,6 +271,6 @@ trappingtime(vert_hist::AbstractVector, lmin) = avgdiag(vert_hist, lmin)
 trappingtime(x::AbstractMatrix, lmin) = trappingtime(verticalhistogram(x), lmin)
 
 maxvert(vert_hist::AbstractVector) = length(vert_hist)
-maxvert(x::AbstractMatrix) = maxvert(vertical_histogram(x))
+maxvert(x::AbstractMatrix) = maxvert(verticalhistogram(x))
 
 end
