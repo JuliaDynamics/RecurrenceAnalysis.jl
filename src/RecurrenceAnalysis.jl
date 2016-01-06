@@ -27,6 +27,10 @@ function recurrencematrix(x::Array{Float64,1}, d::Integer, k::Integer, radius::R
     for p = 1:nk-1
         # First iteration in nearest point in the first dimension 
         q0 = q = first_neighbour[p]
+        # Exit if all columns were already identified as neighbours
+        if q > nk
+            continue
+        end
         dq = vnorm(xk_sort[q,:] - xk_sort[p,:])
         match_all = false
         if dq < radius
