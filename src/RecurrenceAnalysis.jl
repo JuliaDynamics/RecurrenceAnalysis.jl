@@ -1,5 +1,6 @@
 module RecurrenceAnalysis
 
+export embed
 export recurrencematrix
 export recurrencerate, determinism, avgdiag, maxdiag, divergence, entropy
 export trend, laminarity, trappingtime, maxvert
@@ -7,39 +8,59 @@ export trend, laminarity, trappingtime, maxvert
 # vnorm function can be redefined
 vnorm = x -> norm(x, Inf)
 
+# Embed series
+function embed(x::AbstractVecOrMat, delay::Integer, m::Integer)
+    dims = size(x)
+    n = dims[1]
+    nm = n-delay*(m-1)
+    if nm < 2 &&
+        warning("the emedded time series has length < 2")
+    end
+    ix = (1:nm) .+ (0:delay:delay*(m-1))'
+    embed_indices(x, ix)
+end
+
+embed(x, delay, m) = isinteger(delay) && isinteger(m) ?
+    embed(x,delay,m) : error("delay and embedding dimension must be integer values")
+
+embed_indices(x::AbstractVector, indices) = x[indices]
+
+function embed_indices(x::AbstractMatrix, indices)
+    dx = size(x)
+    dxm = size(indices)
+    ix_rep = repeat(indices, inner=[1,dx[2]])
+    ix_rep += repeat(dx[1]*(0:dx[2]-1)', outer=[dxm...])
+    x[ix_rep]
+end
+
 # Recurrence matrix creation
 
-"""Create a recurrence matrix from a time series"""
-function recurrencematrix(x::Array{Float64,1}, d::Integer, k::Integer, radius::Real)
+"""Create a recurrence matrix from an embedded time series"""
+function recurrencematrix(x, radius)
     halfradius = 0.5radius
-    n = length(x)
-    # Create k-vectors with delay d
-    # Each k-vector is in a row
-    nk = n-d*(k-1)
-    nk < 2 && error("Input is too short: length must be greater than k*d")
-    xk = x[collect(1:nk) .+ collect(0:d:d*(k-1))']
+    n = size(x)[1]
     # Sort by the first dimension
-    ix = sortperm(xk[:,1])
-    xk_sort = xk[ix,:]
+    ix = sortperm(x[:,1])
+    x_sort = x[ix,:]
     # Create and fill sparse matrix (upper triangle)
-    rmat = map(Bool, speye(nk))
-    first_neighbour = collect(2:nk)
-    for p = 1:nk-1
-        # First iteration in nearest point in the first dimension 
+    rmat = map(Bool, speye(n))
+    first_neighbour = collect(2:n)
+    for p = 1:n-1
+        # First iteration at nearest point in the first dimension 
         q0 = q = first_neighbour[p]
         # Exit if all columns were already identified as neighbours
-        if q > nk
+        if q > n
             continue
         end
-        dq = vnorm(xk_sort[q,:] - xk_sort[p,:])
+        dq = vnorm(x_sort[q,:] - x_sort[p,:])
         match_all = false
         if dq < radius
             rmat[p,q] = rmat[q,p] = true
             match_all = (dq < halfradius)
         end
         # Continue with following points
-        while ((q+=1) <= nk) && (xk_sort[q,1] - xk_sort[p,1] < radius)
-            dq = vnorm(xk_sort[q,:] - xk_sort[p,:])
+        while ((q+=1) <= n) && (x_sort[q,1] - x_sort[p,1] < radius)
+            dq = vnorm(x_sort[q,:] - x_sort[p,:])
             if dq < radius
                 rmat[p, q] = rmat[q, p] = true
                 # Mark all crossings within half radius
@@ -59,25 +80,46 @@ function recurrencematrix(x::Array{Float64,1}, d::Integer, k::Integer, radius::R
     rmat[ix_inv, ix_inv]
 end
 
-function recurrencematrix(x::AbstractVecOrMat, d::Real, k::Real, radius::Real)
-    if length(x) != maximum(size(x))
-        error("`x` must be a row or column vector")
+"""Create a recurrence matrix from umbedded time series
+with specified dimension and delay"""
+function recurrencematrix_v(x::AbstractVector, m, delay, radius)
+    n = length(x)
+    nm = n-delay*(m-1)
+    if nm < 2 &&
+        warning("the emedded time series has length < 2")
     end
-    recurrencematrix(float(x[:]), Int(d), Int(k), radius)
+    # Sort by the first dimension
+    ix = sortperm(x)
+    x_sort = x[ix]
+    # Create and fill sparse matrix (upper triangle)
+    rmat_full = map(Bool, speye(n))
+    last_c = 1
+    for p = 1:n-1
+        next_c = findnext(x_sort-x_sort[p] .> radius, last_c)
+        last_c = next_c == 0 ? n : next_c
+        for q = p+1:last_c
+            rmat_full[p,q] = true
+            rmat_full[q,p] = true
+        end
+    end
+    ix_inv = sortperm(ix)
+    rmat_full = rmat_full[ix_inv, ix_inv]
+    # Multiply matrices to embed
+    rmat = rmat_full[1:nm, 1:nm]
+    for k = (1:m-1)
+        rmat .*= rmat_full[k*delay+(1:nm), k*delay+(1:nm)]
+    end
+    rmat
 end
 
+
 """Brute force algorithm for computation of the recurrence matrix"""
-function recurrencematrix_bruteforce(x::Array{Float64,1}, d::Integer, k::Integer, radius::Real)
-    n = length(x)
-    # Create k-vectors with delay d
-    # Each k-vector is in a row
-    nk = n-d*(k-1)
-    nk < 2 && error("Input is too short: length must be greater than k*d")
-    xk = x[collect(1:nk) .+ collect(0:d:d*(k-1))']
-    rmat = map(Bool, speye(nk))
-    for r = 1:nk
-        for c = (r+1):nk
-            dist = vnorm(xk[r,:] - xk[c,:])
+function recurrencematrix_bruteforce(x, radius)
+    n = size(x)[1]
+    rmat = map(Bool, speye(n))
+    for r = 1:n
+        for c = (r+1):n
+            dist = vnorm(x[r,:] - x[c,:])
             if dist < radius
                 rmat[r,c] = rmat[c,r] = true
             end
@@ -202,14 +244,21 @@ end
 entropy(x::AbstractMatrix, lmin) = entropy(diagonalhistogram(x), lmin)
 
 function trend(npoints::AbstractVector, border)
-  nmax = length(npoints)
-  rrk = npoints./collect(nmax:-1:1)
-  m = nmax-border
-  w = collect(1:m)-m/2
-  w'*(rrk[1:m]-mean(rrk[1:m])) / (w'*w)
+    nmax = length(npoints)
+    rrk = npoints./collect(nmax:-1:1)
+    m = nmax-border
+    w = collect(1:m)-m/2
+    w'*(rrk[1:m]-mean(rrk[1:m])) / (w'*w)
 end
 
 trend(x::AbstractMatrix, border) = trend(localrecurrence(x), border)
+
+# Number of l-length sequences, based on diagonals
+function countsequences(diag_hist::AbstractVector, lmin)
+    overlap = (1:length(diag_hist))' - lmin + 1
+    overlap[overlap .< 0] = 0
+    overlap * diag_hist
+end
 
 # 2. Based on vertical lines
 
