@@ -11,16 +11,26 @@ function fdbins(x::AbstractVector)
 end
 
 # Average mutual information
+
 function ami(x, d1, d2)
-    nbins = fdbins(x)
+    edges = fdbins(x)
+    nbins = length(edges)-1
     ami = zeros(d2)
+    n = length(x)-d2
+    log2n = log2(n)
+    pxy = zeros(nbins, nbins)
+    px = zeros(nbins,1)
+    py = zeros(1,nbins)
     for d in d1:d2
-        n = length(x) - d
-        logn = log2(n)
-        pxy = hist2d(x[(1:n) .+ [0 d]], nbins, nbins)[3]
-        pxpy = sum(pxy, 2) * sum(pxy, 1)
-        logp = ifelse(pxy.!=0, log2(pxy./pxpy)+logn, 0.)
-        ami[d] = sum(pxy.*logp)
+        b1, b2, pxy = hist2d!(pxy, x[(1:n) .+ [0 d]], edges, edges)
+        px = sum!(px, pxy)
+        py = sum!(py, pxy)
+        for ix=1:nbins, iy=1:nbins
+            if pxy[ix,iy] != 0
+                pxpy = px[ix]*py[iy]
+                ami[d] += pxy[ix,iy]*(log2(pxy[ix,iy]/pxpy)+log2n)
+            end
+        end
     end
     ami[d1:d2]
 end
@@ -28,16 +38,16 @@ end
 # Generalized mutual information
 function gmi(x, d1, d2, radius)
     rmfull = recurrencematrix(x,radius)
-    gmi = zeros(d2)
+    h2tau = zeros(d2)
     n = length(x) - d2
     rm1 = rmfull[1:n, 1:n]
-    h2 = -log(recurrencerate(rm1))
-    for d in d1:d2
-        rm2 = rmfull[d+(1:n), d+(1:n)]
-        h2tau = -log(recurrencerate(rm1 .* rm2))
-        gmi[d] = 2h2 - h2tau
+    rmj = spzeros(n, n)
+    for d in d1:d2 
+        rmj = rm1 .* rmfull[d+(1:n), d+(1:n)]
+        h2tau[d] = -log(nnz(rmj))
     end
-    gmi[d1:d2]
+    h2 = -log(recurrencerate(rm1))
+    2h2 - h2tau[d1:d2] - 2log(n)
 end
 
         
