@@ -4,6 +4,6 @@ function radius_mrr(x::AbstractVector, rr::Real)
     nr == 0 && error("the recurrence rate does not account for more than one sample")
     xs = sort(x)
     d = xs[nr+1:end] - xs[1:end-nr]
-    median(th)
+    median(d)
 end
 
