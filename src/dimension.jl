@@ -48,4 +48,41 @@ end
 
 # Cao's algorithm
 function afnn(x, m1, m2, delay; metric="max")
+    dm = distancematrix(x)
+    n = size(x)[1]
+    dm[1:n+1:end] = maximum(dm)
+    dme = embedmatrix(dm, m1, delay, metric)
+    mn = size(dme)[1]
+    mean_increment = zeros(m2-m1+2)
+    mean_ratio = zeros(m2-m1+2)
+    for m = 1:length(mean_ratio)
+        nm -= delay
+        nnval, nnpos = findmin(dme[1:nm,1:nm], 2)
+        dme = embedmatrix1(dme, delay, metric)
+        nnv1 = nnval[1:nm]
+        nnv2 = dme[1:nm,1:nm][nnpos]
+        mean_increment[m] = nnv2 - nnv1
+        mean_ratio[m] = mean(nnv2./nnv2)
+    end
+    e1 = mean_increment[2:end]./mean_increment[1:end-1]
+    e2 = mean_ratio[2:end]./mean_ratio[1:end-1]
+    e1, e2
+end
+
+# Krakovská's algorithm
+function ffnn(x, m1, m2, delay; metric="max")
+    dm = distancematrix(x)
+    n = size(x)[1]
+    dm[1:n+1:end] = maximum(dm)
+    dme = embedmatrix(dm, m1, delay, metric)
+    nm = size(dme)[1]
+    fnn_ratio = zeros(m2-m1+1)
+    for m = 1:length(mean_ratio)
+        nm -= delay
+        nnval, nnpos1 = findmin(dme[1:nm,1:nm], 2)
+        dme = embedmatrix1(dme, delay, metric)
+        nnval, nnpos2 = findmin(dme, 2)
+        ffn_ratio[m] = sum(nnpos1 .!= nnpos2)/nm
+    end
+    ffn_ratio
 end
