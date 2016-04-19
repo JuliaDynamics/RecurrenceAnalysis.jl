@@ -103,7 +103,7 @@ function avgdiag(diag_hist::AbstractVector; lmin=2, kwargs...)
 end
 
 function avgdiag(x::AbstractMatrix; kwargs...)
-    avgdiag(diagonalhistogram(x; kwargs); kwargs...)
+    avgdiag(diagonalhistogram(x; kwargs...); kwargs...)
 end
 
 maxdiag(diag_hist::AbstractVector) = length(diag_hist)
@@ -119,7 +119,7 @@ function entropy(diag_hist::AbstractVector; lmin=2, kwargs...)
     if lmin <= nbins
         prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist[lmin:nbins])
         prob_bins = prob_bins[find(prob_bins)]
-        -sum(prob_bins .* log2(prob_bins))
+        -sum(prob_bins .* log(prob_bins))
     else
         0.0
     end
