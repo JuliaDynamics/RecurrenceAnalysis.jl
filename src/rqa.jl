@@ -30,9 +30,10 @@ function diagonalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=1, kwargs..
     # Iterate over diagonals - excluding LOI and Theiler window
     # If the matrix is symmetric, examine only the upper triangle
     diag_collection = collect(theiler:n-2)
-    !issym(m) && prepend!(diag_collection, collect(-(m-2):-max(theiler,1)))
+    xsym = issym(x)
+    !xsym && prepend!(diag_collection, collect(-(m-2):-max(theiler,1)))
     for d in diag_collection
-        increment = (issym(x) && d > 0) ? 2 : 1
+        increment = (xsym && d > 0) ? 2 : 1
         previous_cell = false
         first_c = max(1, d+1)
         last_c = min(n, m+d)
