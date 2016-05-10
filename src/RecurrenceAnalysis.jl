@@ -6,7 +6,7 @@ export embed,
        distancematrix,
        recurrencematrix,
        recurrencerate,
-       determinism
+       determinism,
        avgdiag,
        maxdiag,
        divergence,
