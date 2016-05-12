@@ -6,7 +6,7 @@ export embed,
        distancematrix,
        recurrencematrix,
        recurrencerate,
-       determinism
+       determinism,
        avgdiag,
        maxdiag,
        divergence,
@@ -59,15 +59,41 @@ end
 
 # Recurrence matrix creation
 
-"""Create a distance matrix from an embedded time series"""
-function distancematrix(x, normtype="max")
-    dist = getmetric(normtype)
+"""Create a distance matrix from embedded time series"""
+function distancematrix(x::AbstractVecOrMat, metric::AbstractString="max")
+    dist = getmetric(metric)
     pairwise(dist, x')
 end
 
+function distancematrix(x::AbstractVecOrMat, y::AbstractVecOrMat, metric::AbstractString="max")
+    dist = getmetric(metric)
+    pairwise(dist, x', y')
+end
+
 """Create a recurrence matrix from an embedded time series"""
-function recurrencematrix(x, radius, args...)
-    sparse(distancematrix(x, args...) .< radius)
+function recurrencematrix(x, radius; normalize=true, kwargs...)
+    kwargs = Dict(kwargs)
+    argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
+    dm = distancematrix(argsdm...)
+    normalize && (dm /= maximum(dm))
+    sparse(dm .< radius)
+end
+
+"""Create a cross recurrence matrix from two embeded time series"""
+function crossrecurrencematrix(x, y, radius; normalize=true, kwargs...)
+    kwargs = Dict(kwargs)
+    argsdm = haskey(kwargs,:metric) ? (x, y, kwargs[:metric]) : (x, y)
+    dm = distancematrix(argsdm...)
+    normalize && (dm /= maximum(dm))
+    sparse(dm .< radius)
+end
+
+"""Create a joint recurrence matrix from two embeded time series"""
+function jointrecurrencematrix(x, y, radius; kwargs...)
+    rm1 = recurrencematrix(x, radius, kwargs...)
+    rm2 = recurrencematrix(y, radius, kwargs...)
+    n = minimum([size(rm1)..., size(rm2)...])
+    rm1[1:n, 1:n] .* rm2[1:n, 1:n]
 end
 
 include("rqa.jl")
