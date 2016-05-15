@@ -53,8 +53,8 @@ function afnn(x, mbounds, delay; metric="max")
     dm = distancematrix(embed(x, m1, delay), metric)
     n = size(dm)[1]
     dm[1:n+1:end] = maximum(dm)
-    mean_increment = zeros(m2-m1+2)
     mean_ratio = zeros(m2-m1+2)
+    mean_increment = zeros(m2-m1+2)
     for m = 1:length(mean_ratio)
         n -= delay
         nnval, nnpos = findmin(dm[1:n,1:n], 2)
@@ -62,7 +62,10 @@ function afnn(x, mbounds, delay; metric="max")
         nnv1 = nnval[1:n]
         nnv2 = dm[1:n,1:n][nnpos]
         mean_ratio[m] = mean(nnv2./nnv1)
-        mean_increment[m] = mean(sqrt(nnv2.^2 - nnv1.^2))
+        # Project nnpos in original series
+        nnx = div(nnpos, n) + 1
+        d = (m1+m-2)*delay
+        mean_increment[m] = mean(abs(x[(1:n)+d]-x[nnx+d]))
     end
     e1 = mean_ratio[2:end]./mean_ratio[1:end-1]
     e2 = mean_increment[2:end]./mean_increment[1:end-1]
