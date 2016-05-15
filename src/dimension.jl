@@ -64,7 +64,7 @@ function afnn(x, mbounds, delay; metric="max")
         mean_ratio[m] = mean(nnv2./nnv1)
         # Project nnpos in original series
         nnx = div(nnpos, n) + 1
-        d = (m1+m-2)*delay
+        d = (m1+m-1)*delay
         mean_increment[m] = mean(abs(x[(1:n)+d]-x[nnx+d]))
     end
     e1 = mean_ratio[2:end]./mean_ratio[1:end-1]
@@ -73,7 +73,7 @@ function afnn(x, mbounds, delay; metric="max")
 end
 
 # Krakovská's algorithm
-function ffnn(x, bounds, delay; metric="max")
+function ffnn(x, mbounds, delay; metric="max")
     m1, m2 = mbounds
     dm = distancematrix(embed(x, m1, delay), metric)
     n = size(x)[1]
