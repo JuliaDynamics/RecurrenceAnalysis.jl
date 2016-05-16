@@ -5,6 +5,8 @@ using Distances
 export embed,
        distancematrix,
        recurrencematrix,
+       crossrecurrencematrix,
+       jointrecurrencematrix,
        recurrencerate,
        determinism,
        avgdiag,
@@ -13,7 +15,7 @@ export embed,
        entropy,
        trend,
        laminarity,
-       trappingtie,
+       trappingtime,
        maxvert,
        autocorrelation,
        ami,
@@ -32,7 +34,11 @@ function getmetric(normtype::AbstractString)
     metrics[normtype]
 end
 
-# Embed series
+"""
+    embed(x, m, delay)
+    
+Embed a time series in `m` dimensions with a given delay. 
+"""
 function embed(x::AbstractVecOrMat, m::Integer, delay::Integer)
     dims = size(x)
     n = dims[1]
@@ -45,7 +51,7 @@ function embed(x::AbstractVecOrMat, m::Integer, delay::Integer)
 end
 
 embed(x, m, delay) = isinteger(m) && isinteger(delay) ?
-    embed(x,m, delay) : error("embedding dimension and delay must be integer values")
+    embed(x, m, delay) : error("embedding dimension and delay must be integer values")
 
 embed_indices(x::AbstractVector, indices) = x[indices]
 
@@ -59,7 +65,14 @@ end
 
 # Recurrence matrix creation
 
-"""Create a distance matrix from embedded time series"""
+"""
+    distancematrix(x, metric="max")
+    distancematrix(x, y, metric="max")
+    
+Create a distance matrix from one or two (possibly embedded) time series.
+
+Available metrics for the distances are `"max"` (default), `"inf"` (same), and `"euclidean"`.
+"""
 function distancematrix(x::AbstractVecOrMat, metric::AbstractString="max")
     dist = getmetric(metric)
     pairwise(dist, x')
@@ -70,25 +83,51 @@ function distancematrix(x::AbstractVecOrMat, y::AbstractVecOrMat, metric::Abstra
     pairwise(dist, x', y')
 end
 
-"""Create a recurrence matrix from an embedded time series"""
-function recurrencematrix(x, radius; normalize=true, kwargs...)
+"""
+    recurrencematrix(x, radius; <keyword arguments>)
+    
+Create a recurrence matrix from an embedded time series.
+
+# Arguments
+* `x::Any` : embedded time series.
+* `radius::Any` : threshold parameter to classify distances as recurrences.
+* `scale::Any` : function of the distance matrix, or fixed number to scale the distances
+between points. Typical choices are `maximum` (default) to scale distances into
+the unit inteval, or `mean`. Use `1` to keep the distances unscaled.
+* `metric::String` : metric of the norm, as in `distancematrix`.
+"""
+function recurrencematrix(x, radius; scale=maximum, kwargs...)
     kwargs = Dict(kwargs)
     argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
     dm = distancematrix(argsdm...)
-    normalize && (dm /= maximum(dm))
+    (typeof(normalize) == Function) && (normalize = normalize(dm))
+    dm /= normalize
     sparse(dm .< radius)
 end
 
-"""Create a cross recurrence matrix from two embeded time series"""
-function crossrecurrencematrix(x, y, radius; normalize=true, kwargs...)
+"""
+    crossrecurrencematrix(x, y, radius; <keyword arguments>)
+    
+Create a cross recurrence matrix from two embeded time series.
+
+See `?recurrencematrix` for details.
+"""
+function crossrecurrencematrix(x, y, radius; scale=maximum, kwargs...)
     kwargs = Dict(kwargs)
     argsdm = haskey(kwargs,:metric) ? (x, y, kwargs[:metric]) : (x, y)
     dm = distancematrix(argsdm...)
-    normalize && (dm /= maximum(dm))
+    (typeof(normalize) == Function) && (normalize = normalize(dm))
+    dm /= normalize
     sparse(dm .< radius)
 end
 
-"""Create a joint recurrence matrix from two embeded time series"""
+"""
+    crossrecurrencematrix(x, y, radius; <keyword arguments>)
+    
+Create a joint recurrence matrix from two embeded time series.
+
+See `?recurrencematrix` for details.
+"""
 function jointrecurrencematrix(x, y, radius; kwargs...)
     rm1 = recurrencematrix(x, radius, kwargs...)
     rm2 = recurrencematrix(y, radius, kwargs...)

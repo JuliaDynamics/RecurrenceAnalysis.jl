@@ -1,5 +1,11 @@
 # Recurrence parameters as defined by Marwan et al. (2007)
 
+"""
+    recurrencerate(x, theiler=0)
+    
+Calculate the recurrence rate (RR) of a recurrence matrix, ruling out
+the points within the Theiler window.
+"""
 recurrencerate(x::AbstractMatrix) = countnz(x)/prod(size(x))
 
 function recurrencerate(x::AbstractMatrix; theiler::Integer=0)
@@ -62,6 +68,12 @@ function diagonalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=1, kwargs..
     [allpoints - collect(2:nbins+1)'*bins; bins]
 end
 
+"""
+    determinism(x; lmin=2, theiler=1)
+    
+Calculate the determinism (DET) of a recurrence matrix, ruling out
+the points within the Theiler window and diagonals shorter than a minimum value.
+"""
 function determinism(diag_hist::AbstractVector; lmin=2, kwargs...)
     if lmin < 2
         error("lmin must be 2 or higher")
@@ -75,6 +87,12 @@ function determinism(x::AbstractMatrix; kwargs...)
     determinism(diagonalhistogram(x; kwargs...); kwargs...)
 end
 
+"""
+    avgdiag(x; lmin=2, theiler=1)
+    
+Calculate the average diagonal length (L) in a recurrence matrix, ruling out
+the points within the Theiler window and diagonals shorter than a minimum value.
+"""
 function avgdiag(diag_hist::AbstractVector; lmin=2, kwargs...)
     if lmin < 2
         error("lmin must be 2 or higher")
@@ -88,11 +106,30 @@ function avgdiag(x::AbstractMatrix; kwargs...)
     avgdiag(diagonalhistogram(x; kwargs...); kwargs...)
 end
 
+"""
+    maxdiag(x; lmin=2, theiler=1)
+    
+Calculate the longest diagonal (Lmax) in a recurrence matrix, ruling out
+the points within the Theiler window and diagonals shorter than a minimum value.
+"""
+
 maxdiag(diag_hist::AbstractVector) = length(diag_hist)
 maxdiag(x::AbstractMatrix; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
 
+"""
+    divergence(x; lmin=2, theiler=1)
+    
+Calculate the divergence of a recurrence matrix
+(actually the inverse of `maxdiag`.
+"""
 divergence(x) = 1/maxdiag(x)
 
+"""
+    maxdiag(x; lmin=2, theiler=1)
+    
+Calculate the entropy of diagonal lengths (ENT) of a recurrence matrix, ruling out
+the points within the Theiler window and diagonals shorter than a minimum value.
+"""
 function entropy(diag_hist::AbstractVector; lmin=2, kwargs...)
     if lmin < 2
         error("lmin must be 2 or higher")
@@ -111,6 +148,12 @@ function entropy(x::AbstractMatrix; kwargs...)
     entropy(diagonalhistogram(x; kwargs...); kwargs...)
 end
 
+"""
+    trend(x; theiler=1, border=10)
+    
+Calculate the trend of recurrences in recurrence matrix towards its edges, ruling out
+the points within the Theiler window and in the outermost diagonals.
+"""
 function trend(npoints::AbstractVector; theiler=1, border=10, kwargs...)
     nmax = length(npoints)
     rrk = npoints./collect(nmax:-1:1)
@@ -163,12 +206,30 @@ function verticalhistogram(x::AbstractMatrix{Bool})
     [countnz(x) - collect(2:nbins+1)'*bins; bins]
 end
 
+"""
+    laminarity(x; lmin=2)
+    
+Calculate the laminarity (LAM) of a recurrence matrix, ruling out
+vertical lines shorter than a minimum value.
+"""
 laminarity(vert_hist::AbstractVector; kwargs...) = determinism(vert_hist; kwargs...)
 laminarity(x::AbstractMatrix; kwargs...) = laminarity(verticalhistogram(x); kwargs...)
 
+"""
+    trappingtime(x; lmin=2)
+    
+Calculate the trapping time (TT) of a recurrence matrix, ruling out
+vertical lines shorter than a minimum value.
+"""
 trappingtime(vert_hist::AbstractVector; kwargs...) = avgdiag(vert_hist; kwargs...)
 trappingtime(x::AbstractMatrix; kwargs...) = trappingtime(verticalhistogram(x); kwargs...)
 
+"""
+    maxvert(x; lmin=2)
+    
+Calculate the longest vertical line (Vmax) of a recurrence matrix, ruling out
+lines shorter than a minimum value.
+"""
 maxvert(vert_hist::AbstractVector) = length(vert_hist)
 maxvert(x::AbstractMatrix) = maxvert(verticalhistogram(x))
 
