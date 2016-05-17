@@ -100,8 +100,8 @@ function recurrencematrix(x, radius; scale=maximum, kwargs...)
     kwargs = Dict(kwargs)
     argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
     dm = distancematrix(argsdm...)
-    (typeof(normalize) == Function) && (normalize = normalize(dm))
-    dm /= normalize
+    (typeof(scale) == Function) && (scale = scale(dm))
+    dm /= scale
     sparse(dm .< radius)
 end
 
@@ -116,8 +116,8 @@ function crossrecurrencematrix(x, y, radius; scale=maximum, kwargs...)
     kwargs = Dict(kwargs)
     argsdm = haskey(kwargs,:metric) ? (x, y, kwargs[:metric]) : (x, y)
     dm = distancematrix(argsdm...)
-    (typeof(normalize) == Function) && (normalize = normalize(dm))
-    dm /= normalize
+    (typeof(scale) == Function) && (scale = scale(dm))
+    dm /= scale
     sparse(dm .< radius)
 end
 
