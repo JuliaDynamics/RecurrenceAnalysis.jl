@@ -125,7 +125,7 @@ Calculate the divergence of a recurrence matrix
 divergence(x) = 1/maxdiag(x)
 
 """
-    maxdiag(x; lmin=2, theiler=1)
+    entropy(x; lmin=2, theiler=1)
     
 Calculate the entropy of diagonal lengths (ENT) of a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.

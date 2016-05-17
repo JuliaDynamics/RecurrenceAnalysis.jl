@@ -1,5 +1,8 @@
-# Autocorrelation
-
+"""
+    autocorrelation(x)
+    
+Calculate autocorrelation of a vector for all positive lags.
+"""
 autocorrelation(x) = xcorr(x,x)[length(x):end]
 
 # Numbers of bin
@@ -15,7 +18,20 @@ n_sturges(x::AbstractVector) = ceil(Integer, 1+log2(length(x)))
 
 makebins(x, n) = linspace(extrema(x)..., n+1)
 
-# Average mutual information
+"""
+    ami(x, delay, nbins)
+    
+Calculate the average mutual information of a signal for given delays.
+
+The delay can either be an integer (in which case the function returns an integer),
+or a series of numbers (returning a vector) specified as an array of ascending integers,
+a range, or a tuple with the limits of the range (minimum, maximum).
+
+The number of bins used to estimate the marginal and joint entropies of the
+original and delayed signal can be given as a fixed integer, or as a
+string that specifies a binning criterion. Currently available criteria are
+Sturges (`"Sturges"`) or Freeman-Diaconis (`"FD"`).
+"""
 function ami(x, delay::Integer, nbins::Integer)
     n = length(x)-delay
     log2n = log2(n)
@@ -60,20 +76,35 @@ end
 
 ami(x, delay::Tuple{Integer,Integer}, nbins) = ami(x, colon(delay...), nbins)
 
-function ami(x, delay, bins="Sturges")
+function ami(x, delay, nbins="Sturges")
     # Define number of bins
-    dict_binfuns = Dict("Sturges" => :n_sturges,
-        "FD" => :n_fd)
-    !haskey(dict_binfuns,bins) && error("incorrect definition of bins.")
-    binfun = dict_binfuns[bins]
-    nbins = eval(:($(binfun)(x)))
+    dict_binfuns = Dict("Sturges" => n_sturges,
+        "FD" => n_fd)
+    !haskey(dict_binfuns,nbins) && error("incorrect definition of bins.")
+    binfun = dict_binfuns[nbins]
+    nbins = binfun(x)
     ami(x, delay, nbins)
 end
 
-# Generalized mutual information, based on Renyi entropy
+"""
+    gmi(x, delay, radius; <keyword arguments>)
+    
+Calculate the generalized mutual information of a signal for given delays, based
+on Rényi entropies.
 
-function gmi(x, delay::Integer, radius::Real)
-    rmfull = recurrencematrix(x,radius)
+The delay can either be an integer (in which case the function returns an integer),
+or a series of numbers (returning a vector) specified as an array of ascending integers,
+a range, or a tuple with the limits of the range (minimum, maximum).
+
+The radius and keyword arguments are used as inputs to the calculation of
+recurrence matrices to estimate Rényi entropies (see `?recurrencematrix` for details).
+Note: to optimise calculations for a given secuence of delays,
+the recurrence matrix is assumed to be obtained from distances defined as
+the maximum (infinity norm). Defining a different metric in the keyword arguments
+is possible, but not recommended.
+"""
+function gmi(x, delay::Integer, radius::Real; kwargs...)
+    rmfull = recurrencematrix(x,radius; kwargs...)
     n = length(x) - delay
     # Entropy of the non-delayed series
     rm1 = rmfull[1:n, 1:n]
@@ -86,9 +117,9 @@ function gmi(x, delay::Integer, radius::Real)
     (2h2 - h2tau)/maxh2
 end
 
-function gmi(x, delay::Union{Array, Range}, radius::Real)
+function gmi(x, delay::Union{Array, Range}, radius::Real; kwargs...)
     d2 = maximum(delay)
-    rmfull = recurrencematrix(x,radius)
+    rmfull = recurrencematrix(x,radius; kwargs...)
     h2tau = zeros(d2+1)
     n = length(x) - d2
     # Entropy of the non-delayed series
@@ -105,6 +136,6 @@ function gmi(x, delay::Union{Array, Range}, radius::Real)
     (2h2 - h2tau[1+delay])/maxh2
 end
 
-gmi(x, delay::Tuple{Integer,Integer}, radius) = gmi(x, colon(delay...), radius)
+gmi(x, delay::Tuple{Integer,Integer}, radius; kwargs...) = gmi(x, colon(delay...), radius; kwargs...)
 
-gmi(x, delay) = gmi(x, delay, radius_mrr(.01))
+# gmi(x::AbstractVector, delay) = gmi(x, delay, radius_mrr(x, .01))
