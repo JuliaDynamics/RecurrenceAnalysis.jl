@@ -96,15 +96,13 @@ The delay can either be an integer (in which case the function returns an intege
 or a series of numbers (returning a vector) specified as an array of ascending integers,
 a range, or a tuple with the limits of the range (minimum, maximum).
 
-The radius and keyword arguments are used as inputs to the calculation of
-recurrence matrices to estimate Rényi entropies (see `?recurrencematrix` for details).
-Note: to optimise calculations for a given secuence of delays,
-the recurrence matrix is assumed to be obtained from distances defined as
-the maximum (infinity norm). Defining a different metric in the keyword arguments
-is possible, but not recommended.
+The radius is a fixed value in the absolute scale of the signal,
+used for the calculation of recurrence matrices to estimate
+Rényi entropies (see `?recurrencematrix` for details).
+Maximum norm and no scaling of distances are assumed.
 """
-function gmi(x, delay::Integer, radius::Real; kwargs...)
-    rmfull = recurrencematrix(x,radius; kwargs...)
+function gmi(x, delay::Integer, radius::Real)
+    rmfull = recurrencematrix(x,radius,scale=1)
     n = length(x) - delay
     # Entropy of the non-delayed series
     rm1 = rmfull[1:n, 1:n]
@@ -117,9 +115,9 @@ function gmi(x, delay::Integer, radius::Real; kwargs...)
     (2h2 - h2tau)/maxh2
 end
 
-function gmi(x, delay::Union{Array, Range}, radius::Real; kwargs...)
+function gmi(x, delay::Union{Array, Range}, radius::Real)
     d2 = maximum(delay)
-    rmfull = recurrencematrix(x,radius; kwargs...)
+    rmfull = recurrencematrix(x,radius,scale=1)
     h2tau = zeros(d2+1)
     n = length(x) - d2
     # Entropy of the non-delayed series
@@ -136,6 +134,6 @@ function gmi(x, delay::Union{Array, Range}, radius::Real; kwargs...)
     (2h2 - h2tau[1+delay])/maxh2
 end
 
-gmi(x, delay::Tuple{Integer,Integer}, radius; kwargs...) = gmi(x, colon(delay...), radius; kwargs...)
+gmi(x, delay::Tuple{Integer,Integer}, radius) = gmi(x, colon(delay...), radius)
 
 # gmi(x::AbstractVector, delay) = gmi(x, delay, radius_mrr(x, .01))
