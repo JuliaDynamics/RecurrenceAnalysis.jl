@@ -19,7 +19,10 @@ export embed,
        maxvert,
        autocorrelation,
        ami,
-       gmi
+       gmi,
+       fnn,
+       afnn,
+       ffnn
 
 # get distance metric of the Distance packages
 function getmetric(normtype::AbstractString)
@@ -137,6 +140,7 @@ end
 
 include("rqa.jl")
 include("delay.jl")
+include("dimension.jl")
 include("radius.jl")
 
 end
