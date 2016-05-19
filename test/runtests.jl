@@ -26,7 +26,7 @@ function dynamical_system(x0, dxdt, dt, n)
         for ix=1:m
             dx[ix] = dx_rk4(dxdt, x[t,:], ix, dt)
         end
-        x[t+1,:] = x[t,:] + dx
+        x[t+1,:] = x[t,:][:] + dx
     end
     x
 end
