@@ -22,7 +22,7 @@ function dynamical_system(x0, dxdt, dt, n)
     x = zeros(n,m)
     x[1,:] = collect(x0)
     for t=1:n-1
-        dx = zeros(1,m)
+        dx = zeros(m)
         for ix=1:m
             dx[ix] = dx_rk4(dxdt, x[t,:], ix, dt)
         end
@@ -32,10 +32,10 @@ function dynamical_system(x0, dxdt, dt, n)
 end
 
 # Test with Lorenz system
-lorenz_eq(sigma, rho, beta) = (
+lorenz_eq(sigma, rho, b) = (
   (x,y,z) -> sigma*(y - x),
   (x,y,z) -> x*(rho - z) - y,
-  (x,y,z) -> x*y - beta*z)
+  (x,y,z) -> x*y - b*z)
 
 sigma=10.; rho=28.; b=8/3;
 x0 = ones(3)
