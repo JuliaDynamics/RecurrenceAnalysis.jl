@@ -7,21 +7,17 @@ function embedmatrix1(x, delay, metric="max")
     sqrt(fun(x[1:nr-delay, 1:nc-delay], x[1+delay:nr, 1+delay:nc]))
 end
 
-function embedmatrix(x, m, delay, metric="max")
-    dist = getmetric(metric)
-    fun = Dict(Euclidean()=>+, Chebyshev()=>max)[dist]
-    nr, nc = size(x)
-    nrm = nr - delay*m
-    ncm = nc - delay*m
-    x = abs2(x)
-    xm = x[1:nrm, 1:ncm]
-    for k = 1:m
-        xm = fun(xm, x[delay*k+(1:nrm), delay*k+(1:ncm)])
-    end
-    sqrt(xm)
-end
+"""
+    fnn(x, mbounds, delay, thresholds; metric="max")
+    
+Calculate the number of false nearest neighbours (FNN) by Kennel's algorithm.
 
-# Kennel's algorithm
+FNN are calculated for the embedding dimensions between `mbounds[1]` and
+`mbounds[2]`, and for the given delay, taking `thresholds[1]` as the parameter
+Rtol, and `thresholds[2]` as the parameter Atol. The argument `metric` defines
+what kind of distance is calculated between pairs of points, as in
+`distancematrix`.
+"""
 function fnn(x, mbounds, delay, thresholds; metric="max")
     Rtol2 = thresholds[1]^2
     Atol = thresholds[2]
@@ -47,7 +43,17 @@ function fnn(x, mbounds, delay, thresholds; metric="max")
     nfnn
 end
 
-# Cao's algorithm
+"""
+    fnn(x, mbounds, delay; metric="max")
+    
+Calculate the ratios E1 and E2 of Cao's method of "averaged false nearest neighbours".
+
+The ratios are calculated for the embedding dimensions between `mbounds[1]` and
+`mbounds[2]`, and for the given delay. The argument `metric` defines
+what kind of distance is calculated between pairs of points, as in
+`distancematrix`.
+"""
+
 function afnn(x, mbounds, delay; metric="max")
     m1, m2 = mbounds
     dm = distancematrix(embed(x, m1, delay), metric)
@@ -72,7 +78,16 @@ function afnn(x, mbounds, delay; metric="max")
     e1, e2
 end
 
-# Krakovská's algorithm
+"""
+    ffnn(x, mbounds, delay; metric="max")
+    
+Calculate the ratio of false first nearest neighbours (FFNN) by Krakovská's algorithm.
+
+The ratios are calculated for the embedding dimensions between `mbounds[1]` and
+`mbounds[2]`, and for the given delay. The argument `metric` defines
+what kind of distance is calculated between pairs of points, as in
+`distancematrix`.
+"""
 function ffnn(x, mbounds, delay; metric="max")
     m1, m2 = mbounds
     dm = distancematrix(embed(x, m1, delay), metric)
