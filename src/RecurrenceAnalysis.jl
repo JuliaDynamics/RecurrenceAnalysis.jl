@@ -96,7 +96,7 @@ between points. Typical choices are `maximum` (default) to scale distances into
 the unit inteval, or `mean`. Use `1` to keep the distances unscaled.
 * `metric::String` : metric of the norm, as in `distancematrix`.
 """
-function recurrencematrix(x, radius; scale=maximum, kwargs...)
+function recurrencematrix(x, radius; scale=y->maximum(y[:]), kwargs...)
     kwargs = Dict(kwargs)
     argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
     dm = distancematrix(argsdm...)
@@ -112,7 +112,7 @@ Create a cross recurrence matrix from two embeded time series.
 
 See `?recurrencematrix` for details.
 """
-function crossrecurrencematrix(x, y, radius; scale=maximum, kwargs...)
+function crossrecurrencematrix(x, y, radius; scale=y->maximum(y[:]), kwargs...)
     kwargs = Dict(kwargs)
     argsdm = haskey(kwargs,:metric) ? (x, y, kwargs[:metric]) : (x, y)
     dm = distancematrix(argsdm...)

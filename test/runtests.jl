@@ -61,8 +61,8 @@ jrmat = jointrecurrencematrix(x, lorenz_data[:,3], 0.05)
 # RQA
 rr = recurrencerate(rmat)
 @test recurrencerate(rmat,theiler=1) < rr
-det = determinism(rmat)
-@test determinism(rmat, theiler=5, lmin=5) < det
+detm = determinism(rmat)
+@test determinism(rmat, theiler=5, lmin=5) < detm
 lmean = avgdiag(rmat)
 @test avgdiag(rmat, lmin=5) > lmean
 @test maxdiag(rmat) > lmean
