@@ -50,6 +50,10 @@ ami_fd = ami(x, (1,30), "FD")
 @test findmin(ami_fd)[2] == 16
 ami_15 = ami(x, (1,30), 15)
 gmi_10 = gmi(x, (1,30), 0.1)
+# Look for optimal embedding dimension
+fnnval  =  fnn(x, (1,10), 17, (15, 2))
+e1,e2   = afnn(x, (1,10), 17)
+ffnnval = ffnn(x, (1,10), 17)
 # Distance and recurrence matrices
 xe = embed(x, 3, 17)
 dmat = distancematrix(xe)

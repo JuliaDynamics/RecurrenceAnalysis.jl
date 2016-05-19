@@ -44,7 +44,7 @@ function fnn(x, mbounds, delay, thresholds; metric="max")
 end
 
 """
-    fnn(x, mbounds, delay; metric="max")
+    afnn(x, mbounds, delay; metric="max")
     
 Calculate the ratios E1 and E2 of Cao's method of "averaged false nearest neighbours".
 

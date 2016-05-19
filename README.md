@@ -41,6 +41,15 @@ Functions to estimate the optimal delay for a time series:
 | `ami`             | Average mutual information                            |
 | `gmi`             | Generalised mutual information based on Rényi entropy |
 
+
+Functions to estimate the optimal embedding dimensions for a time series:
+
+| Function | Description                                                            |
+| -------- | -----------                                                            |
+| `fnn`    | False Nearest Neighbours (FNN, Kennel et al., *Phys Rev A*:1992)         |
+| `afnn`   | Averaged FNN (Cao, *Phys D Nonlin Phen*:1997)                            |
+| `ffnn`   | False First Nearesth Neighbours (Krakovská et al., *J Complex Sys*:2015) |
+
 # Plotting recurrence matrices
 
 This package does not provide plotting tools. The matrices created by
@@ -65,4 +74,5 @@ orientation in recurrence plots.)
 
  * FAN method to define recurrence plots
  * Criteria to define the optimal radius
+ * Windowed RQA
  * Recurrence Network analysis
