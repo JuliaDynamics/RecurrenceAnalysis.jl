@@ -2,7 +2,7 @@
 
 # RecurrenceAnalysis
 
-Julia tools for Recurrence Quantification Analysis (RQA)
+**Julia tools for Recurrence Quantification Analysis (RQA)**
 
 ## Basic functions
 
@@ -16,7 +16,7 @@ The following functions can be used to quantify distances and recurrences in tim
 | `crossrecurrencematrix` | Create a cross recurrence matrix from two (possibly embeded) time series |
 | `jointrecurrencematrix` | Create a joint recurrence matrix from two (possibly embeded) time series |
 
-Functions for the calculation of RQA parameters from recurrence matrices:
+Functions for the calculation of [RQA parameters](http://www.recurrence-plot.tk/rqa.php) from recurrence matrices:
 
 | Function         | Description                                                               |
 | --------         | -----------                                                               |
@@ -31,26 +31,20 @@ Functions for the calculation of RQA parameters from recurrence matrices:
 | `trappingtime`   | Trapping time (*TT*): average length of vertical structures               |
 | `maxvert`        | Length of longest vertical structure (*Vmax*)                             |
 
-# Auxiliary functions
+A typical RQA workflow may be like this:
 
-Functions to estimate the optimal delay for a time series:
-
-| Function          | Description                                           |
-| --------          | -----------                                           |
-| `autocorrelation` | Autocorrelation for positive delays                   |
-| `ami`             | Average mutual information                            |
-| `gmi`             | Generalised mutual information based on Rényi entropy |
-
-
-Functions to estimate the optimal embedding dimensions for a time series:
-
-| Function | Description                                                            |
-| -------- | -----------                                                            |
-| `fnn`    | False Nearest Neighbours (FNN, Kennel et al., *Phys Rev A*:1992)         |
-| `afnn`   | Averaged FNN (Cao, *Phys D Nonlin Phen*:1997)                            |
-| `ffnn`   | False First Nearesth Neighbours (Krakovská et al., *J Complex Sys*:2015) |
-
-# Plotting recurrence matrices
+```julia
+# 1. Transform time series x into an embedded vector
+xe = embed(x, 5, 3)                 # Embedding dimension = 5, delay = 3 
+# 2. Compute recurrence matrix
+rmat = recurrencematrix(xe, 0.05)   # Threshold ε = 5% of maximum distance
+# 3. Calculate RQA parameters
+rr = recurrencerate(rmat)
+detm = determinism(rmat)
+ent = entropy(rmat)
+...
+```
+### Plotting recurrence matrices
 
 This package does not provide plotting tools. The matrices created by
 `recurrencematrix`, `crossrecurrencematrix` and `jointrecurrencematrix` are
@@ -69,6 +63,57 @@ savefig(rp, "rmat.png")       # Write the plot to disk (PNG)
 
 (Note: the *y*-axis of such a plot is flipped with respect to the customary
 orientation in recurrence plots.)
+
+### RQA options:
+
+Some functions can be tuned with options passed as keyword arguments:
+
+| Argument  | Default   | Functions | Description |
+| --------  | --------  | --------- | ----------- 
+| `metric`  | `"max"`   | `distancematrix`<br/>`recurrencematrix`<br/>`crossrecurrencematrix`<br/>`jointrecurrencematrix` | Norm used to measure distances between points. Possible values: `max`, `inf` (infinity norm, same as `max`), and `euc` (Euclidean norm). |
+| `scale`   | `maximum` | `recurrencematrix`<br/>`crossrecurrencematrix`<br/>`jointrecurrencematrix` | Function or fixed number to scale the distances between points before applying the given threshold. Use `maximum` (default) if the threshold is to be taken as a fraction of the maximum distance, `mean` if it is a fraction of the mean distance, etc., and `1` (identity scale) to use an absolute threshold. |
+| `theiler` | `0` for `recurrencerate`,<br/>`1` for other functions  | `recurrencerate`<br/>`determinism`<br/>`avgdiag`<br/>`maxdiag`<br/>`divergence`<br/>`entropy`<br/>`trend` | 'Theiler' window: number of diagonals around the LOI excluded from the analysis. |
+| `lmin`    | 2         | `determinism`<br/>`avgdiag`<br/>`maxdiag`<br/>`divergence`<br/>`entropy`<br/>`laminarity`<br/>`trappingtime`<br/>`maxvert` | Minimum length of the recurrent structures (diagonal or vertical) considered in the analysis. |
+| `border`  | 10        | `trend`  | Number of diagonals excluded from the analysis near the border of the matrix. |
+
+Note: In order to keep the functions simpler and avoid confusion with the scaling of the distances, there is no option to normalize the input, although that is a customary procedure in RQA. This can be done *prior* to using the functions of this package.
+
+
+## Auxiliary functions
+
+**Functions to estimate the optimal delay for a time series:**
+
+| Function          | Description                                           |
+| --------          | -----------                                           |
+| `autocorrelation` | Autocorrelation for positive delays                   |
+| `ami`             | Average mutual information                            |
+| `gmi`             | Generalised mutual information based on Rényi entropy |
+
+Examples:
+
+```julia
+autocorrelation(x) # Values from delay=0 to delay=length(x)-1
+ami(x, 10)         # AMI for delay = 10
+ami(x, 1:10)       # Same, for delays from 1 to 10
+ami(x, (1,10))     # Same as above
+gmi(x, 10, 0.1)    # GMI for delay = 10; recurrences for distances < 0.1
+gmi(x, 1:10, 0.1)  # Same as with AMI ...
+gmi(x, (1,10), 0.1)  
+```
+The AMI functions estimate the marginal and joint entropies of the original and delayed signals using histograms of their values. A third argument of the `ami` function can be used to tell how many bins those histograms must have. That argument must be either an integer, or one of the strings `"Sturges"` or `"FD"` (Freeman-Diaconis criterion). Sturges' criterion is used by default.
+
+The GMI functions use recurrence matrices to estimate Rényi entropies (cf. [Marwan et al, *Phys Rep*:2007](http://www.recurrence-plot.tk/marwan_PhysRep2007.pdf)). In order to make the calculations more efficient, the options available for the basic functions are not available; the assumed settings are maximum norm and *no scaling* (because the scale would not be preserved for different delays); i.e. the time series should be normalised beforehand, or use a threshold referred to the absolute values of the time series.
+
+
+**Functions to estimate the optimal embedding dimensions for a time series:**
+
+| Function | Description                                                                                                       |
+| -------- | -----------                                                                                                       |
+| `fnn`    | False Nearest Neighbours (FNN, [Kennel et al., *Phys Rev A*:1992](http://dx.doi.org/10.1103/PhysRevA.45.3403))    |
+| `afnn`   | Averaged FNN ([Cao, *Phys D Nonlin Phen*:1997](http://dx.doi.org/10.1016/S0167-2789(97)00118-8))                  |
+| `ffnn`   | False First Nearesth Neighbours ([Krakovská et al., *J Complex Sys*:2015](http://dx.doi.org/10.1155/2015/932750)) |
+
+These functions have the optional keyword argument `metric`, with the same meaning and default value as above.
 
 # To-do list:
 

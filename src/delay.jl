@@ -19,7 +19,7 @@ n_sturges(x::AbstractVector) = ceil(Integer, 1+log2(length(x)))
 makebins(x, n) = linspace(extrema(x)..., n+1)
 
 """
-    ami(x, delay, nbins)
+    ami(x, delay[, nbins])
     
 Calculate the average mutual information of a signal for given delays.
 
@@ -30,7 +30,7 @@ a range, or a tuple with the limits of the range (minimum, maximum).
 The number of bins used to estimate the marginal and joint entropies of the
 original and delayed signal can be given as a fixed integer, or as a
 string that specifies a binning criterion. Currently available criteria are
-Sturges (`"Sturges"`) or Freeman-Diaconis (`"FD"`).
+Sturges (`"Sturges"`, the default value) or Freeman-Diaconis (`"FD"`).
 """
 function ami(x, delay::Integer, nbins::Integer)
     n = length(x)-delay
@@ -87,7 +87,7 @@ function ami(x, delay, nbins="Sturges")
 end
 
 """
-    gmi(x, delay, radius; <keyword arguments>)
+    gmi(x, delay, radius)
     
 Calculate the generalized mutual information of a signal for given delays, based
 on Rényi entropies.
