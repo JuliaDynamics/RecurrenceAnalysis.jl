@@ -1,6 +1,7 @@
 module RecurrenceAnalysis
 
 using Distances
+using StatsBase: fit, Histogram
 
 export embed,
        distancematrix,
@@ -103,8 +104,8 @@ function recurrencematrix(x, radius; scale=maximum, kwargs...)
     kwargs = Dict(kwargs)
     argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
     dm = distancematrix(argsdm...)
-    (typeof(scale) == Function) && (scale = scale(dm))
-    dm /= scale
+    (typeof(scale) == Function) && (scale = scale(dm[:]))
+    dm ./= scale
     sparse(dm .< radius)
 end
 
@@ -119,8 +120,8 @@ function crossrecurrencematrix(x, y, radius; scale=maximum, kwargs...)
     kwargs = Dict(kwargs)
     argsdm = haskey(kwargs,:metric) ? (x, y, kwargs[:metric]) : (x, y)
     dm = distancematrix(argsdm...)
-    (typeof(scale) == Function) && (scale = scale(dm))
-    dm /= scale
+    (typeof(scale) == Function) && (scale = scale(dm[:]))
+    dm ./= scale
     sparse(dm .< radius)
 end
 

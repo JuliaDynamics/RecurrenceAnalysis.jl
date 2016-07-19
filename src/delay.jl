@@ -36,7 +36,8 @@ function ami(x, delay::Integer, nbins::Integer)
     n = length(x)-delay
     log2n = log2(n)
     edges = makebins(x, nbins)
-    b1, b2, pxy = hist2d(x[(1:n) .+ [0 delay]], edges, edges)
+    xd = (x[1:n], x[(1:n).+delay])
+    pxy = fit(Histogram, xd, (edges, edges)).weights
     px = sum(pxy, 2)
     py = sum(pxy, 1)
     ret = 0.
@@ -56,12 +57,12 @@ function ami(x, delay::Union{Array, Range}, nbins::Integer)
     n = length(x)-d2
     log2n = log2(n)
     # Pre-allocated arrays
-    pxy = zeros(nbins, nbins)
     px = zeros(nbins,1)
     py = zeros(1,nbins)
     for d in delay
         edges = makebins(x[1:n+d], nbins)
-        b1, b2, pxy = hist2d!(pxy, x[(1:n) .+ [0 d]], edges, edges)
+        xd = (x[1:n], x[(1:n).+d])
+        pxy = fit(Histogram, xd, (edges, edges)).weights
         px = sum!(px, pxy)
         py = sum!(py, pxy)
         for ix=1:nbins, iy=1:nbins
