@@ -47,9 +47,7 @@ function embed(x::AbstractVecOrMat, m::Integer, delay::Integer)
     dims = size(x)
     n = dims[1]
     nm = n-delay*(m-1)
-    if nm < 2 &&
-        warning("the emedded time series has length < 2")
-    end
+    (nm < 2) && warning("the emedded time series has length < 2")
     ix = (1:nm) .+ (0:delay:delay*(m-1))'
     embed_indices(x, ix)
 end
@@ -104,8 +102,8 @@ function recurrencematrix(x, radius; scale=maximum, kwargs...)
     kwargs = Dict(kwargs)
     argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
     dm = distancematrix(argsdm...)
-    (typeof(scale) == Function) && (scale = scale(dm[:]))
-    dm ./= scale
+    scfac = (typeof(scale) == Function) ? scale(dm[:]) : scale
+    dm ./= scfac
     sparse(dm .< radius)
 end
 
@@ -120,8 +118,8 @@ function crossrecurrencematrix(x, y, radius; scale=maximum, kwargs...)
     kwargs = Dict(kwargs)
     argsdm = haskey(kwargs,:metric) ? (x, y, kwargs[:metric]) : (x, y)
     dm = distancematrix(argsdm...)
-    (typeof(scale) == Function) && (scale = scale(dm[:]))
-    dm ./= scale
+    scfac = (typeof(scale) == Function) ? scale(dm[:]) : scale
+    dm ./= scfac
     sparse(dm .< radius)
 end
 
