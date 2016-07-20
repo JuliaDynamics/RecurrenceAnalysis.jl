@@ -18,6 +18,22 @@ n_sturges(x::AbstractVector) = ceil(Integer, 1+log2(length(x)))
 
 makebins(x, n) = linspace(extrema(x)..., n+1)
 
+# Own simplified implementation of hist2d for square edges
+function hist2!(h, x, edges)
+    n = length(edges)-1
+    for r=1:n, c=1:n
+        h[r,c] = 0;
+    end
+    for i = 1:size(x,1)
+        r = searchsortedfirst(edges, x[i,1]) - 1
+        c = searchsortedfirst(edges, x[i,2]) - 1
+        if 1 <= r <= n && 1 <= c <= n
+            h[r,c] += 1
+        end
+    end
+    h
+end
+
 """
     ami(x, delay[, nbins])
     
@@ -36,8 +52,8 @@ function ami(x, delay::Integer, nbins::Integer)
     n = length(x)-delay
     log2n = log2(n)
     edges = makebins(x, nbins)
-    xd = (x[1:n], x[(1:n).+delay])
-    pxy = fit(Histogram, xd, (edges, edges)).weights
+    pxy = zeros(nbins,nbins)
+    hist2!(pxy, x[(1:n).+[0 delay]], edges)
     px = sum(pxy, 2)
     py = sum(pxy, 1)
     ret = 0.
@@ -57,14 +73,14 @@ function ami(x, delay::Union{Array, Range}, nbins::Integer)
     n = length(x)-d2
     log2n = log2(n)
     # Pre-allocated arrays
+    pxy = zeros(nbins,nbins)
     px = zeros(nbins,1)
     py = zeros(1,nbins)
     for d in delay
         edges = makebins(x[1:n+d], nbins)
-        xd = (x[1:n], x[(1:n).+d])
-        pxy = fit(Histogram, xd, (edges, edges)).weights
-        px = sum!(px, pxy)
-        py = sum!(py, pxy)
+        hist2!(pxy, x[(1:n).+[0 d]], edges)
+        sum!(px, pxy)
+        sum!(py, pxy)
         for ix=1:nbins, iy=1:nbins
             if pxy[ix,iy] != 0
                 pxpy = px[ix]*py[iy]

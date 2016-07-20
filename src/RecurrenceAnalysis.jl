@@ -1,7 +1,6 @@
 module RecurrenceAnalysis
 
 using Distances
-using StatsBase: fit, Histogram
 
 export embed,
        distancematrix,
