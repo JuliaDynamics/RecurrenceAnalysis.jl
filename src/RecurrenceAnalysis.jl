@@ -1,6 +1,7 @@
 module RecurrenceAnalysis
 
 using Distances
+using StatsBase: fit, Histogram
 
 export embed,
        distancematrix,
@@ -19,7 +20,10 @@ export embed,
        maxvert,
        autocorrelation,
        ami,
-       gmi
+       gmi,
+       fnn,
+       afnn,
+       ffnn
 
 # get distance metric of the Distance packages
 function getmetric(normtype::AbstractString)
@@ -43,9 +47,7 @@ function embed(x::AbstractVecOrMat, m::Integer, delay::Integer)
     dims = size(x)
     n = dims[1]
     nm = n-delay*(m-1)
-    if nm < 2 &&
-        warning("the emedded time series has length < 2")
-    end
+    (nm < 2) && warning("the emedded time series has length < 2")
     ix = (1:nm) .+ (0:delay:delay*(m-1))'
     embed_indices(x, ix)
 end
@@ -100,8 +102,8 @@ function recurrencematrix(x, radius; scale=maximum, kwargs...)
     kwargs = Dict(kwargs)
     argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
     dm = distancematrix(argsdm...)
-    (typeof(normalize) == Function) && (normalize = normalize(dm))
-    dm /= normalize
+    (typeof(scale) <: Function) && (scale = scale(dm))
+    dm /= scale
     sparse(dm .< radius)
 end
 
@@ -116,8 +118,8 @@ function crossrecurrencematrix(x, y, radius; scale=maximum, kwargs...)
     kwargs = Dict(kwargs)
     argsdm = haskey(kwargs,:metric) ? (x, y, kwargs[:metric]) : (x, y)
     dm = distancematrix(argsdm...)
-    (typeof(normalize) == Function) && (normalize = normalize(dm))
-    dm /= normalize
+    (typeof(scale) <: Function) && (scale = scale(dm))
+    dm /= scale
     sparse(dm .< radius)
 end
 
@@ -137,6 +139,7 @@ end
 
 include("rqa.jl")
 include("delay.jl")
+include("dimension.jl")
 include("radius.jl")
 
 end

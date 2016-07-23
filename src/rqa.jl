@@ -122,10 +122,10 @@ maxdiag(x::AbstractMatrix; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
 Calculate the divergence of a recurrence matrix
 (actually the inverse of `maxdiag`.
 """
-divergence(x) = 1/maxdiag(x)
+divergence(x; kwargs...) = 1/maxdiag(x; kwargs...)
 
 """
-    maxdiag(x; lmin=2, theiler=1)
+    entropy(x; lmin=2, theiler=1)
     
 Calculate the entropy of diagonal lengths (ENT) of a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
@@ -231,5 +231,5 @@ Calculate the longest vertical line (Vmax) of a recurrence matrix, ruling out
 lines shorter than a minimum value.
 """
 maxvert(vert_hist::AbstractVector) = length(vert_hist)
-maxvert(x::AbstractMatrix) = maxvert(verticalhistogram(x))
+maxvert(x::AbstractMatrix; kwargs...) = maxvert(verticalhistogram(x; kwargs...))
 
