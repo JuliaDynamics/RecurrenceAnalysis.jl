@@ -124,7 +124,7 @@ These functions have the optional keyword argument `metric`, with the same meani
 | ----------------- | -----------                         |
 | `sorteddistances` | Distances associated to *RR* values |
 
-This function may be used to explore how the *RR* varies as a function of the chosen threshold, in order to define the threshold from a target *RR*, or look for the linear scaling region between those parameters ([Webber & Zbilut, 2005](www.nsf.gov/sbe/bcs/pac/nmbs/chap2.pdf), p. 56).
+This function may be used to explore how the *RR* varies as a function of the chosen threshold, in order to define the threshold from a target *RR*, or look for the linear scaling region between those parameters ([Webber & Zbilut, 2005](http://www.nsf.gov/sbe/bcs/pac/nmbs/chap2.pdf), p. 56).
 
 # To-do list:
 
