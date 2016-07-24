@@ -22,7 +22,8 @@ export embed,
        gmi,
        fnn,
        afnn,
-       ffnn
+       ffnn,
+       sorteddistances
 
 # get distance metric of the Distance packages
 function getmetric(normtype::AbstractString)

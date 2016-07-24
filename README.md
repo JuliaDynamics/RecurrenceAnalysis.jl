@@ -105,7 +105,7 @@ gmi(x, (1,10), 0.1)
 ```
 The AMI functions estimate the marginal and joint entropies of the original and delayed signals using histograms of their values. A third argument of the `ami` function can be used to tell how many bins those histograms must have. That argument must be either an integer, or one of the strings `"Sturges"` or `"FD"` (Freeman-Diaconis criterion). Sturges' criterion is used by default.
 
-The GMI functions use recurrence matrices to estimate Rényi entropies (cf. [Marwan et al, *Phys Rep*:2007](http://www.recurrence-plot.tk/marwan_PhysRep2007.pdf)). In order to make the calculations more efficient, the options available for the basic functions are not available; the assumed settings are maximum norm and *no scaling* (because the scale would not be preserved for different delays); i.e. the time series should be normalised beforehand, or use a threshold referred to the absolute values of the time series.
+The GMI functions use recurrence matrices to estimate Rényi entropies (cf. [Marwan et al., *Phys Rep*:2007](http://www.recurrence-plot.tk/marwan_PhysRep2007.pdf)). In order to make the calculations more efficient, the options available for the basic functions are not available; the assumed settings are maximum norm and *no scaling* (because the scale would not be preserved for different delays); i.e. the time series should be normalised beforehand, or use a threshold referred to the absolute values of the time series.
 
 
 **Functions to estimate the optimal embedding dimensions for a time series:**
@@ -118,9 +118,16 @@ The GMI functions use recurrence matrices to estimate Rényi entropies (cf. [Mar
 
 These functions have the optional keyword argument `metric`, with the same meaning and default value as above.
 
+**Functions to estimate the optimal threshold (radius) of recurrence matrices**
+
+| Function          | Description                         |
+| ----------------- | -----------                         |
+| `sorteddistances` | Distances associated to *RR* values |
+
+This function may be used to explore how the *RR* varies as a function of the chosen threshold, in order to define the threshold from a target *RR*, or look for the linear scaling region between those parameters ([Webber & Zbilut, 2005](www.nsf.gov/sbe/bcs/pac/nmbs/chap2.pdf), p. 56).
+
 # To-do list:
 
  * FAN method to define recurrence plots
- * Criteria to define the optimal radius
  * Windowed RQA
  * Recurrence Network analysis

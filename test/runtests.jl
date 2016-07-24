@@ -52,6 +52,8 @@ gmi_10 = gmi(x, (1,12), 0.1)
 fnnval  =  fnn(x, (1,5), 8, (15, 2))
 e1,e2   = afnn(x, (1,5), 8)
 ffnnval = ffnn(x, (1,5), 8)
+# Look for optimal threshold
+dd, rr = sorteddistances(x, theiler=1)
 # Distance and recurrence matrices
 xe = embed(x, 3, 8)
 dmat = distancematrix(xe)
