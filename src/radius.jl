@@ -12,3 +12,35 @@ function radius_mrr(x::AbstractVector, rr::Real)
     median(d)
 end
 
+"""
+    sorteddistances(x; <keyword arguments>)
+
+Return a tuple with the sorted distances between points of the
+embedded time series `x`, and the recurrence rates under those values.
+
+The keyword arguments are the same that should passed to the functions
+`recurrencematrix` and `recurrencerate` to obtain those results. I.e., if
+`d,r = sorteddistances(x; kwargs...)`, and
+`rmat = recurrencematrix(x, d[i]; kwargs...)`, then
+`recurrencerate(rmat; kwargs...) == r[i]`.
+"""
+function sorteddistances(x; theiler::Integer=0, scale=maximum, kwargs...)
+    # Create distance matrix
+    kwargs = Dict(kwargs)
+    argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
+    dm = distancematrix(argsdm...)
+    scale = (typeof(scale) <: Function) ? scale(dm) : scale
+    dm /= scale
+    # Browse upper triangle after Theiler window
+    n = size(x,1)
+    nd = (n+1)*n/2
+    ntheiler = theiler*n - theiler*(theiler-1)/2
+    distarray = zeros(round(Integer,nd-ntheiler))
+    pos = 0
+    for d = theiler:n-1
+        tmp = dm[n*d+1 : n+1 : n^2]
+        distarray[pos+(1:length(tmp))] = tmp
+        pos += length(tmp)
+    end
+    sort(distarray), (1.:length(distarray))/length(distarray)
+end
