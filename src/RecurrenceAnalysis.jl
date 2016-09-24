@@ -1,6 +1,6 @@
 module RecurrenceAnalysis
 
-using Distances
+using Distances, Compat
 
 export embed,
        distancematrix,

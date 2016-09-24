@@ -6,10 +6,9 @@
 Calculate the recurrence rate (RR) of a recurrence matrix, ruling out
 the points within the Theiler window.
 """
-recurrencerate(x::AbstractMatrix) = countnz(x)/prod(size(x))
-
 function recurrencerate(x::AbstractMatrix; theiler::Integer=0)
     theiler < 0 && error("Theiler window length must be greater than 0")
+    theiler == 0 && (return countnz(x)/prod(size(x)))
     diags_remove = -(theiler-1):(theiler-1)
     theiler_points = 0
     theiler_nz = 0
@@ -36,7 +35,7 @@ function diagonalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=1, kwargs..
     # Iterate over diagonals - excluding LOI and Theiler window
     # If the matrix is symmetric, examine only the upper triangle
     diag_collection = collect(theiler:n-2)
-    xsym = issym(x)
+    @compat xsym = issymmetric(x)
     !xsym && prepend!(diag_collection, collect(-(m-2):-max(theiler,1)))
     for d in diag_collection
         increment = (xsym && d > 0) ? 2 : 1
