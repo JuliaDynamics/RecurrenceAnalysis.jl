@@ -16,7 +16,7 @@ function recurrencerate(x::AbstractMatrix; theiler::Integer=0)
         theiler_points += length(diag(x,d))
         theiler_nz += countnz(diag(x,d))
     end
-    (countnz(x)-theiler_nz)/(prod(size(x))-theiler_points)
+    typeof(0.0)( (countnz(x)-theiler_nz)/(prod(size(x))-theiler_points) )
 end
 
 function tau_recurrence(x::AbstractMatrix{Bool})
@@ -95,7 +95,7 @@ function determinism(diag_hist::AbstractVector; lmin=2, kwargs...)
     end
     nbins = length(diag_hist)
     diag_points = collect(1:nbins) .* diag_hist
-    (lmin > nbins) ? 0.0 : sum(diag_points[lmin:nbins])/sum(diag_points) 
+    (lmin > nbins) ? 0.0 : typeof(0.0)( sum(diag_points[lmin:nbins])/sum(diag_points) )
 end
 
 function determinism(x::AbstractMatrix; kwargs...)
@@ -114,7 +114,7 @@ function avgdiag(diag_hist::AbstractVector; lmin=2, kwargs...)
     end
     nbins = length(diag_hist)
     diag_points = collect(1:nbins) .* diag_hist
-    (lmin > nbins) ? 0.0 : sum(diag_points[lmin:nbins])/sum(diag_hist[lmin:nbins]) 
+    (lmin > nbins) ? 0.0 : typeof(0.0)( sum(diag_points[lmin:nbins])/sum(diag_hist[lmin:nbins]) )
 end
 
 function avgdiag(x::AbstractMatrix; kwargs...)
@@ -128,7 +128,7 @@ Calculate the longest diagonal (Lmax) in a recurrence matrix, ruling out
 the points within the Theiler window.
 """
 
-maxdiag(diag_hist::AbstractVector) = length(diag_hist)
+maxdiag(diag_hist::AbstractVector) = (Int)length(diag_hist)
 maxdiag(x::AbstractMatrix; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
 
 """
@@ -137,7 +137,7 @@ maxdiag(x::AbstractMatrix; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
 Calculate the divergence of a recurrence matrix
 (actually the inverse of `maxdiag`.
 """
-divergence(x; kwargs...) = 1/maxdiag(x; kwargs...)
+divergence(x; kwargs...) = typeof(0.0)( 1/maxdiag(x; kwargs...) )
 
 """
     entropy(x; lmin=2, theiler=1)
@@ -153,7 +153,7 @@ function entropy(diag_hist::AbstractVector; lmin=2, kwargs...)
     if lmin <= nbins
         prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist[lmin:nbins])
         prob_bins = prob_bins[find(prob_bins)]
-        -sum(prob_bins .* log.(prob_bins))
+        typeof(0.0)( -sum(prob_bins .* log.(prob_bins)) )
     else
         0.0
     end
@@ -174,7 +174,7 @@ function trend(npoints::AbstractVector; theiler=1, border=10, kwargs...)
     rrk = npoints./collect(nmax:-1:1)
     m = nmax-border
     w = collect(theiler:m)-m/2
-    w'*(rrk[theiler:m]-mean(rrk[theiler:m])) / (w'*w)
+    typeof(0.0)( w'*(rrk[theiler:m]-mean(rrk[theiler:m])) / (w'*w) )
 end
 
 function trend(x::AbstractMatrix; kwargs...)

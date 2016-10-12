@@ -23,7 +23,8 @@ export embed,
        fnn,
        afnn,
        ffnn,
-       sorteddistances
+       sorteddistances,
+       @windowed
 
 # get distance metric of the Distance packages
 function getmetric(normtype::AbstractString)
@@ -148,5 +149,6 @@ include("rqa.jl")
 include("delay.jl")
 include("dimension.jl")
 include("radius.jl")
+include("windowed.jl")
 
 end
