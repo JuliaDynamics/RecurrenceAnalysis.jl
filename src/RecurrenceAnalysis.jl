@@ -38,6 +38,15 @@ function getmetric(normtype::AbstractString)
     metrics[normtype]
 end
 
+# column values in sparse matrix (parallel to rowvals)
+function colvals(x::SparseMatrixCSC)
+    cv = zeros(Int,nnz(x))
+    @inbounds for c=1:size(x,2)
+        cv[nzrange(x,c)] = c
+    end
+    cv
+end
+
 """
     embed(x, m, delay)
     
@@ -103,8 +112,7 @@ function recurrencematrix(x, radius; scale=maximum, kwargs...)
     argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
     dm = distancematrix(argsdm...)
     (typeof(scale) <: Function) && (scale = scale(dm))
-    dm /= scale
-    sparse(dm .< radius)
+    sparse(dm .< radius*scale)
 end
 
 """
@@ -119,8 +127,7 @@ function crossrecurrencematrix(x, y, radius; scale=maximum, kwargs...)
     argsdm = haskey(kwargs,:metric) ? (x, y, kwargs[:metric]) : (x, y)
     dm = distancematrix(argsdm...)
     (typeof(scale) <: Function) && (scale = scale(dm))
-    dm /= scale
-    sparse(dm .< radius)
+    sparse(dm .< radius*scale)
 end
 
 """

@@ -3,8 +3,8 @@ function embedmatrix1(x, delay, metric="max")
     dist = getmetric(metric)
     fun = Dict(Euclidean()=>+, Chebyshev()=>max)[dist]
     nr, nc = size(x)
-    x = abs2(x)
-    sqrt(fun(x[1:nr-delay, 1:nc-delay], x[1+delay:nr, 1+delay:nc]))
+    x = abs2.(x)
+    sqrt.(fun.(x[1:nr-delay, 1:nc-delay], x[1+delay:nr, 1+delay:nc]))
 end
 
 """
@@ -71,7 +71,7 @@ function afnn(x, mbounds, delay; metric="max")
         # Project nnpos in original series
         nnx = div(nnpos, n) + 1
         d = (m1+m-1)*delay
-        mean_increment[m] = mean(abs(x[(1:n)+d]-x[nnx+d]))
+        mean_increment[m] = mean(abs.(x[(1:n)+d]-x[nnx+d]))
     end
     e1 = mean_ratio[2:end]./mean_ratio[1:end-1]
     e2 = mean_increment[2:end]./mean_increment[1:end-1]
@@ -91,7 +91,7 @@ what kind of distance is calculated between pairs of points, as in
 function ffnn(x, mbounds, delay; metric="max")
     m1, m2 = mbounds
     dm = distancematrix(embed(x, m1, delay), metric)
-    n = size(x)[1]
+    n = size(dm)[1]
     dm[1:n+1:end] = maximum(dm)
     fnn_ratio = zeros(m2-m1+1)
     for m = 1:length(fnn_ratio)

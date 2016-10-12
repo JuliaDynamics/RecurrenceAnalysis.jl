@@ -67,6 +67,22 @@ function diagonalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=1, kwargs..
     [allpoints - collect(2:nbins+1)'*bins; bins]
 end
 
+function diagonalhistogram(x::SparseMatrixCSC{Bool}; theiler::Integer=1, kwargs...)
+    theiler < 0 && error("Theiler window length must be greater than 0")
+    m,n=size(x)
+    rv = rowvals(x)
+    dv = colvals(x) - rowvals(x)
+    @compat if issymmetric(x)
+        valid = (dv .>= theiler)
+        f = 2
+    else
+        valid = (abs(dv) .>= theiler)
+        f = 1
+    end
+    vmat = sparse(rv[valid], dv[valid]+m+1, true)
+    f*verticalhistogram(vmat)
+end
+
 """
     determinism(x; lmin=2, theiler=1)
     
@@ -106,10 +122,10 @@ function avgdiag(x::AbstractMatrix; kwargs...)
 end
 
 """
-    maxdiag(x; lmin=2, theiler=1)
+    maxdiag(x; theiler=1)
     
 Calculate the longest diagonal (Lmax) in a recurrence matrix, ruling out
-the points within the Theiler window and diagonals shorter than a minimum value.
+the points within the Theiler window.
 """
 
 maxdiag(diag_hist::AbstractVector) = length(diag_hist)
@@ -137,7 +153,7 @@ function entropy(diag_hist::AbstractVector; lmin=2, kwargs...)
     if lmin <= nbins
         prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist[lmin:nbins])
         prob_bins = prob_bins[find(prob_bins)]
-        -sum(prob_bins .* log(prob_bins))
+        -sum(prob_bins .* log.(prob_bins))
     else
         0.0
     end
@@ -205,6 +221,50 @@ function verticalhistogram(x::AbstractMatrix{Bool})
     [countnz(x) - collect(2:nbins+1)'*bins; bins]
 end
 
+function verticalhistogram(x::SparseMatrixCSC{Bool})
+    m,n=size(x)
+    bins = [0]
+    nbins = 1
+    rv = rowvals(x)
+    # Iterate over columns
+    for d = 1:n
+        rvd = rv[nzrange(x,d)]
+        nd = length(rvd)
+        if nd>1
+            r1 = rvd[1]
+            rprev = r1
+            for r in rvd[2:end]
+                # Look for nonzero that starts a new column fragment
+                # (more than one row after the previous one)
+                if r-rprev != 1
+                    current_diag = rprev-r1+1
+                    if current_diag > nbins
+                        append!(bins, zeros(current_diag-nbins))
+                        nbins = current_diag
+                    end
+                    bins[current_diag] += 1
+                    r1 = r
+                end
+                rprev = r
+            end
+            # Last column fragment
+            if rprev-rvd[end-1] == 1
+                current_diag = rprev-r1+1
+                if current_diag > nbins
+                    append!(bins, zeros(current_diag-nbins))
+                    nbins = current_diag
+                end
+                bins[current_diag] += 1
+            else
+                bins[1] += 1
+            end
+        elseif nd==1
+            bins[1] += 1
+        end
+    end
+    bins
+end
+
 """
     laminarity(x; lmin=2)
     
@@ -224,11 +284,10 @@ trappingtime(vert_hist::AbstractVector; kwargs...) = avgdiag(vert_hist; kwargs..
 trappingtime(x::AbstractMatrix; kwargs...) = trappingtime(verticalhistogram(x); kwargs...)
 
 """
-    maxvert(x; lmin=2)
+    maxvert(x)
     
-Calculate the longest vertical line (Vmax) of a recurrence matrix, ruling out
-lines shorter than a minimum value.
+Calculate the longest vertical line (Vmax) of a recurrence matrix.
 """
 maxvert(vert_hist::AbstractVector) = length(vert_hist)
-maxvert(x::AbstractMatrix; kwargs...) = maxvert(verticalhistogram(x; kwargs...))
+maxvert(x::AbstractMatrix) = maxvert(verticalhistogram(x))
 
