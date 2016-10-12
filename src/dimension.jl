@@ -3,7 +3,7 @@ function embedmatrix1{T}(x::Array{T,2}, delay, metric="max")
     dist = getmetric(metric)
     fun = Dict(Euclidean()=>+, Chebyshev()=>max)[dist]
     nr, nc = size(x)
-    @compat x .= abs2.(x)
+    @compat x = abs2.(x)
     @compat y = sqrt.(fun.(x[1:nr-delay, 1:nc-delay], x[1+delay:nr, 1+delay:nc]))
     Array{T,2}(y)
 end
