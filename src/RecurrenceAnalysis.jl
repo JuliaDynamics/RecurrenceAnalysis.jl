@@ -85,14 +85,14 @@ Create a distance matrix from one or two (possibly embedded) time series.
 
 Available metrics for the distances are `"max"` (default), `"inf"` (same), and `"euclidean"`.
 """
-function distancematrix(x::AbstractVecOrMat, metric::AbstractString="max")
+function distancematrix{T}(x::AbstractVecOrMat{T}, metric::AbstractString="max")
     dist = getmetric(metric)
-    pairwise(dist, x')
+    Array{T,2}(pairwise(dist, x'))
 end
 
-function distancematrix(x::AbstractVecOrMat, y::AbstractVecOrMat, metric::AbstractString="max")
+function distancematrix{Tx,Ty}(x::AbstractVecOrMat{Tx}, y::AbstractVecOrMat{Ty}, metric::AbstractString="max")
     dist = getmetric(metric)
-    pairwise(dist, x', y')
+    Array{Union{Tx,Ty},2}(pairwise(dist, x', y'))
 end
 
 """

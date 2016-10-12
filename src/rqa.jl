@@ -8,7 +8,9 @@ the points within the Theiler window.
 """
 function recurrencerate(x::AbstractMatrix; theiler::Integer=0)
     theiler < 0 && error("Theiler window length must be greater than 0")
-    theiler == 0 && (return countnz(x)/prod(size(x)))
+    if theiler == 0
+        return typeof(0.0)( countnz(x)/prod(size(x)) )
+    end
     diags_remove = -(theiler-1):(theiler-1)
     theiler_points = 0
     theiler_nz = 0
