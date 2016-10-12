@@ -7,7 +7,7 @@ function radius_mrr(x::AbstractVector, rr::Real)
     d = zeros(lx)
     for i=1:lx
         dxs = xs[max(1,i-nr+1):min(lx,i+nr-1)] - xs[i]
-        d[i] = sort(abs.(dxs))[nr]
+        @compat d[i] = sort(abs.(dxs))[nr]
     end
     median(d)
 end

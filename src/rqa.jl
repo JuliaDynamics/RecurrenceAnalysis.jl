@@ -76,7 +76,7 @@ function diagonalhistogram(x::SparseMatrixCSC{Bool}; theiler::Integer=1, kwargs.
         valid = (dv .>= theiler)
         f = 2
     else
-        valid = (abs(dv) .>= theiler)
+        @compat valid = (abs.(dv) .>= theiler)
         f = 1
     end
     vmat = sparse(rv[valid], dv[valid]+m+1, true)
@@ -153,7 +153,7 @@ function entropy(diag_hist::Vector; lmin=2, kwargs...)
     if lmin <= nbins
         prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist[lmin:nbins])
         prob_bins = prob_bins[find(prob_bins)]
-        typeof(0.0)( -sum(prob_bins .* log.(prob_bins)) )
+        @compat typeof(0.0)( -sum(prob_bins .* log.(prob_bins)) )
     else
         0.0
     end
