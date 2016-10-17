@@ -56,17 +56,22 @@ ffnnval = ffnn(x, (1,5), 8)
 dd, rr = sorteddistances(x, theiler=1)
 # Distance and recurrence matrices
 xe = embed(x, 3, 8)
-rmat = recurrencematrix(xe, 1.5)
-y = lorenz_data[701:2:end,3]
-crmat = crossrecurrencematrix(x, y, 1.5)
-jrmat = jointrecurrencematrix(x, y, 1.5)
+dmat = distancematrix(xe)
+dmat_euc = distancematrix(xe,"euclidean")
+@test all(dmat .<= dmat_euc)
+rmat = recurrencematrix(xe, 0.05)
+crmat = crossrecurrencematrix(x, lorenz_data[:,3], 0.05)
+jrmat = jointrecurrencematrix(x, lorenz_data[:,3], 0.05)
 # RQA
-rqapar = rqa(rmat, theiler=2, lmin=5, border=20)
-# Windowed RQA
-rmatw = @windowed recurrencematrix(xe, 1.5) 50
-crmatw = @windowed(crossrecurrencematrix(x, y, 1.5),30)
-@windowed jrmatw = jointrecurrencematrix(x, y, 1.5) 30
-@test jrmatw[33+(1:30),33+(1:30)] == jrmat[33+(1:30),33+(1:30)]
-@windowed(rrw = recurrencerate(rmatw), width=50, step=40)
-@windowed rqaw = rqa(rmatw) width=50 step=40
-@test rqaw["RR"] == rrw
+rr = recurrencerate(rmat)
+@test recurrencerate(rmat,theiler=1) < rr
+detm = determinism(rmat)
+@test determinism(rmat, theiler=5, lmin=5) < detm
+lmean = avgdiag(rmat)
+@test avgdiag(rmat, lmin=5) > lmean
+@test maxdiag(rmat) > lmean
+ent = entropy(rmat)
+tnd = trend(rmat, border=20, theiler=5)
+lam = laminarity(rmat)
+tt = trappingtime(rmat, lmin=5)
+@test maxvert(rmat) >= tt

@@ -40,9 +40,13 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
     iy1 = iy[end]+1
     ix2 = min(ix1+bsize-1, n)
     iy2 = min(iy1+bsize-1, n)
-    rmat_b = crossrecurrencematrix(x[ix1:ix2,:], y[iy1:iy2,:], vargs...; kwargs...)
-    append!(rws, rowvals(rmat_b)+ix1-1)
-    append!(cls, colvals(rmat_b)+iy1-1)
+    rx = ix1:ix2
+    ry = iy1:iy2
+    if length(rx) > 0 && length(ry) > 0
+        rmat_b = crossrecurrencematrix(x[ix1:ix2,:], y[iy1:iy2,:], vargs...; kwargs...)
+        append!(rws, rowvals(rmat_b)+ix1-1)
+        append!(cls, colvals(rmat_b)+iy1-1)
+    end
     rws, cls
 end
 
@@ -71,7 +75,7 @@ macro windowed(ex, options...)
     # Expression can be of type a = f(x...)
     if in(ex.head, [:(=), :kw])
         left, right = (ex.args...)
-        return :($(esc(left)) = @windowed($(esc(right)),$(map(esc,options)...)))
+        return esc(:($left = @windowed($right,$(options...))))
     end
     # Parse options
     dict_op = Dict{Symbol,Any}(:step=>1)
@@ -86,78 +90,118 @@ macro windowed(ex, options...)
     if ex.head == :call
         f = ex.args[1]
         # Iteration of RQA functions
-        # fun(x,...) => [fun(x[i+w,i+w]) for i=0:s:nw]
+        # fun(x,...) => [fun(x[i+w,i+w],...) for i=0:s:nw]
         if in(f, rqa_funs)
+            @gensym w s nw i
             x = ex.args[2]
-            submat = :($x[i+w,i+w])
+            submat = :($x[$i+$w,$i+$w])
             ex.args[2] = submat
             ret_ex = quote
-                w = 1:$(dict_op[:width])
-                s = $(dict_op[:step])
-                nw = size($x,1) - $(dict_op[:width])
-                ($(rqa_types[f]))[$ex for i=0:s:nw]
+                $w = 1:$(dict_op[:width])
+                $s = $(dict_op[:step])
+                $nw = size($x,1) - $(dict_op[:width])
+                ($(rqa_types[f]))[$ex for $i=0:$s:$nw]
             end
-            return ret_ex
+            return esc(ret_ex)
+        end
+        # Iteration of all RQA parameters
+        if f == :rqa
+            @gensym w s nw ni rqa_dict i rqa_i k v
+            x = ex.args[2]
+            submat = :($x[($i-1)*$s+$w,($i-1)*$s+$w])
+            ex.args[2] = submat
+            ret_ex = quote
+                $w = 1:$(dict_op[:width])
+                $s = $(dict_op[:step])
+                $nw = size($x,1) - $(dict_op[:width])
+                $ni = div($nw, $s)+1
+                $rqa_dict = Dict(
+                    "RR"   => zeros(typeof(0.0),$ni),
+                    "DET"  => zeros(typeof(0.0),$ni),
+                    "L"    => zeros(typeof(0.0),$ni),
+                    "Lmax" => zeros(Int,$ni),
+                    "DIV"  => zeros(typeof(0.0),$ni),
+                    "ENT"  => zeros(typeof(0.0),$ni),
+                    "TND"  => zeros(typeof(0.0),$ni),
+                    "LAM"  => zeros(typeof(0.0),$ni),
+                    "TT"   => zeros(typeof(0.0),$ni),
+                    "Vmax" => zeros(Int,$ni)
+                )
+                for $i=1:$ni
+                    $rqa_i = $ex
+                    for ($k,$v) in $rqa_i
+                        $rqa_dict[$k][$i] = $v
+                    end
+                end
+                $rqa_dict
+            end
+            return esc(ret_ex)
         end
         # Iteration of matrix construction functions
         if f == :crossrecurrencematrix
             # ij_block_rmat(x,y,width,d,...) with d=-1,0,1
+            @gensym i j ii jj
             x = ex.args[2]
             y = ex.args[3]
-            ex.args[1] = :ij_block_rmat
+            ex.args[1] = :(RecurrenceAnalysis.ij_block_rmat)
             insert!(ex.args, 4, dict_op[:width])
             insert!(ex.args, 5, -1)
-            exd_lower  = :((i,j) = $(parse(string(ex))))
+            exd_lower  = :(($i,$j) = $(parse(string(ex))))
             ex.args[5] = 0
-            exd_center = :((ii,jj) = $(parse(string(ex))))
+            exd_center = :(($ii,$jj) = $(parse(string(ex))))
             ex.args[5] = 1
-            exd_upper  = :((ii,jj) = $(parse(string(ex))))
+            exd_upper  = :(($ii,$jj) = $(parse(string(ex))))
             ret_ex = quote
                 $exd_lower
                 $exd_center
-                append!(i, ii)
-                append!(j, jj)
+                append!($i, $ii)
+                append!($j, $jj)
                 $exd_upper
-                append!(i, ii)
-                append!(j, jj)
-                sparse(i,j,true,size($x,1),size($y,1))
+                append!($i, $ii)
+                append!($j, $jj)
+                sparse($i,$j,true,size($x,1),size($y,1))
             end
-            return ret_ex
+            return esc(ret_ex)
         elseif f == :recurrencematrix
             # ij_block_rmat(x,x,width,d,...) with d=-1,0
-            ex.args[1] = :ij_block_rmat
+            @gensym i j ii jj n
+            ex.args[1] = :(RecurrenceAnalysis.ij_block_rmat)
             x = ex.args[2]
             insert!(ex.args, 3, x)
             insert!(ex.args, 4, dict_op[:width])
             insert!(ex.args, 5, -1)
-            exd_lower  = :((i,j) = $(parse(string(ex))))
+            exd_lower  = :(($i,$j) = $(parse(string(ex))))
             ex.args[5] = 0
-            exd_center = :((ii,jj) = $(parse(string(ex))))
+            exd_center = :(($ii,$jj) = $(parse(string(ex))))
             ret_ex = quote
                 $exd_lower
-                i, j = [i;j], [j;i]
+                $i, $j = [$i;$j], [$j;$i]
                 $exd_center
-                append!(i,ii)
-                append!(j,jj)
-                n = size($x,1)
-                sparse(i,j,true,n,n)
+                append!($i,$ii)
+                append!($j,$jj)
+                $n = size($x,1)
+                sparse($i,$j,true,$n,$n)
             end
-            return ret_ex
+            return esc(ret_ex)
         elseif f == :jointrecurrencematrix
-            x_string = string(ex.args[2])
-            y_string = string(ex.args[3])
+            @gensym rm1 rm2
+            x = ex.args[2]
+            y = ex.args[3]
+            minsz = :(min(size($x,1),size($y,1)))
+            subx = :($x[1:$minsz,:])
+            suby = :($y[1:$minsz,:])
             ex.args[1] = :recurrencematrix
             deleteat!(ex.args, 3)
-            ex.args[2] = parse(x_string)
-            ex_rmx = :(rm1 = @windowed($(parse(string(ex))),width=$(dict_op[:width])))
-            ex.args[2] = parse(y_string)
-            ex_rmy = :(rm2 = @windowed($(parse(string(ex))),width=$(dict_op[:width])))
+            ex.args[2] = subx
+            ex_rmx = :($rm1 = @windowed($(parse(string(ex))),width=$(dict_op[:width])))
+            ex.args[2] = suby
+            ex_rmy = :($rm2 = @windowed($(parse(string(ex))),width=$(dict_op[:width])))
             ret_ex = quote
                 $ex_rmx
                 $ex_rmy
-                rm1 & rm2
+                $rm1 & $rm2
             end
-            return ret_ex
+            return esc(ret_ex)
         end
         # Throw error if it is not a valid function
         error("$(string(ex.args[1])) is not a valid function for windowing")

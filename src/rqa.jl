@@ -6,7 +6,7 @@
 Calculate the recurrence rate (RR) of a recurrence matrix, ruling out
 the points within the Theiler window.
 """
-function recurrencerate(x::AbstractMatrix; theiler::Integer=0)
+function recurrencerate(x::AbstractMatrix; theiler::Integer=0, kwargs...)
     theiler < 0 && error("Theiler window length must be greater than 0")
     if theiler == 0
         return typeof(0.0)( countnz(x)/prod(size(x)) )
@@ -130,7 +130,7 @@ Calculate the longest diagonal (Lmax) in a recurrence matrix, ruling out
 the points within the Theiler window.
 """
 
-maxdiag(diag_hist::Vector) = length(diag_hist)
+maxdiag(diag_hist::Vector; kwargs...) = length(diag_hist)
 maxdiag(x::AbstractMatrix; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
 
 """
@@ -292,4 +292,23 @@ Calculate the longest vertical line (Vmax) of a recurrence matrix.
 """
 maxvert(vert_hist::Vector) = length(vert_hist)
 maxvert(x::AbstractMatrix) = maxvert(verticalhistogram(x))
+
+"""
+    rqa(x; <keyword arguments>)
+"""
+function rqa(x; kwargs...)
+    dhist = diagonalhistogram(x; kwargs...)
+    vhist = verticalhistogram(x)
+    Dict("RR"  => recurrencerate(x;kwargs...),
+        "DET"  => determinism(dhist;kwargs...),
+        "L"    => avgdiag(dhist;kwargs...),
+        "Lmax" => maxdiag(dhist),
+        "DIV"  => divergence(dhist),
+        "ENT"  => entropy(dhist;kwargs...),
+        "TND"  => trend(x;kwargs...),
+        "LAM"  => laminarity(vhist;kwargs...),
+        "TT"   => trappingtime(vhist;kwargs...),
+        "Vmax" => maxvert(vhist)
+    )
+end
 
