@@ -1,6 +1,6 @@
 # RecurrenceAnalysis.jl News
 
-## 10-11-2016 - v0.0.4
+## 10-11-2016 - v0.1.0
 
 * Support for windowed RQA
 * Change default scale of `recurrencematrix`, etc.
