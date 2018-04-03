@@ -25,16 +25,16 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
     rws = (Int)[]
     cls = (Int)[]
     for i=abs(dindex):n_fullblocks-1
-        ix = i*bsize+brange
-        iy = i*bsize+brange
+        ix = i*bsize .+ brange
+        iy = i*bsize .+ brange
         if dindex < 0
-            iy -= -dindex*bsize
+            iy .-= -dindex*bsize
         elseif dindex > 0
-            ix -= dindex*bsize
+            ix .-= dindex*bsize
         end
         rmat_b = crossrecurrencematrix(x[ix,:], y[iy,:], vargs...; kwargs...)
-        append!(rws, rowvals(rmat_b)+ix[1]-1)
-        append!(cls, colvals(rmat_b)+iy[1]-1)
+        append!(rws, rowvals(rmat_b) .+ix[1] .- 1)
+        append!(cls, colvals(rmat_b) .+iy[1] .- 1)
     end
     ix1 = ix[end]+1
     iy1 = iy[end]+1
@@ -44,8 +44,8 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
     ry = iy1:iy2
     if length(rx) > 0 && length(ry) > 0
         rmat_b = crossrecurrencematrix(x[ix1:ix2,:], y[iy1:iy2,:], vargs...; kwargs...)
-        append!(rws, rowvals(rmat_b)+ix1-1)
-        append!(cls, colvals(rmat_b)+iy1-1)
+        append!(rws, rowvals(rmat_b) .+ ix1 .- 1)
+        append!(cls, colvals(rmat_b) .+ iy1 .- 1)
     end
     rws, cls
 end

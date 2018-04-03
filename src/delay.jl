@@ -91,10 +91,10 @@ function ami(x, delay::Union{Array, AbstractRange}, nbins::Integer)
             end
         end
     end
-    miv[1+delay]/log2(nbins)
+    miv[1 .+ delay]./log2(nbins)
 end
 
-ami(x, delay::Tuple{Integer,Integer}, nbins) = ami(x, colon(delay...), nbins)
+ami(x, delay::Tuple{Integer,Integer}, nbins) = ami(x, delay[1]:delay[2], nbins)
 
 function ami(x, delay, nbins="Sturges")
     # Define number of bins
@@ -151,9 +151,9 @@ function gmi(x, delay::Union{Array, AbstractRange}, radius::Real)
     end
     # Maximum entropy for a given radius corresponds to uniform distribution
     maxh2 = log2((maximum(x)-minimum(x))/radius)
-    (2h2 .- h2tau[1.+delay])./maxh2
+    (2h2 .- h2tau[1 .+ delay])./maxh2
 end
 
-gmi(x, delay::Tuple{Integer,Integer}, radius) = gmi(x, colon(delay...), radius)
+gmi(x, delay::Tuple{Integer,Integer}, radius) = gmi(x, delay[1]:delay[2], radius)
 
 # gmi(x::AbstractVector, delay) = gmi(x, delay, radius_mrr(x, .01))

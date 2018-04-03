@@ -3,6 +3,7 @@ module RecurrenceAnalysis
 using Distances, Compat
 using Compat.SparseArrays, Compat.LinearAlgebra
 import Compat.String
+import Meta.parse
 
 export embed,
        distancematrix,
