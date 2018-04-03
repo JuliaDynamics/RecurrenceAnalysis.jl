@@ -153,7 +153,7 @@ function entropy(diag_hist::Vector; lmin=2, kwargs...)
     nbins = length(diag_hist)
     if lmin <= nbins
         prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist[lmin:nbins])
-        prob_bins = prob_bins[findall(prob_bins)]
+        prob_bins = prob_bins[findall(!iszero, prob_bins)]
         @compat typeof(0.0)( -sum(prob_bins .* log.(prob_bins)) )
     else
         0.0

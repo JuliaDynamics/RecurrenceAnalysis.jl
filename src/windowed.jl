@@ -94,10 +94,10 @@ macro windowed(ex, options...)
         if in(f, rqa_funs)
             @gensym w s nw i
             x = ex.args[2]
-            submat = :($x[$i+$w,$i+$w])
+            submat = :($x[(1+$i):($w+$i), (1+$i):($w+$i)])
             ex.args[2] = submat
             ret_ex = quote
-                $w = 1:$(dict_op[:width])
+                $w = $(dict_op[:width])
                 $s = $(dict_op[:step])
                 $nw = size($x,1) - $(dict_op[:width])
                 ($(rqa_types[f]))[$ex for $i=0:$s:$nw]
@@ -108,10 +108,10 @@ macro windowed(ex, options...)
         if f == :rqa
             @gensym w s nw ni rqa_dict i rqa_i k v
             x = ex.args[2]
-            submat = :($x[($i-1)*$s+$w,($i-1)*$s+$w])
+            submat = :($x[(($i-1)*$s+1):(($i-1)*$s+$w), (($i-1)*$s+1):(($i-1)*$s+$w)])
             ex.args[2] = submat
             ret_ex = quote
-                $w = 1:$(dict_op[:width])
+                $w = $(dict_op[:width])
                 $s = $(dict_op[:step])
                 $nw = size($x,1) - $(dict_op[:width])
                 $ni = div($nw, $s)+1
