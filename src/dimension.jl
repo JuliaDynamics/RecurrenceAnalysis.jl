@@ -33,7 +33,7 @@ function fnn(x, mbounds, delay, thresholds; metric="max")
     for m = 1:length(nfnn)
         # Look for nearest neighbours within the first n-delay
         n -= delay
-        nnval, nnpos = findmin(dm[1:n,1:n], 2)
+        nnval, nnpos = Compat.findmin(dm[1:n,1:n], dims=2)
         dm = embedmatrix1(dm, delay, metric)
         nnv1 = nnval[1:n]
         nnv2 = dm[1:n,1:n][nnpos]
@@ -63,13 +63,13 @@ function afnn(x, mbounds, delay; metric="max")
     mean_increment = zeros(m2-m1+2)
     for m = 1:length(mean_ratio)
         n -= delay
-        nnval, nnpos = findmin(dm[1:n,1:n], 2)
+        nnval, nnpos = Compat.findmin(dm[1:n,1:n], dims=2)
         dm = embedmatrix1(dm, delay, metric)
         nnv1 = nnval[1:n]
         nnv2 = dm[1:n,1:n][nnpos]
         mean_ratio[m] = mean(nnv2./nnv1)
         # Project nnpos in original series
-        @compat nnx = div.(Integer.(nnpos), n) .+ 1
+        nnx = [coord[2] for coord in nnpos]
         d = (m1+m-1)*delay
         @compat mean_increment[m] = mean(abs.(x[(1:n).+d].-x[nnx.+d]))
     end
@@ -96,9 +96,11 @@ function ffnn(x, mbounds, delay; metric="max")
     fnn_ratio = zeros(m2-m1+1)
     for m = 1:length(fnn_ratio)
         n -= delay
-        nnval, nnpos1 = findmin(dm[1:n,1:n], 2)
+        nnval, nnpos = Compat.findmin(dm[1:n,1:n], dims=2)
+        nnpos1 = [x[1] + (x[2]-1)*n for x in nnpos]
         dm = embedmatrix1(dm, delay, metric)
-        nnval, nnpos2 = findmin(dm, 2)
+        nnval, nnpos = Compat.findmin(dm, dims=2)
+        nnpos2 = [x[1] + (x[2]-1)*n for x in nnpos]
         fnn_ratio[m] = sum(nnpos1 .!= nnpos2)/n
     end
     fnn_ratio
