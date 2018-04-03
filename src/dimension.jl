@@ -3,7 +3,7 @@ function embedmatrix1{T}(x::Array{T,2}, delay, metric="max")
     dist = getmetric(metric)
     fun = Dict(Euclidean()=>+, Chebyshev()=>max)[dist]
     nr, nc = size(x)
-    @compat x = abs2.(x)
+    @compat x .= abs2.(x)
     @compat y = sqrt.(fun.(x[1:nr-delay, 1:nc-delay], x[1+delay:nr, 1+delay:nc]))
     Array{T,2}(y)
 end
@@ -39,7 +39,7 @@ function fnn(x, mbounds, delay, thresholds; metric="max")
         nnv2 = dm[1:n,1:n][nnpos]
         fnn1 = ( ((nnv2.^2)./(nnv1.^2)-1) .> Rtol2 )
         fnn2 = ( (nnv2/Ra) .> Atol )
-        nfnn[m] = sum(fnn1 | fnn2)
+        @compat nfnn[m] = sum(fnn1 .| fnn2)
     end
     nfnn
 end
@@ -70,7 +70,7 @@ function afnn(x, mbounds, delay; metric="max")
         nnv2 = dm[1:n,1:n][nnpos]
         mean_ratio[m] = mean(nnv2./nnv1)
         # Project nnpos in original series
-        nnx = div(nnpos, n) + 1
+        @compat nnx = div.(nnpos, n) + 1
         d = (m1+m-1)*delay
         @compat mean_increment[m] = mean(abs.(x[(1:n)+d]-x[nnx+d]))
     end

@@ -1,4 +1,5 @@
 using RecurrenceAnalysis
+using Compat
 using Base.Test
 
 # Functions for dynamic systems

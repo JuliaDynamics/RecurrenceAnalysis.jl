@@ -199,7 +199,7 @@ macro windowed(ex, options...)
             ret_ex = quote
                 $ex_rmx
                 $ex_rmy
-                $rm1 & $rm2
+                @compat $rm1 .& $rm2
             end
             return esc(ret_ex)
         end

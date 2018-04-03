@@ -1,6 +1,7 @@
 module RecurrenceAnalysis
 
 using Distances, Compat
+import Compat.String
 
 export embed,
        distancematrix,
