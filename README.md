@@ -4,7 +4,7 @@
 
 [![Build Status](https://travis-ci.org/heliosdrm/RecurrenceAnalysis.jl.svg?branch=master)](https://travis-ci.org/heliosdrm/RecurrenceAnalysis.jl)
 
-[![RecurrenceAnalysis](http://pkg.julialang.org/badges/RecurrenceAnalysis_0.5.svg)](http://pkg.julialang.org/?pkg=RecurrenceAnalysis) [![RecurrenceAnalysis](http://pkg.julialang.org/badges/RecurrenceAnalysis_0.6.svg)](http://pkg.julialang.org/?pkg=RecurrenceAnalysis)  [![RecurrenceAnalysis](http://pkg.julialang.org/badges/RecurrenceAnalysis_0.7.svg)](http://pkg.julialang.org/?pkg=RecurrenceAnalysis) 
+[![RecurrenceAnalysis](http://pkg.julialang.org/badges/RecurrenceAnalysis_0.6.svg)](http://pkg.julialang.org/?pkg=RecurrenceAnalysis)  [![RecurrenceAnalysis](http://pkg.julialang.org/badges/RecurrenceAnalysis_0.7.svg)](http://pkg.julialang.org/?pkg=RecurrenceAnalysis) 
 
 
 ## Basic functions
