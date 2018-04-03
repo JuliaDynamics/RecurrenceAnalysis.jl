@@ -39,7 +39,7 @@ function sorteddistances(x; theiler::Integer=0, scale=maximum, kwargs...)
     pos = 0
     for d = theiler:n-1
         tmp = dm[n*d+1 : n+1 : n^2]
-        distarray[pos .+ (1:length(tmp))] = tmp
+        distarray[(1+pos):(length(tmp)+pos)] = tmp
         pos += length(tmp)
     end
     sort(distarray), (1.:length(distarray))/length(distarray)

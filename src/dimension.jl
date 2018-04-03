@@ -37,7 +37,7 @@ function fnn(x, mbounds, delay, thresholds; metric="max")
         dm = embedmatrix1(dm, delay, metric)
         nnv1 = nnval[1:n]
         nnv2 = dm[1:n,1:n][nnpos]
-        fnn1 = ( ((nnv2.^2)./(nnv1.^2).-1) .> Rtol2 )
+        fnn1 = ( ((nnv2.^2)./(nnv1.^2) .- 1) .> Rtol2 )
         fnn2 = ( (nnv2/Ra) .> Atol )
         @compat nfnn[m] = sum(fnn1 .| fnn2)
     end
@@ -71,7 +71,7 @@ function afnn(x, mbounds, delay; metric="max")
         # Project nnpos in original series
         nnx = [coord[2] for coord in nnpos]
         d = (m1+m-1)*delay
-        @compat mean_increment[m] = mean(abs.(x[(1:n).+d].-x[nnx.+d]))
+        @compat mean_increment[m] = mean(abs.(x[(1+d):(n+d)] .- x[nnx .+ d]))
     end
     e1 = mean_ratio[2:end]./mean_ratio[1:end-1]
     e2 = mean_increment[2:end]./mean_increment[1:end-1]
