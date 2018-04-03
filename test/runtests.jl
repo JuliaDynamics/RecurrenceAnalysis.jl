@@ -1,6 +1,6 @@
 using RecurrenceAnalysis
 using Compat
-using Base.Test
+using Compat.Test
 
 # Functions for dynamic systems
 # Increment of x[ix] through RK4-integration

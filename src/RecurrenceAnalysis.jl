@@ -1,6 +1,7 @@
 module RecurrenceAnalysis
 
 using Distances, Compat
+using Compat.SparseArrays, Compat.LinearAlgebra
 import Compat.String
 
 export embed,

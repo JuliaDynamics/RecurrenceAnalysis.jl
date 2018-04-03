@@ -129,7 +129,6 @@ end
 Calculate the longest diagonal (Lmax) in a recurrence matrix, ruling out
 the points within the Theiler window.
 """
-
 maxdiag(diag_hist::Vector; kwargs...) = length(diag_hist)
 maxdiag(x::AbstractMatrix; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
 

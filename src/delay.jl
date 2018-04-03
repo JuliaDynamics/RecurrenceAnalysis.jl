@@ -16,7 +16,10 @@ end
 # Sturges
 n_sturges(x::AbstractVector) = ceil(Integer, 1+log2(length(x)))
 
-makebins(x, n) = linspace(extrema(x)..., n+1)
+function makebins(x, n)
+    x_ext = extrema(x)    
+    Compat.range(x_ext[1], stop=x_ext[2], length=n+1)
+end
 
 # Own simplified implementation of hist2d for square edges
 function hist2!(h, x, edges)
@@ -67,7 +70,7 @@ function ami(x, delay::Integer, nbins::Integer)
     ret/log2(nbins)
 end
 
-function ami(x, delay::Union{Array, Range}, nbins::Integer)
+function ami(x, delay::Union{Array, AbstractRange}, nbins::Integer)
     d2 = maximum(delay)
     miv = zeros(d2+1)
     n = length(x)-d2
@@ -132,7 +135,7 @@ function gmi(x, delay::Integer, radius::Real)
     (2h2 - h2tau)/maxh2
 end
 
-function gmi(x, delay::Union{Array, Range}, radius::Real)
+function gmi(x, delay::Union{Array, AbstractRange}, radius::Real)
     d2 = maximum(delay)
     rmfull = recurrencematrix(x,radius,scale=1)
     h2tau = zeros(d2+1)
@@ -143,12 +146,12 @@ function gmi(x, delay::Union{Array, Range}, radius::Real)
     # Joint entropy
     rmj = spzeros(n, n)
     for d in delay
-        rmj = rm1 .* rmfull[d+(1:n), d+(1:n)]
+        rmj = rm1 .* rmfull[d.+(1:n), d.+(1:n)]
         h2tau[d+1] = -log2(nnz(rmj)/n^2)
     end
     # Maximum entropy for a given radius corresponds to uniform distribution
     maxh2 = log2((maximum(x)-minimum(x))/radius)
-    (2h2 - h2tau[1+delay])/maxh2
+    (2h2 .- h2tau[1.+delay])./maxh2
 end
 
 gmi(x, delay::Tuple{Integer,Integer}, radius) = gmi(x, colon(delay...), radius)

@@ -74,7 +74,7 @@ Outside the window width, the values of the recurrence matrix will be undefined 
 macro windowed(ex, options...)
     # Expression can be of type a = f(x...)
     if in(ex.head, [:(=), :kw])
-        left, right = (ex.args...)
+        left, right = (ex.args...,)
         return esc(:($left = @windowed($right,$(options...))))
     end
     # Parse options

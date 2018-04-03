@@ -9,10 +9,12 @@ julia:
   - nightly
 branches:
   - only:
-    - master  
+    - master
+    - julia_0.1_support
 matrix:
   allow_failures:
     - julia: nightly
+    - branches: julia_0.1_support
 notifications:
   email: false
 # uncomment the following lines to override the default test script
