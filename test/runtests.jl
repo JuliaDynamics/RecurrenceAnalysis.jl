@@ -1,6 +1,6 @@
 using RecurrenceAnalysis
 using Compat
-using Base.Test
+using Compat.Test
 
 # Functions for dynamic systems
 # Increment of x[ix] through RK4-integration
@@ -67,7 +67,7 @@ rqapar = rqa(rmat, theiler=2, lmin=5, border=20)
 rmatw = @windowed recurrencematrix(xe, 1.5) 50
 crmatw = @windowed(crossrecurrencematrix(x, y, 1.5),30)
 @windowed jrmatw = jointrecurrencematrix(x, y, 1.5) 30
-@test jrmatw[33+(1:30),33+(1:30)] == jrmat[33+(1:30),33+(1:30)]
+@test jrmatw[(34:63),(34:63)] == jrmat[(34:63), (34:63)]
 @windowed(rrw = recurrencerate(rmatw), width=50, step=40)
 @windowed rqaw = rqa(rmatw) width=50 step=40
 @test rqaw["RR"] == rrw

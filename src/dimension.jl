@@ -1,5 +1,5 @@
 # Embed distance matrix
-function embedmatrix1{T}(x::Array{T,2}, delay, metric="max")
+function embedmatrix1(x::Array{T, 2}, delay, metric = "max") where T
     dist = getmetric(metric)
     fun = Dict(Euclidean()=>+, Chebyshev()=>max)[dist]
     nr, nc = size(x)
@@ -33,11 +33,11 @@ function fnn(x, mbounds, delay, thresholds; metric="max")
     for m = 1:length(nfnn)
         # Look for nearest neighbours within the first n-delay
         n -= delay
-        nnval, nnpos = findmin(dm[1:n,1:n], 2)
+        nnval, nnpos = Compat.findmin(dm[1:n,1:n], dims=2)
         dm = embedmatrix1(dm, delay, metric)
         nnv1 = nnval[1:n]
         nnv2 = dm[1:n,1:n][nnpos]
-        fnn1 = ( ((nnv2.^2)./(nnv1.^2)-1) .> Rtol2 )
+        fnn1 = ( ((nnv2.^2)./(nnv1.^2) .- 1) .> Rtol2 )
         fnn2 = ( (nnv2/Ra) .> Atol )
         @compat nfnn[m] = sum(fnn1 .| fnn2)
     end
@@ -54,7 +54,6 @@ The ratios are calculated for the embedding dimensions between `mbounds[1]` and
 what kind of distance is calculated between pairs of points, as in
 `distancematrix`.
 """
-
 function afnn(x, mbounds, delay; metric="max")
     m1, m2 = mbounds
     dm = distancematrix(embed(x, m1, delay), metric)
@@ -64,15 +63,15 @@ function afnn(x, mbounds, delay; metric="max")
     mean_increment = zeros(m2-m1+2)
     for m = 1:length(mean_ratio)
         n -= delay
-        nnval, nnpos = findmin(dm[1:n,1:n], 2)
+        nnval, nnpos = Compat.findmin(dm[1:n,1:n], dims=2)
         dm = embedmatrix1(dm, delay, metric)
         nnv1 = nnval[1:n]
         nnv2 = dm[1:n,1:n][nnpos]
         mean_ratio[m] = mean(nnv2./nnv1)
         # Project nnpos in original series
-        @compat nnx = div.(nnpos, n) + 1
+        nnx = [coord[2] for coord in nnpos]
         d = (m1+m-1)*delay
-        @compat mean_increment[m] = mean(abs.(x[(1:n)+d]-x[nnx+d]))
+        @compat mean_increment[m] = mean(abs.(x[(1+d):(n+d)] .- x[nnx .+ d]))
     end
     e1 = mean_ratio[2:end]./mean_ratio[1:end-1]
     e2 = mean_increment[2:end]./mean_increment[1:end-1]
@@ -97,9 +96,11 @@ function ffnn(x, mbounds, delay; metric="max")
     fnn_ratio = zeros(m2-m1+1)
     for m = 1:length(fnn_ratio)
         n -= delay
-        nnval, nnpos1 = findmin(dm[1:n,1:n], 2)
+        nnval, nnpos = Compat.findmin(dm[1:n,1:n], dims=2)
+        nnpos1 = [x[1] + (x[2]-1)*n for x in nnpos]
         dm = embedmatrix1(dm, delay, metric)
-        nnval, nnpos2 = findmin(dm, 2)
+        nnval, nnpos = Compat.findmin(dm, dims=2)
+        nnpos2 = [x[1] + (x[2]-1)*n for x in nnpos]
         fnn_ratio[m] = sum(nnpos1 .!= nnpos2)/n
     end
     fnn_ratio

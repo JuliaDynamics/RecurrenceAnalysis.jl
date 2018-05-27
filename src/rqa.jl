@@ -9,21 +9,21 @@ the points within the Theiler window.
 function recurrencerate(x::AbstractMatrix; theiler::Integer=0, kwargs...)
     theiler < 0 && error("Theiler window length must be greater than 0")
     if theiler == 0
-        return typeof(0.0)( countnz(x)/prod(size(x)) )
+        return typeof(0.0)( count(!iszero, x)/prod(size(x)) )
     end
     diags_remove = -(theiler-1):(theiler-1)
     theiler_points = 0
     theiler_nz = 0
     for d in diags_remove
         theiler_points += length(diag(x,d))
-        theiler_nz += countnz(diag(x,d))
+        theiler_nz += count(!iszero, diag(x,d))
     end
-    typeof(0.0)( (countnz(x)-theiler_nz)/(prod(size(x))-theiler_points) )
+    typeof(0.0)( (count(!iszero, x)-theiler_nz)/(prod(size(x))-theiler_points) )
 end
 
 function tau_recurrence(x::AbstractMatrix{Bool})
     n = minimum(size(x))
-    [countnz(diag(x,d))/(n-d) for d in (1:n-1)]
+    [count(!iszero, diag(x,d))/(n-d) for d in (1:n-1)]
 end
 
 # Based on diagonal lines
@@ -65,7 +65,7 @@ function diagonalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=1, kwargs..
         end
     end
     # Add isolated points in first bin
-    allpoints = (theiler == 0) ? countnz(x) : countnz(triu(x, theiler)) + countnz(tril(x,-theiler))
+    allpoints = (theiler == 0) ? count(!iszero, x) : count(!iszero, triu(x, theiler)) + count(!iszero, tril(x,-theiler))
     [allpoints - collect(2:nbins+1)'*bins; bins]
 end
 
@@ -129,7 +129,6 @@ end
 Calculate the longest diagonal (Lmax) in a recurrence matrix, ruling out
 the points within the Theiler window.
 """
-
 maxdiag(diag_hist::Vector; kwargs...) = length(diag_hist)
 maxdiag(x::AbstractMatrix; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
 
@@ -154,7 +153,7 @@ function entropy(diag_hist::Vector; lmin=2, kwargs...)
     nbins = length(diag_hist)
     if lmin <= nbins
         prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist[lmin:nbins])
-        prob_bins = prob_bins[find(prob_bins)]
+        prob_bins = prob_bins[findall(!iszero, prob_bins)]
         @compat typeof(0.0)( -sum(prob_bins .* log.(prob_bins)) )
     else
         0.0
@@ -175,8 +174,8 @@ function trend(npoints::Vector; theiler=1, border=10, kwargs...)
     nmax = length(npoints)
     rrk = npoints./collect(nmax:-1:1)
     m = nmax-border
-    w = collect(theiler:m)-m/2
-    typeof(0.0)( (w'*(rrk[theiler:m]-mean(rrk[theiler:m])) / (w'*w))[1] )
+    w = collect(theiler:m) .- m/2
+    typeof(0.0)( (w'*(rrk[theiler:m] .- mean(rrk[theiler:m])) ./ (w'*w))[1] )
 end
 
 function trend(x::AbstractMatrix; kwargs...)
@@ -220,7 +219,7 @@ function verticalhistogram(x::AbstractMatrix{Bool})
         end
     end
     # Add isolated points in first bin
-    [countnz(x) - collect(2:nbins+1)'*bins; bins]
+    [count(!iszero, x) - collect(2:nbins+1)'*bins; bins]
 end
 
 function verticalhistogram(x::SparseMatrixCSC{Bool})

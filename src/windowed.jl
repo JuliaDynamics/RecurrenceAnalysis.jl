@@ -25,16 +25,16 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
     rws = (Int)[]
     cls = (Int)[]
     for i=abs(dindex):n_fullblocks-1
-        ix = i*bsize+brange
-        iy = i*bsize+brange
+        ix = i*bsize + brange
+        iy = i*bsize + brange
         if dindex < 0
             iy -= -dindex*bsize
         elseif dindex > 0
             ix -= dindex*bsize
         end
         rmat_b = crossrecurrencematrix(x[ix,:], y[iy,:], vargs...; kwargs...)
-        append!(rws, rowvals(rmat_b)+ix[1]-1)
-        append!(cls, colvals(rmat_b)+iy[1]-1)
+        append!(rws, rowvals(rmat_b) .+ix[1] .- 1)
+        append!(cls, colvals(rmat_b) .+iy[1] .- 1)
     end
     ix1 = ix[end]+1
     iy1 = iy[end]+1
@@ -44,8 +44,8 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
     ry = iy1:iy2
     if length(rx) > 0 && length(ry) > 0
         rmat_b = crossrecurrencematrix(x[ix1:ix2,:], y[iy1:iy2,:], vargs...; kwargs...)
-        append!(rws, rowvals(rmat_b)+ix1-1)
-        append!(cls, colvals(rmat_b)+iy1-1)
+        append!(rws, rowvals(rmat_b) .+ ix1 .- 1)
+        append!(cls, colvals(rmat_b) .+ iy1 .- 1)
     end
     rws, cls
 end
@@ -74,7 +74,7 @@ Outside the window width, the values of the recurrence matrix will be undefined 
 macro windowed(ex, options...)
     # Expression can be of type a = f(x...)
     if in(ex.head, [:(=), :kw])
-        left, right = (ex.args...)
+        left, right = (ex.args...,)
         return esc(:($left = @windowed($right,$(options...))))
     end
     # Parse options
@@ -94,10 +94,10 @@ macro windowed(ex, options...)
         if in(f, rqa_funs)
             @gensym w s nw i
             x = ex.args[2]
-            submat = :($x[$i+$w,$i+$w])
+            submat = :($x[(1+$i):($w+$i), (1+$i):($w+$i)])
             ex.args[2] = submat
             ret_ex = quote
-                $w = 1:$(dict_op[:width])
+                $w = $(dict_op[:width])
                 $s = $(dict_op[:step])
                 $nw = size($x,1) - $(dict_op[:width])
                 ($(rqa_types[f]))[$ex for $i=0:$s:$nw]
@@ -108,10 +108,10 @@ macro windowed(ex, options...)
         if f == :rqa
             @gensym w s nw ni rqa_dict i rqa_i k v
             x = ex.args[2]
-            submat = :($x[($i-1)*$s+$w,($i-1)*$s+$w])
+            submat = :($x[(($i-1)*$s+1):(($i-1)*$s+$w), (($i-1)*$s+1):(($i-1)*$s+$w)])
             ex.args[2] = submat
             ret_ex = quote
-                $w = 1:$(dict_op[:width])
+                $w = $(dict_op[:width])
                 $s = $(dict_op[:step])
                 $nw = size($x,1) - $(dict_op[:width])
                 $ni = div($nw, $s)+1
