@@ -1,5 +1,9 @@
 # RecurrenceAnalysis.jl News
 
+## 23-06-2018 - v0.2.0
+
+* Update to support Julia 0.6-0.7 (breaking compatibility with 0.5).
+
 ## 10-11-2016 - v0.1.0
 
 * Support for windowed RQA
