@@ -1,6 +1,6 @@
 module RecurrenceAnalysis
 
-using Distances, Compat
+using Distances, StatsBase, Compat
 using Compat.SparseArrays, Compat.LinearAlgebra
 import Compat.String
 import Base.Meta.parse
@@ -47,7 +47,7 @@ end
 function colvals(x::SparseMatrixCSC)
     cv = zeros(Int,nnz(x))
     @inbounds for c=1:size(x,2)
-        cv[nzrange(x,c)] = c
+        cv[nzrange(x,c)] .= c
     end
     cv
 end
@@ -75,7 +75,7 @@ function embed_indices(x::AbstractMatrix, indices)
     dx = size(x)
     dxm = size(indices)
     ix_rep = repeat(indices, inner=[1,dx[2]])
-    ix_rep += repeat(dx[1]*(0:dx[2]-1)', outer=[dxm...])
+    ix_rep .+= repeat(dx[1].*(0:dx[2]-1)', outer=[dxm...])
     x[ix_rep]
 end
 
@@ -117,7 +117,7 @@ function recurrencematrix(x, radius; scale=1, kwargs...)
     argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
     dm = distancematrix(argsdm...)
     (typeof(scale) <: Function) && (scale = scale(dm))
-    sparse(dm .< radius*scale)
+    Compat.SparseArrays.sparse(dm .< radius*scale)
 end
 
 """
@@ -132,7 +132,7 @@ function crossrecurrencematrix(x, y, radius; scale=1, kwargs...)
     argsdm = haskey(kwargs,:metric) ? (x, y, kwargs[:metric]) : (x, y)
     dm = distancematrix(argsdm...)
     (typeof(scale) <: Function) && (scale = scale(dm))
-    sparse(dm .< radius*scale)
+    Compat.SparseArrays.sparse(dm .< radius*scale)
 end
 
 """

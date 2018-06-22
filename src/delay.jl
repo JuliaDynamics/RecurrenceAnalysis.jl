@@ -128,7 +128,7 @@ function gmi(x, delay::Integer, radius::Real)
     rm1 = rmfull[1:n, 1:n]
     h2 = -log2(nnz(rm1)/n^2)
     # Joint entropy
-    rmj = rm1 .* rmfull[delay+(1:n), delay+(1:n)]
+    rmj = rm1 .* rmfull[delay.+(1:n), delay.+(1:n)]
     h2tau = -log2(nnz(rmj)/n^2)
     # Maximum entropy for a given radius corresponds to uniform distribution
     maxh2 = log2((maximum(x)-minimum(x))/radius)
@@ -146,7 +146,7 @@ function gmi(x, delay::Union{Array, AbstractRange}, radius::Real)
     # Joint entropy
     rmj = spzeros(n, n)
     for d in delay
-        rmj = rm1 .* rmfull[(1+d):(n+d), (1+d):(n+d)]
+        rmj = rm1 .* rmfull[d.+(1:n), d.+(1:n)]
         h2tau[d+1] = -log2(nnz(rmj)/n^2)
     end
     # Maximum entropy for a given radius corresponds to uniform distribution

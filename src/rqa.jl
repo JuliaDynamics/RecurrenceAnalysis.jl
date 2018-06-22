@@ -37,7 +37,7 @@ function diagonalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=1, kwargs..
     # Iterate over diagonals - excluding LOI and Theiler window
     # If the matrix is symmetric, examine only the upper triangle
     diag_collection = collect(theiler:n-2)
-    @compat xsym = issymmetric(x)
+    xsym = issymmetric(x)
     !xsym && prepend!(diag_collection, collect(-(m-2):-max(theiler,1)))
     for d in diag_collection
         increment = (xsym && d > 0) ? 2 : 1
@@ -74,15 +74,15 @@ function diagonalhistogram(x::SparseMatrixCSC{Bool}; theiler::Integer=1, kwargs.
     m,n=size(x)
     rv = rowvals(x)
     dv = colvals(x) - rowvals(x)
-    @compat if issymmetric(x)
+    if issymmetric(x)
         valid = (dv .>= theiler)
         f = 2
     else
-        @compat valid = (abs.(dv) .>= theiler)
+        valid = (abs.(dv) .>= theiler)
         f = 1
     end
-    vmat = sparse(rv[valid], dv[valid]+m+1, true)
-    f*verticalhistogram(vmat)
+    vmat = sparse(rv[valid], dv[valid] .+ (m+1), true)
+    f .* verticalhistogram(vmat)
 end
 
 """
@@ -154,7 +154,7 @@ function entropy(diag_hist::Vector; lmin=2, kwargs...)
     if lmin <= nbins
         prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist[lmin:nbins])
         prob_bins = prob_bins[findall(!iszero, prob_bins)]
-        @compat typeof(0.0)( -sum(prob_bins .* log.(prob_bins)) )
+        typeof(0.0)( -sum(prob_bins .* log.(prob_bins)) )
     else
         0.0
     end
@@ -184,7 +184,7 @@ end
 
 # Number of l-length sequences, based on diagonals
 function countsequences(diag_hist::Vector; lmin=2, kwargs...)
-    overlap = (1:length(diag_hist))' - lmin + 1
+    overlap = (1:length(diag_hist))' .- (lmin+1)
     overlap[overlap .< 0] = 0
     overlap * diag_hist
 end

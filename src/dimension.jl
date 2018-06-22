@@ -3,8 +3,8 @@ function embedmatrix1(x::Array{T, 2}, delay, metric = "max") where T
     dist = getmetric(metric)
     fun = Dict(Euclidean()=>+, Chebyshev()=>max)[dist]
     nr, nc = size(x)
-    @compat x .= abs2.(x)
-    @compat y = sqrt.(fun.(x[1:nr-delay, 1:nc-delay], x[1+delay:nr, 1+delay:nc]))
+    x .= abs2.(x)
+    y = sqrt.(fun.(x[1:nr-delay, 1:nc-delay], x[1+delay:nr, 1+delay:nc]))
     Array{T,2}(y)
 end
 
@@ -29,7 +29,7 @@ function fnn(x, mbounds, delay, thresholds; metric="max")
     # Start with matrix embedded at m=m1
     dm = distancematrix(embed(x, m1, delay), metric)
     n = size(dm)[1]
-    dm[1:n+1:end] = maximum(dm)
+    dm[1:n+1:end] .= maximum(dm)
     for m = 1:length(nfnn)
         # Look for nearest neighbours within the first n-delay
         n -= delay
@@ -39,7 +39,7 @@ function fnn(x, mbounds, delay, thresholds; metric="max")
         nnv2 = dm[1:n,1:n][nnpos]
         fnn1 = ( ((nnv2.^2)./(nnv1.^2) .- 1) .> Rtol2 )
         fnn2 = ( (nnv2/Ra) .> Atol )
-        @compat nfnn[m] = sum(fnn1 .| fnn2)
+        nfnn[m] = sum(fnn1 .| fnn2)
     end
     nfnn
 end
@@ -58,7 +58,7 @@ function afnn(x, mbounds, delay; metric="max")
     m1, m2 = mbounds
     dm = distancematrix(embed(x, m1, delay), metric)
     n = size(dm)[1]
-    dm[1:n+1:end] = maximum(dm)
+    dm[1:n+1:end] .= maximum(dm)
     mean_ratio = zeros(m2-m1+2)
     mean_increment = zeros(m2-m1+2)
     for m = 1:length(mean_ratio)
@@ -71,7 +71,7 @@ function afnn(x, mbounds, delay; metric="max")
         # Project nnpos in original series
         nnx = [coord[2] for coord in nnpos]
         d = (m1+m-1)*delay
-        @compat mean_increment[m] = mean(abs.(x[(1+d):(n+d)] .- x[nnx .+ d]))
+        mean_increment[m] = mean(abs.(x[(1:n).+d] .- x[nnx .+ d]))
     end
     e1 = mean_ratio[2:end]./mean_ratio[1:end-1]
     e2 = mean_increment[2:end]./mean_increment[1:end-1]
@@ -92,7 +92,7 @@ function ffnn(x, mbounds, delay; metric="max")
     m1, m2 = mbounds
     dm = distancematrix(embed(x, m1, delay), metric)
     n = size(dm)[1]
-    dm[1:n+1:end] = maximum(dm)
+    dm[1:n+1:end] .= maximum(dm)
     fnn_ratio = zeros(m2-m1+1)
     for m = 1:length(fnn_ratio)
         n -= delay

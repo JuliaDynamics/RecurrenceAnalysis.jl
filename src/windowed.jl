@@ -25,12 +25,12 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
     rws = (Int)[]
     cls = (Int)[]
     for i=abs(dindex):n_fullblocks-1
-        ix = i*bsize + brange
-        iy = i*bsize + brange
+        ix = i*bsize .+ brange
+        iy = i*bsize .+ brange
         if dindex < 0
-            iy -= -dindex*bsize
+            iy = iy .+ dindex*bsize
         elseif dindex > 0
-            ix -= dindex*bsize
+            ix = ix .- dindex*bsize
         end
         rmat_b = crossrecurrencematrix(x[ix,:], y[iy,:], vargs...; kwargs...)
         append!(rws, rowvals(rmat_b) .+ix[1] .- 1)
@@ -94,10 +94,10 @@ macro windowed(ex, options...)
         if in(f, rqa_funs)
             @gensym w s nw i
             x = ex.args[2]
-            submat = :($x[(1+$i):($w+$i), (1+$i):($w+$i)])
+            submat = :($x[$i.+$w,$i.+$w])
             ex.args[2] = submat
             ret_ex = quote
-                $w = $(dict_op[:width])
+                $w = 1:$(dict_op[:width])
                 $s = $(dict_op[:step])
                 $nw = size($x,1) - $(dict_op[:width])
                 ($(rqa_types[f]))[$ex for $i=0:$s:$nw]
@@ -108,10 +108,10 @@ macro windowed(ex, options...)
         if f == :rqa
             @gensym w s nw ni rqa_dict i rqa_i k v
             x = ex.args[2]
-            submat = :($x[(($i-1)*$s+1):(($i-1)*$s+$w), (($i-1)*$s+1):(($i-1)*$s+$w)])
+            submat = :($x[($i-1)*$s.+$w,($i-1)*$s.+$w])
             ex.args[2] = submat
             ret_ex = quote
-                $w = $(dict_op[:width])
+                $w = 1:$(dict_op[:width])
                 $s = $(dict_op[:step])
                 $nw = size($x,1) - $(dict_op[:width])
                 $ni = div($nw, $s)+1
@@ -159,7 +159,7 @@ macro windowed(ex, options...)
                 $exd_upper
                 append!($i, $ii)
                 append!($j, $jj)
-                sparse($i,$j,true,size($x,1),size($y,1))
+                Compat.SparseArrays.sparse($i,$j,true,size($x,1),size($y,1))
             end
             return esc(ret_ex)
         elseif f == :recurrencematrix
@@ -180,7 +180,7 @@ macro windowed(ex, options...)
                 append!($i,$ii)
                 append!($j,$jj)
                 $n = size($x,1)
-                sparse($i,$j,true,$n,$n)
+                Compat.SparseArrays.sparse($i,$j,true,$n,$n)
             end
             return esc(ret_ex)
         elseif f == :jointrecurrencematrix
@@ -199,7 +199,7 @@ macro windowed(ex, options...)
             ret_ex = quote
                 $ex_rmx
                 $ex_rmy
-                @compat $rm1 .& $rm2
+                $rm1 .& $rm2
             end
             return esc(ret_ex)
         end
