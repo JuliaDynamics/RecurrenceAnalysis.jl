@@ -5,15 +5,14 @@ os:
   - osx
 julia:
   - 0.6
+  - 0.7
   - nightly
 branches:
   - only:
     - master
-    - julia_0.1_support
 matrix:
   allow_failures:
     - julia: nightly
-    - branches: julia_0.1_support
 notifications:
   email: false
 # uncomment the following lines to override the default test script
