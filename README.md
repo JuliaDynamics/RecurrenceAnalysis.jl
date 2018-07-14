@@ -80,15 +80,20 @@ Some functions can be tuned with options passed as keyword arguments:
 
 | Argument  | Default   | Functions | Description |
 | --------  | --------  | --------- | ----------- 
-| `metric`  | `"max"`   | `distancematrix`<br/>`recurrencematrix`<br/>`crossrecurrencematrix`<br/>`jointrecurrencematrix` | Norm used to measure distances between points. Possible values: `"max"`, `"inf"` (infinity norm, same as `"max"`), and `"euc"` (Euclidean norm). |
+| `metric`  | `"max"`   | `distancematrix`<br/>`recurrencematrix`<br/>`crossrecurrencematrix`<br/>`jointrecurrencematrix` | Norm used to measure distances between points. Possible values: `"max"`, `"inf"` (infinity norm, same as `"max"`), and `"euclidean"` (Euclidean norm). |
 | `scale`   | 1         | `recurrencematrix`<br/>`crossrecurrencematrix`<br/>`jointrecurrencematrix` | Function or fixed number to scale the threshold or radius that is used to identify recurrences. Use `maximum` if the threshold is to be taken as a fraction of the maximum distance, `mean` if it is a fraction of the mean distance, etc., and `1` (identity scale, applied by default) to keep the threshold without scaling. |
-| `theiler` | `0` for `recurrencerate`,<br/>`1` for other functions  | `recurrencerate`<br/>`determinism`<br/>`avgdiag`<br/>`maxdiag`<br/>`divergence`<br/>`entropy`<br/>`trend` | 'Theiler' window: number of diagonals around the LOI excluded from the analysis. |
+| `theiler` | 0         | `recurrencerate`<br/>`determinism`<br/>`avgdiag`<br/>`maxdiag`<br/>`divergence`<br/>`entropy`<br/>`trend`<br/>`laminarity`<br/>`trappingtime`<br/>`maxvert` | 'Theiler' window: number of diagonals around the LOI excluded from the analysis. |
 | `lmin`    | 2         | `determinism`<br/>`avgdiag`<br/>`maxdiag`<br/>`divergence`<br/>`entropy`<br/>`laminarity`<br/>`trappingtime`<br/>`maxvert` | Minimum length of the recurrent structures (diagonal or vertical) considered in the analysis. |
 | `border`  | 10        | `trend`  | Number of diagonals excluded from the analysis near the border of the matrix. |
 
 Note: In order to keep the functions simpler and avoid confusion with the scaling of the distances, there is no option to normalize the input, although that is a customary procedure in RQA. This can be done *prior* to using the functions of this package.
 
-The function `rqa` also accepts all those keyword arguments, which are passed down to the corresponding elementary functions. Note that in this case all the parameters are calculated using the same options &mdash; which may not be the default behaviour, for instance in the case of `theiler`. 
+The function `rqa` also accepts all those keyword arguments, which are passed down to the corresponding elementary functions. That function also accepts specific values for the Theiler window and the minimum length of recurrent structures, which are applied only in the calculation of some parameters:
+
+* `theilerdiag` overrides `theiler` in the calculation of parameters related to diagonal structures, i.e. DET, L, Lmax, DIV, ENT and TND.
+* `theilervert` overrides `theiler` in the calculation of parameters related to vertical structures, i.e. LAM, TT and Vmax.
+* `lmindiag` overrides `lmin` in the calculation of parameters related to diagonal structures.
+* `lminvert` overrides `vmin` in the calculation of parameters related to vertical structures.
 
 ## Auxiliary functions
 

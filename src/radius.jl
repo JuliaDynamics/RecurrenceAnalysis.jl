@@ -24,7 +24,7 @@ The keyword arguments are the same that should be passed to the functions
 `rmat = recurrencematrix(x, d[i]; kwargs...)`, then
 `recurrencerate(rmat; kwargs...) == r[i]`.
 """
-function sorteddistances(x; theiler::Integer=0, scale=maximum, kwargs...)
+function sorteddistances_(x; theiler::Integer=0, scale=1, kwargs...)
     # Create distance matrix
     kwargs = Dict(kwargs)
     argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
@@ -37,9 +37,9 @@ function sorteddistances(x; theiler::Integer=0, scale=maximum, kwargs...)
     ntheiler = theiler*n - theiler*(theiler-1)/2
     distarray = zeros(round(Integer,nd-ntheiler))
     pos = 0
-    for d = theiler:n-1
-        tmp = dm[n*d+1 : n+1 : n^2]
-        distarray[pos .+ (1:length(tmp))] = tmp
+    for d = 1:n
+        tmp = dm[d+theiler:n,d]
+        distarray[pos .+ (1:length(tmp))] .= tmp
         pos += length(tmp)
     end
     sort(distarray), (1.:length(distarray))/length(distarray)
