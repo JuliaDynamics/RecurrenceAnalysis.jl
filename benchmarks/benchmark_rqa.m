@@ -1,8 +1,14 @@
+function benchmark_rqa()
+% Do it with max and euclidean norms
+benchmark('euclidean');
+benchmark('maxnorm');
+end
+
 % Measure the times (in ms) of evaluating an expression n times
 function [t, res] = measuretime(f, n)
     t = zeros(1,n);
     for i=1:n
-        t0 = tic;
+        tic;
         res = f();
         t(n) = 1000*toc;
     end
@@ -13,7 +19,7 @@ function y = fun_rqa(x,metric)
     delay = 6;
     embed = 3;
     radius = 1.2;
-    y = crqa(x,x,embed,delay,radius,[],[],2,2,metric,'nonormalize','nogui');
+    y = crqa(x,x,embed,delay,radius,[],[],2,2,1,metric,'nonormalize','nogui');
 end
 
 % Analyse 12 series from 250 to 3000 points 
@@ -32,9 +38,5 @@ function benchmark(metric)
             fprintf(f, '%f\t', res(1,k));
         end
         fprintf(f, '\n');
-        end
     end
 end
-% Do it with max and euclidean norms
-benchmark('euclidean');
-benchmark('maxnorm');
