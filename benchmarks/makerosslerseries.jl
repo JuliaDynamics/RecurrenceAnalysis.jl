@@ -35,7 +35,7 @@ rossler_eq(a, b, c) = (
 
 a=.25; b=.25; c=4
 x0 = zeros(3)
-m = zeros(3000,40)
+m = zeros(3000,24)
 for i=0:11
     x = randn(3)
     rossler_data = dynamical_system(x0, rossler_eq(a,b,c), .05, 4000)
