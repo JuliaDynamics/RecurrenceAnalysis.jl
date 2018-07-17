@@ -5,12 +5,12 @@ benchmark('maxnorm');
 end
 
 % Measure the times (in ms) of evaluating an expression n times
-function [t, res] = measuretime(f, n)
+function [t, res] = measuretime(f, n, varargin)
     t = zeros(1,n);
     for i=1:n
-        tic;
-        res = f();
-        t(n) = 1000*toc;
+        t0 = tic;
+        res = f(varargin{:});
+        t(i) = 1000*toc(t0);
     end
 end
 
@@ -28,15 +28,16 @@ function benchmark(metric)
     m = dlmread('rossler.txt');
     for r=1:12
         x=m(1:250*r,2*r-1);
-        [tt, res] = measuretime(fun_rqa(x,metric),5);
+        [tt, res] = measuretime(@fun_rqa,5,x,metric);
         t = median(tt);
         % Write table of results
-        f = fopen(sprintf('benchmark_rqa_julia_%s.txt',metric),'a');
+        f = fopen(sprintf('benchmark_rqa_matlab_%s.txt',metric),'a');
         fprintf(f, '%d\t%f\t', r,t);
         % "RR","DET","L","Lmax","ENT","LAM","TT"
         for k=1:7
             fprintf(f, '%f\t', res(1,k));
         end
         fprintf(f, '\n');
+        fclose(f);
     end
 end
