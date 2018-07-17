@@ -6,8 +6,8 @@ measuretime <- function(f, n, ...) {
     t <- rep(0,n)
     f = cmpfun(f)
     res <- NULL
-    for (n in 1:ntrials) {
-        t[n] <- 1000*system.time(res<-f(...))["elapsed"]
+    for (i in 1:n) {
+        t[i] <- 1000*system.time(res<-f(...))["elapsed"]
     }
     list(time=t, result=res)
 }
