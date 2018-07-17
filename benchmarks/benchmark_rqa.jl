@@ -1,11 +1,11 @@
 using RecurrenceAnalysis
 
 # Measure the times (in ms) of evaluating an expression n times
-macro measuretime(expr, n)
+macro measuretime(ex, n)
     quote
         # Train the expression and get the result
-        result = $esc(ex)
-        t = zeros(n)
+        result = $(esc(ex))
+        t = zeros($n)
         for i in 1:$n
             t[i] = 1000*(@elapsed $(esc(ex)))
         end
