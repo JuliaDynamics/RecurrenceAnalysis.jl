@@ -62,7 +62,17 @@ y = lorenz_data[701:2:end,3]
 crmat = crossrecurrencematrix(x, y, 1.5)
 jrmat = jointrecurrencematrix(x, y, 1.5)
 # RQA
-rqapar = rqa(rmat, theiler=2, lmin=5, border=20)
+rqapar = rqa(rmat, theiler=2, lmin=3, border=20)
+tol = 1e-5
+@test rqapar["RR"] == 426/234^2
+@test rqapar["DET"] == 364/426
+@test rqapar["L"] == 364/50
+@test rqapar["Lmax"] == 23
+@test rqapar["ENT"] ≈ 2.02058292
+@test rqapar["TND"] ≈ 3.21794972e-7
+@test rqapar["LAM"] == 92/426
+@test rqapar["TT"] == 92/30
+@test rqapar["Vmax"] == 4
 # Windowed RQA
 rmatw = @windowed recurrencematrix(xe, 1.5) 50
 crmatw = @windowed(crossrecurrencematrix(x, y, 1.5),30)

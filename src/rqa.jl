@@ -74,7 +74,7 @@ function diagonalhistogram(x::SparseMatrixCSC{Bool}; theiler::Integer=0, kwargs.
     dv = colvals(x) - rowvals(x)
     loi_hist = Int[]
     if issymmetric(x)
-        valid = (dv .>= min(theiler,1))
+        valid = (dv .>= max(theiler,1))
         f = 2
         # If theiler==0, the LOI is counted separately to avoid duplication
         if theiler == 0

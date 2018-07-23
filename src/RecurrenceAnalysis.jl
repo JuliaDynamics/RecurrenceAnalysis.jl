@@ -1,8 +1,8 @@
 module RecurrenceAnalysis
 
-using Distances, StatsBase, Compat
-using Compat.SparseArrays, Compat.LinearAlgebra
-import Compat.String
+using Distances, Statistics, LinearAlgebra
+using Compat, Compat.SparseArrays
+# import Compat.String
 import Base.Meta.parse
 
 export embed,
