@@ -18,7 +18,7 @@ n_sturges(x::AbstractVector) = ceil(Integer, 1+log2(length(x)))
 
 function makebins(x, n)
     x_ext = extrema(x)    
-    Compat.range(x_ext[1], stop=x_ext[2], length=n+1)
+    range(x_ext[1], stop=x_ext[2], length=n+1)
 end
 
 # Own simplified implementation of hist2d for square edges
