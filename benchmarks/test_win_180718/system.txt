@@ -1,0 +1,11 @@
+Intel(R) Core(TM) i3-3240 CPU @ 3.40GHz CPU, 4GB DDR3 RAM 1333 MHz, running Windows 10 Enterprise.
+
+Software versions:
+Julia 0.7.0-beta2
+Matlab R2013b
+R 3.5.1
+
+Package versions
+Julia: RecurrenceAnalysis commit 81c20f81add0d1c0e558874211415b0147ad2f79
+Matlab: CRPToolbox 5.22 (R32.2)
+R: crqa 1.0.7

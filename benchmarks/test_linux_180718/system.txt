@@ -1,1 +1,11 @@
 Intel(R) Core(TM) i3-4100M CPU @ 2.50GHz, 8GiB SODIMM DDR3 1600 MHz, running Ubuntu 16.04-LTS 
+
+Software versions:
+Julia 0.7.0-beta2
+Python 2.7.12
+R 3.4.4
+
+Package versions
+Julia: RecurrenceAnalysis commit 81c20f81add0d1c0e558874211415b0147ad2f79
+Pyunicorn 0.5.1
+R: crqa 1.0.7

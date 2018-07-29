@@ -1,5 +1,15 @@
 # RecurrenceAnalysis.jl News
 
+## 30-06-2018 - commit ea915e9
+
+* Break compatibility with 0.6
+* Breaking modifications of RQA functions, in order to match the outputs of 
+  **crqa** (R) and **CRPToolbox** (Matlab):
+    - The denominator of RR is fixed to N<sup>2</sup>.
+    - Theiler window added to the calculation of LAM and TT.
+    - Theiler window defaults to 0 in all functions.
+* Bugfix in the calculation of diagonal structures
+
 ## 23-06-2018 - v0.2.0
 
 * Update to support Julia 0.6-0.7 (breaking compatibility with 0.5).

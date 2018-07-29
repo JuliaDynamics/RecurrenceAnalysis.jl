@@ -88,12 +88,16 @@ Some functions can be tuned with options passed as keyword arguments:
 
 Note: In order to keep the functions simpler and avoid confusion with the scaling of the distances, there is no option to normalize the input, although that is a customary procedure in RQA. This can be done *prior* to using the functions of this package.
 
-The function `rqa` also accepts all those keyword arguments, which are passed down to the corresponding elementary functions. That function also accepts specific values for the Theiler window and the minimum length of recurrent structures, which are applied only in the calculation of some parameters:
+The function `rqa` also accepts all those keyword arguments, which are passed down to the corresponding elementary functions. That function also accepts other keyword arguments for the Theiler window and the minimum length of recurrent structures, which are applied only in the calculation of some parameters:
 
 * `theilerdiag` overrides `theiler` in the calculation of parameters related to diagonal structures, i.e. DET, L, Lmax, DIV, ENT and TND.
 * `theilervert` overrides `theiler` in the calculation of parameters related to vertical structures, i.e. LAM, TT and Vmax.
 * `lmindiag` overrides `lmin` in the calculation of parameters related to diagonal structures.
 * `lminvert` overrides `vmin` in the calculation of parameters related to vertical structures.
+
+### Comparison with other RQA software packages
+
+After version 0.2.0 some RQA methods and the defaults of their options have been changed to make their results comparable with those provided by other software packages. Look at the [News](NEWS.md) of this package for details.
 
 ## Auxiliary functions
 
@@ -146,7 +150,7 @@ In some cases, specially with very long time series, it may be suitable to perfo
 ```julia
 @windowed determinism(rmat, theiler=2, lmin=3) width=1000 step=100
 ```
-will return a 91-element vector, such that each value is the determinism associated to a 1000-point fragment, starting at every 100 points (i.e. at `1`, `101`, &ldots; `9001`).
+will return a 91-element vector, such that each value is the determinism associated to a 1000-point fragment, starting at every 100 points (i.e. at `1`, `101`, &hellip; `9001`).
 
 The general syntax of that macro is:
 ```julia
@@ -159,7 +163,7 @@ where:
  * `w` is the width of the window for relevant data around each point.
  * `s` is the step or distance between points where the calculations are done (starting in the first point).
 
-To prevent syntax failures in the expansion of the macro, identify the RQA function (`rqa`, `recurrencerate`, `determinism`,&ldots;) directly by its name (avoid aliases), and use simple variable names (not complex expressions) for the arguments. On the other hand, the windowing options `w` and `s` can be given in any order. If `s` is ommitted, the calculations are done at every point, and the keyword `width` may be ommitted. (However, using `step=1` may be computationally very expensive, and that will provide just overly redundant results around each point, so it is advisable to set `step` a relatively big fraction of the window `width`.)
+To prevent syntax failures in the expansion of the macro, identify the RQA function (`rqa`, `recurrencerate`, `determinism`,&hellip;) directly by its name (avoid aliases), and use simple variable names (not complex expressions) for the arguments. On the other hand, the windowing options `w` and `s` can be given in any order. If `s` is ommitted, the calculations are done at every point, and the keyword `width` may be ommitted. (However, using `step=1` may be computationally very expensive, and that will provide just overly redundant results around each point, so it is advisable to set `step` a relatively big fraction of the window `width`.)
 
 The value returned by the macro will normally be a vector with the same type of numbers as expected by `expr`. In the case of `@windowed rqa(...) ...`, it will return a dictionary with a similar structure as in the default `rqa` function, but replacing scalar values by vectors.
 
@@ -200,4 +204,5 @@ In all four cases, the width parameter `w` might have been qualified with a keyw
 ## To-do list:
 
  * FAN method to define recurrence plots
+ * Fast approximations to RQA
  * Recurrence Network analysis
