@@ -1,6 +1,6 @@
 # RecurrenceAnalysis.jl News
 
-## 30-06-2018 - commit ea915e9
+## 30-06-2018 - v0.3.0-beta
 
 * Break compatibility with 0.6
 * Breaking modifications of RQA functions, in order to match the outputs of 
