@@ -7,7 +7,7 @@ Calculate the recurrence rate (RR) of a recurrence matrix, ruling out
 the points within the Theiler window.
 """
 function recurrencerate(x::AbstractMatrix; theiler::Integer=0, kwargs...)
-    theiler < 0 && error("Theiler window length must be greater than 0")
+    theiler < 0 && error("Theiler window length must be greater than or equal to 0")
     if theiler == 0
         return typeof(0.0)( count(!iszero, x)/prod(size(x)) )
     end
@@ -23,13 +23,13 @@ end
 
 function tau_recurrence(x::AbstractMatrix{Bool})
     n = minimum(size(x))
-    [count(!iszero, diag(x,d))/(n-d) for d in (1:n-1)]
+    [count(!iszero, diag(x,d))/(n-d) for d in (0:n-1)]
 end
 
 # Based on diagonal lines
 
 function diagonalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=1, kwargs...)
-    theiler < 0 && error("Theiler window length must be greater than 0")
+    theiler < 0 && error("Theiler window length must be greater than or equal to 0")
     bins = [0]
     nbins = 1
     current_diag = 0
@@ -70,19 +70,35 @@ function diagonalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=1, kwargs..
 end
 
 function diagonalhistogram(x::SparseMatrixCSC{Bool}; theiler::Integer=1, kwargs...)
-    theiler < 0 && error("Theiler window length must be greater than 0")
+    theiler < 0 && error("Theiler window length must be greater than or equal to 0")
     m,n=size(x)
     rv = rowvals(x)
     dv = colvals(x) - rowvals(x)
+    loi_hist = Int[]
     if issymmetric(x)
-        valid = (dv .>= theiler)
+        valid = (dv .>= max(theiler,1))
         f = 2
+        # If theiler==0, the LOI is counted separately to avoid duplication
+        if theiler == 0
+            loi_hist = verticalhistogram(hcat(diag(x,0)))
+        end
     else
         valid = (abs.(dv) .>= theiler)
         f = 1
     end
     vmat = sparse(rv[valid], dv[valid] .+ (m+1), true)
-    f .* verticalhistogram(vmat)
+    dh = f .* verticalhistogram(vmat)
+    # Add frequencies of LOI if suitable
+    if (nbins_loi = length(loi_hist)) > 0
+        nbins = length(dh)
+        if nbins_loi > nbins
+            loi_hist[1:nbins] .+= dh
+            dh = loi_hist
+        else
+            dh[1:nbins_loi] .+= loi_hist
+        end
+    end
+    dh
 end
 
 """
@@ -93,7 +109,7 @@ the points within the Theiler window and diagonals shorter than a minimum value.
 """
 function determinism(diag_hist::Vector; lmin=2, kwargs...)
     if lmin < 2
-        error("lmin must be 2 or higher")
+        error("lmin must be 2 or greater")
     end
     nbins = length(diag_hist)
     diag_points = collect(1:nbins) .* diag_hist
@@ -112,7 +128,7 @@ the points within the Theiler window and diagonals shorter than a minimum value.
 """
 function avgdiag(diag_hist::Vector; lmin=2, kwargs...)
     if lmin < 2
-        error("lmin must be 2 or higher")
+        error("lmin must be 2 or greater")
     end
     nbins = length(diag_hist)
     diag_points = collect(1:nbins) .* diag_hist
@@ -148,7 +164,7 @@ the points within the Theiler window and diagonals shorter than a minimum value.
 """
 function entropy(diag_hist::Vector; lmin=2, kwargs...)
     if lmin < 2
-        error("lmin must be 2 or higher")
+        error("lmin must be 2 or greater")
     end
     nbins = length(diag_hist)
     if lmin <= nbins
@@ -173,9 +189,10 @@ the points within the Theiler window and in the outermost diagonals.
 function trend(npoints::Vector; theiler=1, border=10, kwargs...)
     nmax = length(npoints)
     rrk = npoints./collect(nmax:-1:1)
-    m = nmax-border
-    w = collect(theiler:m) .- m/2
-    typeof(0.0)( (w'*(rrk[theiler:m] .- mean(rrk[theiler:m])) ./ (w'*w))[1] )
+    a = 1+theiler
+    b = nmax-border
+    w = collect(a:b) .- b/2
+    typeof(0.0)( (w'*(rrk[a:b] .- mean(rrk[a:b])) ./ (w'*w))[1] )
 end
 
 function trend(x::AbstractMatrix; kwargs...)
@@ -294,6 +311,11 @@ maxvert(x::AbstractMatrix) = maxvert(verticalhistogram(x))
 
 """
     rqa(x; <keyword arguments>)
+
+Calculate RQA parameters of a recurrence matrix. See the functions
+`recurrencerate`, `determinism`, `avgdiag`, `maxdiag`, `divergence`, `entropy`,
+`trend`, `laminarity`, `trappingtime` and `maxvert` for the definition of
+the different parameters and the default values of the arguments.
 """
 function rqa(x; kwargs...)
     dhist = diagonalhistogram(x; kwargs...)

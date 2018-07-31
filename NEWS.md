@@ -1,5 +1,11 @@
 # RecurrenceAnalysis.jl News
 
+## 31-07-2018 - v0.2.1
+
+* Bugfixes:
+    - `sorteddistances`
+    - RQA functions (bugs in parameters of diagonal structures when `theiler==0`)
+
 ## 23-06-2018 - v0.2.0
 
 * Update to support Julia 0.6-0.7 (breaking compatibility with 0.5).
