@@ -117,7 +117,7 @@ function recurrencematrix(x, radius; scale=1, kwargs...)
     argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
     dm = distancematrix(argsdm...)
     (typeof(scale) <: Function) && (scale = scale(dm))
-    Compat.SparseArrays.sparse(dm .< radius*scale)
+    Compat.SparseArrays.sparse(dm .<= radius*scale)
 end
 
 """
@@ -132,7 +132,7 @@ function crossrecurrencematrix(x, y, radius; scale=1, kwargs...)
     argsdm = haskey(kwargs,:metric) ? (x, y, kwargs[:metric]) : (x, y)
     dm = distancematrix(argsdm...)
     (typeof(scale) <: Function) && (scale = scale(dm))
-    Compat.SparseArrays.sparse(dm .< radius*scale)
+    Compat.SparseArrays.sparse(dm .<= radius*scale)
 end
 
 """
