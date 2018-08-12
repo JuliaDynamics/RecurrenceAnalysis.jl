@@ -159,7 +159,7 @@ macro windowed(ex, options...)
                 $exd_upper
                 append!($i, $ii)
                 append!($j, $jj)
-                Compat.SparseArrays.sparse($i,$j,true,size($x,1),size($y,1))
+                RecurrenceAnalysis.sparse($i,$j,true,size($x,1),size($y,1))
             end
             return esc(ret_ex)
         elseif f == :recurrencematrix
@@ -180,7 +180,7 @@ macro windowed(ex, options...)
                 append!($i,$ii)
                 append!($j,$jj)
                 $n = size($x,1)
-                Compat.SparseArrays.sparse($i,$j,true,$n,$n)
+                RecurrenceAnalysis.sparse($i,$j,true,$n,$n)
             end
             return esc(ret_ex)
         elseif f == :jointrecurrencematrix

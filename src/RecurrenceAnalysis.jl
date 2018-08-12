@@ -1,8 +1,6 @@
 module RecurrenceAnalysis
 
-using Distances, Statistics, LinearAlgebra
-using Compat, Compat.SparseArrays
-# import Compat.String
+using Distances, Statistics, LinearAlgebra, SparseArrays
 import Base.Meta.parse
 
 export embed,
@@ -117,7 +115,7 @@ function recurrencematrix(x, radius; scale=1, kwargs...)
     argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
     dm = distancematrix(argsdm...)
     (typeof(scale) <: Function) && (scale = scale(dm))
-    Compat.SparseArrays.sparse(dm .<= radius*scale)
+    sparse(dm .<= radius*scale)
 end
 
 """
@@ -132,7 +130,7 @@ function crossrecurrencematrix(x, y, radius; scale=1, kwargs...)
     argsdm = haskey(kwargs,:metric) ? (x, y, kwargs[:metric]) : (x, y)
     dm = distancematrix(argsdm...)
     (typeof(scale) <: Function) && (scale = scale(dm))
-    Compat.SparseArrays.sparse(dm .<= radius*scale)
+    sparse(dm .<= radius*scale)
 end
 
 """

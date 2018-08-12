@@ -1,6 +1,17 @@
 # RecurrenceAnalysis.jl News
 
-## 30-06-2018 - v0.3.0-beta
+## 12-08-2018 - v0.3.0
+
+* Update to support Julia 1.0.0 and 0.7.0
+* RQA functions matching outputs of **crqa** (R) and **CRPToolbox** (Matlab)
+
+## 31-07-2018 - v0.2.1
+
+* Bugfixes:
+    - `sorteddistances`
+    - RQA functions (bugs in parameters of diagonal structures when `theiler==0`)
+
+## 30-07-2018 - v0.3.0-beta
 
 * Break compatibility with 0.6
 * Breaking modifications of RQA functions, in order to match the outputs of 
