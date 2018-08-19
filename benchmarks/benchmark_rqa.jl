@@ -1,4 +1,4 @@
-using RecurrenceAnalysis
+using RecurrenceAnalysis, DelimitedFiles, Statistics
 
 # Measure the times (in ms) of evaluating an expression n times
 macro measuretime(ex, n)

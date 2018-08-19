@@ -1,4 +1,4 @@
-Intel(R) Core(TM) i3-4100M CPU @ 2.50GHz, 8GiB SODIMM DDR3 1600 MHz, running Ubuntu 16.04-LTS 
+Intel(R) Core(TM) i3-4100M CPU @ 2.50GHz, 8GiB SODIMM DDR3 1600 MHz, running Ubuntu 16.04.5-LTS 
 
 Software versions:
 Julia 0.7.0-beta2
