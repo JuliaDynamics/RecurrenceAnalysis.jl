@@ -320,32 +320,59 @@ Calculate RQA parameters of a recurrence matrix. See the functions
 `trend`, `laminarity`, `trappingtime` and `maxvert` for the definition of
 the different parameters and the default values of the arguments.
 
-The arguments `theilerdiag`, `lmindiag` may be used to declare specific values
+The keyword arguments `theilerdiag`, `lmindiag` may be used to declare specific values
 that override the values of `theiler` and `lmin` in the calculation of
 parameters related to diagonal structures. Likewise, `theilervert` and
 `lminvert` can be used for the calculation of parameters related to vertical
 structures.
+
+The returned value is a dictionary with the following keys:
+
+* "RR": recurrence rate (see `recurrencerate`)
+* "DET": determinsm (see `determinism`)
+* "L": average length of diagonal structures (see `avgdiag`)
+* "Lmax": maximum length of diagonal structures (see `maxdiag`)
+* "DIV": divergence (see `divergence`)
+* "ENT": entropy of diagonal structures (see `entropy`)
+* "TND": trend of recurrences (see `trend`)
+* "LAM": laminarity (see `laminarity`)
+* "TT": trapping time (see `trappingtime`)
+* "Vmax": maximum length of vertical structures (`see `maxvert`)
+
+The keyword argument `onlydiagonal` (`false` by default) can be set to `true`
+in order to restrict the analysis to the recurrence rate and the parameters related
+to diagonal structures ("RR", "DET", "L", "Lmax", "DIV" and "ENT").
 """
-function rqa(x; kwargs...)
+function rqa(x; onlydiagonal=false, kwargs...)
     # Parse arguments for diagonal and vertical structures
     kw_d = Dict(kwargs)
     haskey(kw_d, :theilerdiag) && (kw_d[:theiler] = kw_d[:theilerdiag])
     haskey(kw_d, :lmindiag) && (kw_d[:lmin] = kw_d[:lmindiag])
-    kw_v = Dict(kwargs)
-    haskey(kw_v, :theilervert) && (kw_v[:theiler] = kw_v[:theilervert])
-    haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
     dhist = diagonalhistogram(x; kw_d...)
-    vhist = verticalhistogram(x; kw_v...)
-    Dict("RR"  => recurrencerate(x; kwargs...),
+    if onlydiagonal
+        return Dict("RR"  => recurrencerate(x; kwargs...),
         "DET"  => determinism(dhist; kw_d...),
         "L"    => avgdiag(dhist; kw_d...),
         "Lmax" => maxdiag(dhist),
         "DIV"  => divergence(dhist),
-        "ENT"  => entropy(dhist; kw_d...),
-        "TND"  => trend(x; kw_d...),
-        "LAM"  => laminarity(vhist; kw_v...),
-        "TT"   => trappingtime(vhist; kw_v...),
-        "Vmax" => maxvert(vhist)
-    )
+        "ENT"  => entropy(dhist; kw_d...)
+        )
+   else
+        kw_v = Dict(kwargs)
+        haskey(kw_v, :theilervert) && (kw_v[:theiler] = kw_v[:theilervert])
+        haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
+        vhist = verticalhistogram(x; kw_v...)
+        return Dict("RR"  => recurrencerate(x; kwargs...),
+            "DET"  => determinism(dhist; kw_d...),
+            "L"    => avgdiag(dhist; kw_d...),
+            "Lmax" => maxdiag(dhist),
+            "DIV"  => divergence(dhist),
+            "ENT"  => entropy(dhist; kw_d...),
+            "TND"  => trend(x; kw_d...),
+            "LAM"  => laminarity(vhist; kw_v...),
+            "TT"   => trappingtime(vhist; kw_v...),
+            "Vmax" => maxvert(vhist)
+        )
+    end
 end
 
