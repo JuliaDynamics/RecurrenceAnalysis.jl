@@ -72,6 +72,11 @@ tol = 1e-5
 @test rqapar["LAM"] == 92/426
 @test rqapar["TT"] == 92/30
 @test rqapar["Vmax"] == 4
+rqadiag = rqa(rmat, theiler=2, lmin=3, border=20, onlydiagonal=true)
+@test all([rqapar[p]==rqadiag[p] for p in keys(rqadiag)])
+# Fixed rate for recurrence matrix
+rmat2 = recurrencematrix(xe[1:3:end,:], 0.05; fixedrate=true)
+@test .049 < recurrencerate(rmat2) < .051 
 # Windowed RQA
 rmatw = @windowed recurrencematrix(xe, 1.5) 50
 crmatw = @windowed(crossrecurrencematrix(x, y, 1.5),30)

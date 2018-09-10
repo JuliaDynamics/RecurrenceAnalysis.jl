@@ -4,7 +4,7 @@
 
 [![Build Status](https://travis-ci.org/heliosdrm/RecurrenceAnalysis.jl.svg?branch=master)](https://travis-ci.org/heliosdrm/RecurrenceAnalysis.jl)
 
-[![RecurrenceAnalysis](http://pkg.julialang.org/badges/RecurrenceAnalysis_0.6.svg)](http://pkg.julialang.org/?pkg=RecurrenceAnalysis)  [![RecurrenceAnalysis](http://pkg.julialang.org/badges/RecurrenceAnalysis_0.7.svg)](http://pkg.julialang.org/?pkg=RecurrenceAnalysis) 
+[![RecurrenceAnalysis](http://pkg.julialang.org/badges/RecurrenceAnalysis_0.6.svg)](http://pkg.julialang.org/?pkg=RecurrenceAnalysis)
 
 
 ## Basic functions
@@ -80,7 +80,7 @@ Some functions can be tuned with options passed as keyword arguments:
 
 | Argument  | Default   | Functions | Description |
 | --------  | --------  | --------- | ----------- 
-| `metric`  | `"max"`   | `distancematrix`<br/>`recurrencematrix`<br/>`crossrecurrencematrix`<br/>`jointrecurrencematrix` | Norm used to measure distances between points. Possible values: `"max"`, `"inf"` (infinity norm, same as `"max"`), and `"euclidean"` (Euclidean norm). |
+| `metric`  | `"max"`   | `distancematrix`<br/>`recurrencematrix`<br/>`crossrecurrencematrix`<br/>`jointrecurrencematrix` | Norm used to measure distances between points. Possible values: `"max"`, (maximum or infinity norm, also identified as `"inf"`), `"euclidean"` (Euclidean norm), or `"manhattan"` (*L*<sub>1</sub> or Manhattan distance, also `"cityblock"` or `"taxicab"`). |
 | `scale`   | 1         | `recurrencematrix`<br/>`crossrecurrencematrix`<br/>`jointrecurrencematrix` | Function or fixed number to scale the threshold or radius that is used to identify recurrences. Use `maximum` if the threshold is to be taken as a fraction of the maximum distance, `mean` if it is a fraction of the mean distance, etc., and `1` (identity scale, applied by default) to keep the threshold without scaling. |
 | `theiler` | 0         | `recurrencerate`<br/>`determinism`<br/>`avgdiag`<br/>`maxdiag`<br/>`divergence`<br/>`entropy`<br/>`trend`<br/>`laminarity`<br/>`trappingtime`<br/>`maxvert` | 'Theiler' window: number of diagonals around the LOI excluded from the analysis. |
 | `lmin`    | 2         | `determinism`<br/>`avgdiag`<br/>`maxdiag`<br/>`divergence`<br/>`entropy`<br/>`laminarity`<br/>`trappingtime`<br/>`maxvert` | Minimum length of the recurrent structures (diagonal or vertical) considered in the analysis. |
@@ -95,9 +95,11 @@ The function `rqa` also accepts all those keyword arguments, which are passed do
 * `lmindiag` overrides `lmin` in the calculation of parameters related to diagonal structures.
 * `lminvert` overrides `vmin` in the calculation of parameters related to vertical structures.
 
+If only the RR and the parameters based on diagonal structures are required (DET, L, Lmax, DIV and TND), `rqa` can be called with the keyword argument `onlydiagonal=true`, to reduce the time of calculations.
+
 ### Comparison with other RQA software packages
 
-After version 0.2.0 some RQA methods and the defaults of their options have been changed to make their results comparable with those provided by other software packages. Look at the [News](NEWS.md) of this package for details.
+After version 0.2.0 some RQA methods and the defaults of their options have been changed to make their results comparable with those provided by other software packages. See the corresponding section of the [Wiki](https://github.com/heliosdrm/RecurrenceAnalysis.jl/wiki/Comparison-of-software-packages-for-RQA) for details.
 
 ## Auxiliary functions
 
@@ -163,7 +165,7 @@ where:
  * `w` is the width of the window for relevant data around each point.
  * `s` is the step or distance between points where the calculations are done (starting in the first point).
 
-To prevent syntax failures in the expansion of the macro, identify the RQA function (`rqa`, `recurrencerate`, `determinism`,&hellip;) directly by its name (avoid aliases), and use simple variable names (not complex expressions) for the arguments. On the other hand, the windowing options `w` and `s` can be given in any order. If `s` is ommitted, the calculations are done at every point, and the keyword `width` may be ommitted. (However, using `step=1` may be computationally very expensive, and that will provide just overly redundant results around each point, so it is advisable to set `step` a relatively big fraction of the window `width`.)
+To prevent syntax failures in the expansion of the macro, identify the RQA function (`rqa`, `recurrencerate`, `determinism`,&hellip;) directly by its name (avoid aliases), and use simple variable names (not complex expressions) for the arguments. On the other hand, the windowing options `width` and `step` can be given in any order. If `step` is ommitted, the calculations are done at every point, and the keyword `width` may be ommitted. (However, using `step=1` may be computationally very expensive, and that will provide just overly redundant results around each point, so it is advisable to set `step` a relatively big fraction of the window `width`.)
 
 The value returned by the macro will normally be a vector with the same type of numbers as expected by `expr`. In the case of `@windowed rqa(...) ...`, it will return a dictionary with a similar structure as in the default `rqa` function, but replacing scalar values by vectors.
 
@@ -186,7 +188,7 @@ rmat  =           recurrencematrix(x, 0.1, scale=maximum)
 rmatw = @windowed recurrencematrix(x, 0.1, scale=maximum) 1000
 rmat[1:1000,1:1000] == rmatw[1:1000,1:1000] # FALSE!!!
 ```
-In this example, the `1000×1000` blocks of both matrices differ, because the threshold `0.1` is scaled with respect to the maximum distance between all points of `x` in `rmat`, but in the case of `rmatw` the scale changes between subsets of points.
+In this example, the `1000×1000` blocks of both matrices differ, because the threshold `0.1` is scaled with respect to the maximum distance between all points of `x` in `rmat`, but in the case of `rmatw` the scale changes between subsets of points. Something similar may happen if the recurrence matrix is calculated for a fixed recurrence rate (with the option `fixedrate=true`).
 
 ### Alternative syntax for `@windowed`
 

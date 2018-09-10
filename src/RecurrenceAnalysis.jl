@@ -106,23 +106,25 @@ end
     
 Create a recurrence matrix from an embedded time series.
 
-# Arguments
+# Arguments:
 * `x::Any` : embedded time series.
 * `radius::Any` : threshold parameter to classify distances as recurrences.
+
+# Keyword arguments:
 * `scale::Any` : function of the distance matrix, or fixed number to scale the distances
-* `fixedrate::Real` : a number between 0 and 1 to define a fixed recurrence rate.
-If a valid number is given, the radius and the scale are ignored.
 between points. Typical choices are `maximum` to scale distances into
 the unit inteval, or `mean`. Use `1` to keep the distances unscaled (default).
+* `fixedrate::Bool` : a flag that indicates if the `radius` should be taken as a
+target fixed recurrence rate of the full matrix (`false` by default).
+If `fixedrate` is set to `true`, `radius` must be a value between 0 and 1 and `scale` is ignored.
 * `metric::String` : metric of the norm, as in `distancematrix`.
 """
-function recurrencematrix(x, radius; scale=1, kwargs...)
+function recurrencematrix(x, radius; scale=1, fixedrate=false, kwargs...)
     kwargs = Dict(kwargs)
     # check fixed recurrence rate within (0,1)
-    p = pop!(kwargs, :fixedrate, -1)
-    if 0 <= p <= 1
-        sfun = (m) -> quantile(m[:], p)
-        return recurrencematrix(x, 1; scale=sfun, kwargs...)
+    if fixedrate
+        sfun = (m) -> quantile(m[:], radius)
+        return recurrencematrix(x, 1; scale=sfun, fixedrate=false, kwargs...)
     end
     argsdm = haskey(kwargs,:metric) ? (x, kwargs[:metric]) : (x,)
     dm = distancematrix(argsdm...)
@@ -137,13 +139,12 @@ Create a cross recurrence matrix from two embeded time series.
 
 See `?recurrencematrix` for details.
 """
-function crossrecurrencematrix(x, y, radius; scale=1, kwargs...)
+function crossrecurrencematrix(x, y, radius; scale=1, fixedrate=false, kwargs...)
     kwargs = Dict(kwargs)
     # check fixed recurrence rate within (0,1)
-    p = pop!(kwargs, :fixedrate, -1)
-    if 0 <= p <= 1
+    if fixedrate
         sfun = (m) -> quantile(m[:], p)
-        return crossrecurrencematrix(x, y, 1; scale=sfun, kwargs...)
+        return crossrecurrencematrix(x, y, 1; scale=sfun, fixedrate=false, kwargs...)
     end
     argsdm = haskey(kwargs,:metric) ? (x, y, kwargs[:metric]) : (x, y)
     dm = distancematrix(argsdm...)
