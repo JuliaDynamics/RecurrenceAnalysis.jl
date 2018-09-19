@@ -60,6 +60,9 @@ rmat = recurrencematrix(xe, 1.5)
 y = lorenz_data[701:2:end,3]
 crmat = crossrecurrencematrix(x, y, 1.5)
 jrmat = jointrecurrencematrix(x, y, 1.5)
+# Recurrence plot
+crp = recurrenceplot(crmat, width=125)
+@test size(crp)[1] == 75
 # RQA
 rqapar = rqa(rmat, theiler=2, lmin=3, border=20)
 tol = 1e-5

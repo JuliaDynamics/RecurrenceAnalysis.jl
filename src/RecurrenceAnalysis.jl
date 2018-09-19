@@ -8,6 +8,7 @@ export embed,
        recurrencematrix,
        crossrecurrencematrix,
        jointrecurrencematrix,
+       recurrenceplot,
        recurrencerate,
        determinism,
        avgdiag,
@@ -166,6 +167,7 @@ function jointrecurrencematrix(x, y, radius; kwargs...)
     rm1[1:n, 1:n] .* rm2[1:n, 1:n]
 end
 
+include("plot.jl")
 include("rqa.jl")
 include("delay.jl")
 include("dimension.jl")
