@@ -1,5 +1,5 @@
 name = "RecurrenceAnalysis"
-uuid = "c46b41ce-bc2d-11e8-1ce1-cb80c6204235"
+uuid = "639c3291-70d9-5ea2-8c5b-839eba1ee399"
 license = "MIT"
 desc = "Recurrence Plots and Recurrence Quantification Analysis in Julia"
 authors = ["Helios De Rosario <helios.derosario@gmail.com>"]
