@@ -1,0 +1,21 @@
+name = "RecurrenceAnalysis"
+uuid = "c46b41ce-bc2d-11e8-1ce1-cb80c6204235"
+license = "MIT"
+desc = "Recurrence Plots and Recurrence Quantification Analysis in Julia"
+authors = ["Helios De Rosario <helios.derosario@gmail.com>"]
+version = "0.5.0-alfa"
+
+[deps]
+Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[compat]
+Distances = "0.7.0"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
