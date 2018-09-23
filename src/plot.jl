@@ -38,7 +38,7 @@ end
     recurrenceplot(x, [bwcode::Tuple{T,T}]; width::Integer, height::Integer, exactsize=false)
     
 Transform the recurrence matrix `x` into a full matrix suitable for plotting as a grayscale image.
-By default it returns a matrix with the same size as `x`, but flipped vertical axis,
+By default it returns a matrix with the same size as `x`, but switched axes,
 containing "black" values in the cells that represent recurrent points,
 and "white" values in the empty cells.
 

@@ -1,46 +1,24 @@
 # RecurrenceAnalysis
 
-**Julia tools for Recurrence Quantification Analysis (RQA)**
+**Julia tools for Recurrence Plots and Recurrence Quantification Analysis (RQA)**
 
 [![Build Status](https://travis-ci.org/heliosdrm/RecurrenceAnalysis.jl.svg?branch=master)](https://travis-ci.org/heliosdrm/RecurrenceAnalysis.jl)
 
 [![RecurrenceAnalysis](http://pkg.julialang.org/badges/RecurrenceAnalysis_0.6.svg)](http://pkg.julialang.org/?pkg=RecurrenceAnalysis)
 
+## Introduction
 
-## Basic functions
+The typical work for the analysis of recurrences in time series consists of:
 
-The following functions can be used to quantify distances and recurrences in time series:
+1. (Optionally) embed the time series in an *m*-dimensional phase space.
+2. Create a recurrence plot of the (possibly embedded) time series, or a
+cross-recurrence plot or a joint-recurrence plot if the analysis concerns a pair of time series.
+3. Quantify the observed recurrence patterns with Recurrence Quantification Analysis (RQA) parameters.
 
-| Function                | Description                                                              |
-| --------                | -----------                                                              |
-| `embed`                 | Embed a time series in *m* dimensions with a given delay                 |
-| `distancematrix`        | Create a distance matrix from one or two (possibly embedded) time series |
-| `recurrencematrix`      | Create a recurrence matrix from a (possibly embedded) time series        |
-| `crossrecurrencematrix` | Create a cross recurrence matrix from two (possibly embeded) time series |
-| `jointrecurrencematrix` | Create a joint recurrence matrix from two (possibly embeded) time series |
-
-Functions for the calculation of [RQA parameters](http://www.recurrence-plot.tk/rqa.php) from recurrence matrices:
-
-| Function         | Abbreviation | Description                                                        |
-| --------         | ------------ | -----------                                                        |
-| `recurrencerate` | `"RR"`       | Recurrence Rate: ratio of recurrent points                         |
-| `determinism`    | `"DET"`      | Determinism: ratio of recurrent points forming diagonal structures |
-| `avgdiag`        | `"L"`        | Average diagonal length                                            |
-| `maxdiag`        | `"Lmax"`     | Length of longest diagonal                                         |
-| `divergence`     | `"DIV"`      | Divergence: inverse of *Lmax*                                       |
-| `entropy`        | `"ENT"`      | Entropy of the diagonal length histogram                           |
-| `trend`          | `"TND"`      | Trend of paling recurrent points away from the LOI                 |
-| `laminarity`     | `"LAM"`      | Laminarity: ratio of recurrent points forming vertical structures  |
-| `trappingtime`   | `"TT"`       | Trapping time: average length of vertical structures               |
-| `maxvert`        | `"Vmax"`     | Length of longest vertical structure                               |
-
-In addition, the function `rqa` may be used to calculate all the RQA parameters, which are returned in a dictionary
-with keys equal to the abbreviations of the previous table. This alternative is more efficient than calculating the
-parameters individually, since the diagonal and vertical structures are analysed only once.
-
-A typical RQA workflow may be like this:
+This can be done with the package `RecurrenceAnalysis` as shown in the next example (see more details about each step in the following sections):
 
 ```julia
+using RecurrenceAnalysis
 # 1. Transform time series x into an embedded vector
 xe = embed(x, 5, 3)              # Embedding dimension = 5, delay = 3
 # 2. Compute recurrence matrix
@@ -54,29 +32,101 @@ rqa_par = rqa(rmat)              # rqa_par["RR"] == rr, etc.
 ...
 ```
 
-### Plotting recurrence matrices
+## Embedding time series
 
-This package does not provide plotting tools. The matrices created by
-`recurrencematrix`, `crossrecurrencematrix` and `jointrecurrencematrix` are
-sparse matrices of boolean values, that can be converted to full matrices
-of the appropriate type to display them on screen, or save them as image files.
-
-For instance, with the package [Winston](https://github.com/nolta/Winston.jl),
-you can create a recurrence plot from the matrix `rmat`:
+To embed a time series `x` in `m` dimensions with a delay of `d` samples between dimensions, just do:
 
 ```julia
-using Winston
-colormap("grays")             # Set the colormap to have a B&W plot
-rp = imagesc(0xff*full(rmat)) # Show the plot on the screen (in REPL mode)
-savefig(rp, "rmat.png")       # Write the plot to disk (PNG)
+xe = embed(x, m, d)
 ```
 
-(Note: the *y*-axis of such a plot is flipped with respect to the customary
-orientation in recurrence plots.)
+The time series `x` can be a vector of numeric values, or a matrix with `n` columns representing a series of `n`-dimensional vectors. In such case, the resulting `xe` will be a matrix with `m*n` columns.
 
-### RQA options:
+## Recurrence plots
 
-Some functions can be tuned with options passed as keyword arguments:
+The following functions can be used to quantify distances and recurrences in time series:
+
+| Function                | Description                                                              |
+| --------                | -----------                                                              |
+| `distancematrix`        | Create a distance matrix from one or two (possibly embedded) time series |
+| `recurrencematrix`      | Create a recurrence matrix from a (possibly embedded) time series        |
+| `crossrecurrencematrix` | Create a cross recurrence matrix from two (possibly embeded) time series |
+| `jointrecurrencematrix` | Create a joint recurrence matrix from two (possibly embeded) time series |
+
+The arguments required by those functions are the time series and (except for `distancematrix`) the radius or threshold distance in the phase space to consider that two points are recurrent.
+
+In addition they can take the following keyword arguments:
+
+| Argument    | Default   | Functions | Description |
+| --------    | --------  | --------- | ----------- 
+| `metric`    | `"max"`   | All       | Norm used to measure distances between points. Possible values: `"max"`, (maximum or infinity norm, also identified as `"inf"`), `"euclidean"` (*L*<sub>2</sub> or Euclidean norm), or `"manhattan"` (*L*<sub>1</sub> or Manhattan norm, also `"cityblock"` or `"taxicab"`). |
+| `scale`     | 1         | `recurrencematrix`<br/>`crossrecurrencematrix`<br/>`jointrecurrencematrix` | Function or fixed number to scale the threshold or radius that is used to identify recurrences. Use `maximum` if the threshold is to be taken as a fraction of the maximum distance, `mean` if it is a fraction of the mean distance, etc., and `1` (identity scale, applied by default) to keep the threshold without scaling. |
+| `fixedrate` | `false`   | `recurrencematrix`<br/>`crossrecurrencematrix`<br/>`jointrecurrencematrix` | Flag that indicates if the radius should be taken as a fixed target rate (between 0 and 1) of recurrences. |
+
+#### Visualization of recurrence plots
+
+Recurrence plots can be visualized and saved as images with the tools of other packages for Julia, which allow to render numeric matrices as images or "heat maps" that represent numbers as grades of a gray scale (or other color scales). Those packages are independent of `RecurrenceAnalysis` and must be installed separately. Some packages that can be used for this purpose are:
+
+* [Images](https://github.com/JuliaImages/Images.jl)
+(with [ImageView](https://github.com/JuliaImages/ImageView.jl) for visualization
+on screen).
+* [PyPlot](https://github.com/JuliaPy/PyPlot.jl)
+* [GR](https://github.com/jheinen/GR.jl)
+* [Plotly](https://github.com/plotly/Plotly.jl) or [PlotlyJS](https://github.com/sglyon/PlotlyJS.jl)
+* [Gadfly](https://github.com/GiovineItalia/Gadfly.jl)
+* [Makie](https://github.com/JuliaPlots/Makie.jl)
+* [Winston](https://github.com/JuliaGraphics/Winston.jl)
+
+The function `recurrenceplot` can be used to transform the sparse matrices of boolean values created by `recurrencematrix`, `crossrecurrencematrix` or `jointrecurrencematrix` into "ready-to-print" (or "to-display") dense numeric matrices of adequate dimensions, as generally required by the mentioned plotting packages.
+
+For instance, using the package ImageView, the matrix `rmat` returned by `recurrencematrix` might be displayed on the screen just with:
+
+```julia
+using ImageView
+rplot = recurrenceplot(rmat)
+imshow(rp)
+```
+
+In that basic example, the matrix `rplot` will differ from `rmat` in the orientation of the dimensions (i.e. the main diagonal of `rmat` will run from the bottom left to the upper right cells of `rplot`), and in the scale of the values, which will be coded as `0.0` to represent black points where `rmat` had values (in the pairs of recurrent time points), and `1.0` to represent white points in the empty cells.
+
+The numeric endpoints of the color scale and the dimensions of the plot can be customized as in the next example:
+
+```julia
+rplot = recurrenceplot(rmat, (0xff, 0x00), width=300)
+```
+
+* The pair of values of the second optional argument are the numeric codes for black and white points, respectively &mdash; `(0.0, 1.0)` by default. In this example the scale contains integer values ranging from 0 for white to 255 for black, in hexadecimal notation (from 00 to FF),
+as required by the function `imagesc` of the package Winston.
+* The keyword argument `width=300` sets the number of pixels that the plot will contain from left to right (the other dimension is calculated automatically to keep the proportions of `rmat`). Alternatively it is possible to set the `height`, or both to define the maximum dimensions of the plot. (To make the plot of the exact size `width`×`height`, regardless of the proportions of the original matrix, add `exactsize=true` as extra keyword argument.)
+
+If the image produced by `recurrenceplot` is smaller than the size of the original matrix, each pixel will contain a "grey" value (between the codes of white and black) proportional to the number of recurrent points in the block of cells contained by the pixel.
+
+Each plotting package can use different functions to display the matrices, like `imshow`, `heatmap`, `spy`, `imagesc`, etc.
+The mapping between the rows/columns of the matrix and the X-Y axes of the plot may also differ between functions or packages for plotting.
+
+Some plotting packages can be used with a common syntax as backends of the "meta-package" [Plots](https://github.com/JuliaPlots/Plots.jl/).
+In that case, the function `plot` can be used with the series type `:image` or `:heatmap` to visualize the recurrence plots (see the support of that feature by the different backends in <http://docs.juliaplots.org/latest/supported/>, and notice that the default orientations of the Y-axis are different in both series types.)
+
+### Recurrence Quantification Analysis (RQA)
+
+The following functions are used to calculate [RQA parameters](http://www.recurrence-plot.tk/rqa.php) from recurrence matrices:
+
+| Function         | Abbreviation | Description                                                        |
+| --------         | ------------ | -----------                                                        |
+| `recurrencerate` | `"RR"`       | Recurrence Rate: ratio of recurrent points                         |
+| `determinism`    | `"DET"`      | Determinism: ratio of recurrent points forming diagonal structures |
+| `avgdiag`        | `"L"`        | Average diagonal length                                            |
+| `maxdiag`        | `"Lmax"`     | Length of longest diagonal                                         |
+| `divergence`     | `"DIV"`      | Divergence: inverse of *Lmax*                                      |
+| `entropy`        | `"ENT"`      | Entropy of the diagonal length histogram                           |
+| `trend`          | `"TND"`      | Trend of paling recurrent points away from the LOI                 |
+| `laminarity`     | `"LAM"`      | Laminarity: ratio of recurrent points forming vertical structures  |
+| `trappingtime`   | `"TT"`       | Trapping time: average length of vertical structures               |
+| `maxvert`        | `"Vmax"`     | Length of longest vertical structure                               |
+
+In addition, the function `rqa` may be used to calculate all the RQA parameters, which are returned in a dictionary with keys equal to the abbreviations of the previous table. This alternative is more efficient than calculating the parameters individually, since the diagonal and vertical structures are analysed only once.
+
+Some functions can be tuned with options, passed as keyword arguments:
 
 | Argument  | Default   | Functions | Description |
 | --------  | --------  | --------- | ----------- 
@@ -99,7 +149,7 @@ If only the RR and the parameters based on diagonal structures are required (DET
 
 ### Comparison with other RQA software packages
 
-After version 0.2.0 some RQA methods and the defaults of their options have been changed to make their results comparable with those provided by other software packages. See the corresponding section of the [Wiki](https://github.com/heliosdrm/RecurrenceAnalysis.jl/wiki/Comparison-of-software-packages-for-RQA) for details.
+After version 0.2.0 some RQA methods and the defaults of their options were changed to make their results comparable with those provided by other software packages. See the corresponding section of the [Wiki](https://github.com/heliosdrm/RecurrenceAnalysis.jl/wiki/Comparison-of-software-packages-for-RQA) for details.
 
 ## Auxiliary functions
 
@@ -203,8 +253,3 @@ y = @windowed(f(x,...), w)
 
 In all four cases, the width parameter `w` might have been qualified with a keyword as `width=w`. If the step parameter is added, the keyword qualification is mandatory.
 
-## To-do list:
-
- * FAN method to define recurrence plots
- * Fast approximations to RQA
- * Recurrence Network analysis
