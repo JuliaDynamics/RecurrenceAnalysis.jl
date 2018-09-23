@@ -1,5 +1,12 @@
 # RecurrenceAnalysis.jl News
 
+## 23-09-2018 - v0.4.0
+
+* Function `recurrenceplot` to facilitate the visualization of recurrence plots.
+* Support of Manhattan norm for the identification of recurrences.
+* Option to create matrices with fixed recurrence rate.
+* `rqa` option for obtaining only parameters related to diagonal structures.
+
 ## 12-08-2018 - v0.3.0
 
 * Update to support Julia 1.0.0 and 0.7.0
