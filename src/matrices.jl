@@ -35,11 +35,11 @@ the [Distances package](https://github.com/JuliaStats/Distances.jl).
 The list of strings available to define the metric are [1]:
 
 * `"max"` or `"inf"` for the maximum or L∞ norm 
-  (`Chebyshev()` in the Distances package, used by default).
+  (`Chebyshev()` in the `Distances` package, used by default).
 * `"euclidean"` for the L2 or Euclidean norm
-  (`Euclidean()` in Distances).
+  (`Euclidean()` in `Distances`).
 * `"manhattan"`, `"cityblock"`, `"taxicab"` or `"min"` for the Manhattan or L1 norm
-  (`Cityblock()in Distances).
+  (`Cityblock()` in `Distances`).
   
 
 # References
