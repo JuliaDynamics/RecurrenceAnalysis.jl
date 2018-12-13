@@ -88,7 +88,7 @@ end
 
 Create a recurrence matrix from an embedded time series.
 
-# Description
+## Description
 
 The "recurrence matrix" is a numeric representation of a "recurrence plot" [1, 2],
 in the form of a sparse square matrix of Boolean values.
@@ -112,7 +112,7 @@ by the following keyword arguments:
 
 See also: [`crossrecurrencematrix`](@ref), [`jointrecurrencematrix`](@ref).
 
-# References
+## References
 [1] : N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
 *Phys. Reports 438*(5-6), 237-329 (2007).
 

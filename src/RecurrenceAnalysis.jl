@@ -23,9 +23,6 @@ export embed,
        autocorrelation,
        ami,
        gmi,
-       fnn,
-       afnn,
-       ffnn,
        sorteddistances,
        @windowed
 
@@ -42,7 +39,6 @@ include("matrices.jl")
 include("plot.jl")
 include("rqa.jl")
 include("delay.jl")
-include("dimension.jl")
 include("radius.jl")
 include("windowed.jl")
 
