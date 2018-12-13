@@ -1,8 +1,7 @@
 module RecurrenceAnalysis
 
-using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings
+using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, StaticArrays
 import Base.Meta.parse
-import DelayEmbeddings.StaticArrays.SVector
 
 export embed,
        distancematrix,

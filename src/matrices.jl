@@ -1,5 +1,3 @@
-using Distances
-
 const METRICS = Dict(
     "euclidean"=>Euclidean(),
     "max"=>Chebyshev(),
@@ -97,7 +95,7 @@ in the form of a sparse square matrix of Boolean values.
 
 `x` must be `Dataset` or a Vector or Matrix with data points in rows
 (possibly representing and embedded phase, space; see [`embed`](@ref)).
-If ∥`x[i]` – `x[j]`∥ ≤ ε, then the cell `(i, j)` of the matrix will have a `true`
+If `∥x[i] – x[j]∥ ≤ ε`, then the cell `(i, j)` of the matrix will have a `true`
 value. The criteria to evaluate distances between data points are defined
 by the following keyword arguments:
 
@@ -112,7 +110,7 @@ by the following keyword arguments:
   and `scale` is ignored.
 * `metric` : metric of the distances, as in [`distancematrix`](@ref).
 
-See also: [`crossrecurrencematrix`](@ref), [`jointrecurrencematrix`](@ref)
+See also: [`crossrecurrencematrix`](@ref), [`jointrecurrencematrix`](@ref).
 
 # References
 [1] : N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
@@ -128,26 +126,17 @@ recurrencematrix(x, ε; kwargs...) = crossrecurrencematrix(x, x, ε; kwargs...)
 #### Cross recurrence matrix ####
 
 """
-    crossrecurrencematrix(x, y, ε; <keyword arguments>)
+    crossrecurrencematrix(x, y, ε; kwargs...)
 
 Create a cross recurrence matrix from the time series `x` and `y`.
 
-The cross recurrence matrix is a bivariate extension of the recurrence matrix [1, 2].
+The cross recurrence matrix is a bivariate extension of the recurrence matrix.
 For the time series `x`, `y`, of length `n` and `m`, respectively, it is a
-sparse `n×m` matrix of Boolean values, such that if ∥`x[i]` – `x[j]`∥ ≤ ε,
+sparse `n×m` matrix of Boolean values, such that if `∥x[i] – y[j]∥ ≤ ε`,
 then the cell `(i, j)` of the matrix will have a `true` value.
 
-See [`recurrencematrix`](@ref) for details and a description of the arguments.
-
-See also: [`jointrecurrencematrix`](@ref)
-
-# References
-[1] : N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
-*Phys. Reports 438*(5-6), 237-329 (2007).
-
-[2] : N. Marwan & C.L. Webber, "Mathematical and computational foundations of
-recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
-Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
+See [`recurrencematrix`](@ref) for details, references and keywords.
+See also: [`jointrecurrencematrix`](@ref).
 """
 function crossrecurrencematrix(x, y, ε; scale=1, fixedrate=false, metric=Chebyshev())
     # Check fixed recurrence rate - ε must be within (0, 1)
@@ -198,27 +187,18 @@ end
 #### Joint recurrence matrix ####
 
 """
-    jointrecurrencematrix(x, y, ε; <keyword arguments>)
+    jointrecurrencematrix(x, y, ε; kwargs...)
 
 Create a joint recurrence matrix from the time series `x` and `y`.
 
 The joint recurrence matrix considers the recurrences of the trajectories
 of `x` and `y` separately, and looks for points where both recur
-simultaneously [1, 2]. It is calculated by the element-wise multiplication
+simultaneously. It is calculated by the element-wise multiplication
 of the recurrence matrices of `x` and `y`. If `x` and `y` are of different
 length, the recurrences are only calculated until the length of the shortest one.
 
-See [`recurrencematrix`](@ref) for details and a description of the arguments.
-
-See also: [`crossrecurrencematrix`](@ref)
-
-# References
-[1] : N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
-*Phys. Reports 438*(5-6), 237-329 (2007).
-
-[2] : N. Marwan & C.L. Webber, "Mathematical and computational foundations of
-recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
-Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
+See [`recurrencematrix`](@ref) for details, references and keywords.
+See also: [`crossrecurrencematrix`](@ref).
 """
 function jointrecurrencematrix(x, y, ε; kwargs...)
     n = min(size(x,1), size(y,1))
