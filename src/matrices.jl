@@ -56,7 +56,7 @@ function distancematrix(x::Tx, y::Ty, metric::Metric=Chebyshev()) where
     if sx[2] != sy[2]
         error("the dimensions of `x` and `y` data points must be the equal")
     end
-    if sx < MAXDIM # convert to Dataset here, it is significantly faster
+    if sx[2] < MAXDIM # convert to Dataset here, it is significantly faster
         return _distancematrix(Dataset(x), Dataset(y), metric)
     else
         return _distancematrix(x, y, metric)
