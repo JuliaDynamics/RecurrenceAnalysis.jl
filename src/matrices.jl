@@ -1,50 +1,45 @@
-# get distance metric of the Distance package
+using Distances
+
+const METRICS = Dict(
+    "euclidean"=>Euclidean(),
+    "max"=>Chebyshev(),
+    "inf"=>Chebyshev(),
+    "cityblock"=>Cityblock(),
+    "manhattan"=>Cityblock(),
+    "taxicab"=>Cityblock()
+)
+
 function getmetric(normtype::AbstractString)
     normtype = lowercase(normtype)
-    metrics = Dict(
-        "euclidean"=>Euclidean(),
-        "max"=>Chebyshev(),
-        "inf"=>Chebyshev(),
-        "cityblock"=>Cityblock(),
-        "manhattan"=>Cityblock(),
-        "taxicab"=>Cityblock()
-        )
-    !haskey(metrics,normtype) && error("incorrect norm type. Accepted values are \""
-        *join(keys(metrics),"\", \"", "\" or \"") * "\".")
-    metrics[normtype]
+    !haskey(METRICS,normtype) && error("incorrect norm type. Accepted values are \""
+        *join(keys(METRICS),"\", \"", "\" or \"") * "\".")
+    METRICS[normtype]
 end
 
 
 #### Distance matrix ####
 
 """
-    distancematrix(x[, y, metric])
-    
+    distancematrix(x [, y = x], metric = Chebyshev())
+
 Create a matrix with the distances between each pair of points of the
-time series `x`, or between each point of `x` and `y`, with the distance type
-defined by `metric`.
+time series `x` and `y` using `metric`.
 
 The time series `x` and `y` can be `Dataset`s or matrices with data points in rows.
 The data point dimensions (or number of columns) must be the same for `x` and `y`.
 The returned value is a `n×m` matrix, with `n` being the length (or number of rows)
-of `x`, and `m` the length of `y`. If `y` is not provided, the result is a square
-`n×n` matrix.
+of `x`, and `m` the length of `y`.
 
 The metric can be identified by a string, or any of the `Metric`s defined in
-the [Distances package](https://github.com/JuliaStats/Distances.jl).
-The list of strings available to define the metric are [1]:
+the [`Distances` package](https://github.com/JuliaStats/Distances.jl).
+The list of strings available to define the metric are:
 
-* `"max"` or `"inf"` for the maximum or L∞ norm 
+* `"max"` or `"inf"` for the maximum or L∞ norm
   (`Chebyshev()` in the `Distances` package, used by default).
 * `"euclidean"` for the L2 or Euclidean norm
   (`Euclidean()` in `Distances`).
 * `"manhattan"`, `"cityblock"`, `"taxicab"` or `"min"` for the Manhattan or L1 norm
   (`Cityblock()` in `Distances`).
-  
-
-# References
-[1] : N. Marwan *et al.*. "Recurrence plots for the analysis of complex systems",
-*Phys. Reports 438*(5-6), 237-329 (2007).
 """
 distancematrix(x, metric::Union{Metric,String}=Chebyshev()) = distancematrix(x, x, metric)
 
@@ -54,27 +49,27 @@ distancematrix(x::Vector, y::Vector, metric=Chebyshev()) = abs.(x .- y')
 # If the metric is supplied as a string, get the corresponding Metric from Distances
 distancematrix(x, y, metric::String) = distancematrix(x, y, getmetric(metric))
 
-# Choose the metod based on Matrices or Datasets, depending on _maxdimension:
-# for smaller dimensions, Datasets are more efficient
-const _maxdimension = 10
+const MAXDIM = 10
 function distancematrix(x::Tx, y::Ty, metric::Metric=Chebyshev()) where
          {Tx<:Union{AbstractMatrix, Dataset}} where {Ty<:Union{AbstractMatrix, Dataset}}
     sx, sy = size(x), size(y)
     if sx[2] != sy[2]
         error("the dimensions of `x` and `y` data points must be the equal")
     end
-    if sx[2] > _maxdimension
-        return _distancematrix(Matrix(x), Matrix(y), metric)
-    else
+    if sx < MAXDIM # convert to Dataset here, it is significantly faster
         return _distancematrix(Dataset(x), Dataset(y), metric)
+    else
+        return _distancematrix(x, y, metric)
     end
 end
 
 # Core function for Matrices (wrapper of `pairwise` from the Distances package)
-_distancematrix(x::AbstractMatrix, y::AbstractMatrix, metric::Metric) = pairwise(metric, x', y')
+_distancematrix(x::AbstractMatrix, y::AbstractMatrix, metric::Metric) =
+pairwise(metric, x', y')
 # Core function for Datasets
-function _distancematrix(x::Dx, y::Dy, metric::Metric) where 
-         {Dx<:Dataset{S,Tx}} where {Dy<:Dataset{S,Ty}} where {S} where {Tx} where {Ty}
+function _distancematrix(x::Dataset{S,Tx}, y::Dataset{S,Ty},
+    metric::Metric) where {S, Tx, Ty}
+
     x = x.data
     y = y.data
     d = zeros(promote_type(Tx,Ty), length(x), length(y))
@@ -91,8 +86,8 @@ end
 # Defined as a wrapper of crossrecurrencematrix
 
 """
-    recurrencematrix(x, ε; <keyword arguments>)
-    
+    recurrencematrix(x, ε; kwargs...)
+
 Create a recurrence matrix from an embedded time series.
 
 # Description
@@ -101,7 +96,7 @@ The "recurrence matrix" is a numeric representation of a "recurrence plot" [1, 2
 in the form of a sparse square matrix of Boolean values.
 
 `x` must be `Dataset` or a Vector or Matrix with data points in rows
-(possibly representing and embedded phase, space; see [`embed`](@ref)). 
+(possibly representing and embedded phase, space; see [`embed`](@ref)).
 If ∥`x[i]` – `x[j]`∥ ≤ ε, then the cell `(i, j)` of the matrix will have a `true`
 value. The criteria to evaluate distances between data points are defined
 by the following keyword arguments:
@@ -127,14 +122,14 @@ See also: [`crossrecurrencematrix`](@ref), [`jointrecurrencematrix`](@ref)
 recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
-recurrencematrix(x, ε; kwargs...) = crossrecurrencematrix(x, x, ε; kwargs...) 
+recurrencematrix(x, ε; kwargs...) = crossrecurrencematrix(x, x, ε; kwargs...)
 
 
 #### Cross recurrence matrix ####
 
 """
     crossrecurrencematrix(x, y, ε; <keyword arguments>)
-    
+
 Create a cross recurrence matrix from the time series `x` and `y`.
 
 The cross recurrence matrix is a bivariate extension of the recurrence matrix [1, 2].
@@ -171,7 +166,7 @@ _computescale(scale::Function, x, y, metric) = scale(distancematrix(x, y, metric
 _computescale(scale::Real, args...) = scale
 
 # Internal methods to calculate the matrix:
-# If the metric is supplied as a string, get the corresponding Metric from Distances 
+# If the metric is supplied as a string, get the corresponding Metric from Distances
 _crossrecurrencematrix(x, y, ε, metric::String="max") = _crossrecurrencematrix(x, y, ε, getmetric(metric))
 
 # Convert the inputs to Datasets (better performance in all cases)
@@ -180,7 +175,7 @@ function _crossrecurrencematrix(x::AbstractVecOrMat, y::AbstractVecOrMat, ε, me
 end
 
 # Core function
-function _crossrecurrencematrix(x::Dataset, y::Dataset, ε, metric::Metric) 
+function _crossrecurrencematrix(x::Dataset, y::Dataset, ε, metric::Metric)
     x = x.data
     y = y.data
     rowvals = Vector{Int64}()
@@ -204,7 +199,7 @@ end
 
 """
     jointrecurrencematrix(x, y, ε; <keyword arguments>)
-    
+
 Create a joint recurrence matrix from the time series `x` and `y`.
 
 The joint recurrence matrix considers the recurrences of the trajectories
@@ -231,4 +226,3 @@ function jointrecurrencematrix(x, y, ε; kwargs...)
     rm2 = recurrencematrix(y[1:n,:], ε, kwargs...)
     return rm1 .* rm2
 end
-
