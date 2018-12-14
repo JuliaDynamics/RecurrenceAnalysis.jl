@@ -90,12 +90,13 @@ Create a recurrence matrix from an embedded time series.
 
 ## Description
 
-The "recurrence matrix" is a numeric representation of a "recurrence plot" [1, 2],
+The recurrence matrix is a numeric representation of a "recurrence plot" [1, 2],
 in the form of a sparse square matrix of Boolean values.
 
 `x` must be `Dataset` or a Vector or Matrix with data points in rows
 (possibly representing and embedded phase, space; see [`embed`](@ref)).
-If `∥x[i] – x[j]∥ ≤ ε`, then the cell `(i, j)` of the matrix will have a `true`
+If `d(x[i], x[j]) ≤ ε` (with `d` the distance function),
+then the cell `(i, j)` of the matrix will have a `true`
 value. The criteria to evaluate distances between data points are defined
 by the following keyword arguments:
 
@@ -110,7 +111,8 @@ by the following keyword arguments:
   and `scale` is ignored.
 * `metric` : metric of the distances, as in [`distancematrix`](@ref).
 
-See also: [`crossrecurrencematrix`](@ref), [`jointrecurrencematrix`](@ref).
+See also: [`crossrecurrencematrix`](@ref), [`jointrecurrencematrix`](@ref) and
+use [`recurrenceplot`](@ref) to turn the result of these functions into a plottable format.
 
 ## References
 [1] : N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
@@ -156,10 +158,12 @@ _computescale(scale::Real, args...) = scale
 
 # Internal methods to calculate the matrix:
 # If the metric is supplied as a string, get the corresponding Metric from Distances
-_crossrecurrencematrix(x, y, ε, metric::String="max") = _crossrecurrencematrix(x, y, ε, getmetric(metric))
+_crossrecurrencematrix(x, y, ε, metric::String="max") =
+_crossrecurrencematrix(x, y, ε, getmetric(metric))
 
 # Convert the inputs to Datasets (better performance in all cases)
-function _crossrecurrencematrix(x::AbstractVecOrMat, y::AbstractVecOrMat, ε, metric::Metric=Chebyshev())
+function _crossrecurrencematrix(x::AbstractVecOrMat, y::AbstractVecOrMat,
+                                ε, metric::Metric=Chebyshev())
     return _crossrecurrencematrix(Dataset(x), Dataset(y), ε, metric)
 end
 
