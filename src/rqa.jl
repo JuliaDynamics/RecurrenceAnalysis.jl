@@ -63,7 +63,12 @@ function diagonalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=0, kwargs..
         end
     end
     # Add isolated points in first bin
-    allpoints = (theiler == 0) ? count(!iszero, x) : count(!iszero, triu(x, theiler)) + count(!iszero, tril(x,-theiler))
+    allpoints =
+    if theiler == 0
+        count(!iszero, x)
+    else
+        count(!iszero, triu(x, theiler)) + count(!iszero, tril(x,-theiler))
+    end
     [allpoints - collect(2:nbins+1)'*bins; bins]
 end
 
@@ -130,7 +135,8 @@ function avgdiag(diag_hist::Vector; lmin=2, kwargs...)
     end
     nbins = length(diag_hist)
     diag_points = collect(1:nbins) .* diag_hist
-    (lmin > nbins) ? 0.0 : typeof(0.0)( sum(diag_points[lmin:nbins])/sum(diag_hist[lmin:nbins]) )
+    return (lmin > nbins) ? 0.0 :
+        Float64( sum(diag_points[lmin:nbins])/sum(diag_hist[lmin:nbins]) )
 end
 
 function avgdiag(x::AbstractMatrix; kwargs...)
@@ -159,6 +165,8 @@ divergence(x; kwargs...) = typeof(0.0)( 1/maxdiag(x; kwargs...) )
 
 Calculate the entropy of diagonal lengths (ENT) of a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
+
+This function is not exported and should be accessed like `RecurrenceAnalysis.entropy`.
 """
 function entropy(diag_hist::Vector; lmin=2, kwargs...)
     if lmin < 2
@@ -293,7 +301,8 @@ Calculate the laminarity (LAM) of a recurrence matrix, ruling out
 vertical lines shorter than a minimum value.
 """
 laminarity(vert_hist::Vector; kwargs...) = determinism(vert_hist; kwargs...)
-laminarity(x::AbstractMatrix; kwargs...) = laminarity(verticalhistogram(x; kwargs...); kwargs...)
+laminarity(x::AbstractMatrix; kwargs...) =
+laminarity(verticalhistogram(x; kwargs...); kwargs...)
 
 """
     trappingtime(x; lmin=2, theiler=0)
@@ -302,7 +311,8 @@ Calculate the trapping time (TT) of a recurrence matrix, ruling out
 vertical lines shorter than a minimum value.
 """
 trappingtime(vert_hist::Vector; kwargs...) = avgdiag(vert_hist; kwargs...)
-trappingtime(x::AbstractMatrix; kwargs...) = trappingtime(verticalhistogram(x; kwargs...); kwargs...)
+trappingtime(x::AbstractMatrix; kwargs...) =
+trappingtime(verticalhistogram(x; kwargs...); kwargs...)
 
 """
     maxvert(x; theiler=0)
