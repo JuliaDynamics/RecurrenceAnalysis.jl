@@ -1,7 +1,7 @@
 # Recurrence parameters as defined by Marwan et al. (2007)
 
 """
-    recurrencerate(x, theiler=0)
+    recurrencerate(x; theiler=0)
 
 Calculate the recurrence rate (RR) of a recurrence matrix, ruling out
 the points within the Theiler window.

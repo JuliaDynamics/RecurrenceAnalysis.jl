@@ -13,7 +13,7 @@ function radius_mrr(x::AbstractVector, rr::Real)
 end
 
 """
-    sorteddistances(x; <keyword arguments>)
+    sorteddistances(x; kwargs...)
 
 Return a tuple with the sorted distances between points of the
 embedded time series `x`, and the recurrence rates under those values.
