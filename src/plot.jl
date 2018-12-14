@@ -25,7 +25,7 @@ function overlapgrid(m::T, n::T) where T<:Integer
     r = 0:blocksize:n
     initial = floor.(T, r[1:end-1].+1)
     final   = ceil.(T, r[2:end])
-    collect(zip(initial,final)) 
+    collect(zip(initial,final))
 end
 
 # Calculate the level of "gray" (0=white, 1=black) corresponding to a matrix block
@@ -35,11 +35,11 @@ function block2grayscale(x::AbstractMatrix, rind::Tuple{T,T}, cind::Tuple{T,T}) 
 end
 
 """
-    recurrenceplot(x, [bwcode::Tuple{T,T}]; width::Integer, height::Integer, exactsize=false)
-    
-Transform the recurrence matrix `x` into a full matrix suitable for plotting as a grayscale image.
-By default it returns a matrix with the same size as `x`, but switched axes,
-containing "black" values in the cells that represent recurrent points,
+    recurrenceplot(x [, bwcode]; width::Int, height::Int, exactsize=false)
+
+Transform the recurrence matrix `x` into a full matrix suitable for plotting as a
+grayscale image. By default it returns a matrix with the same size as `x`,
+but switched axes, containing "black" values in the cells that represent recurrent points,
 and "white" values in the empty cells.
 
 The numeric codes for black and white are given in a 2-element tuple as a second
@@ -55,7 +55,7 @@ of the image. If only one dimension is given, the other is automatically calcula
 If both dimensions are given, by default they are adjusted to keep an aspect
 proportional to the original matrix, such that the returned matrix fits into a
 matrix of the given dimensions. This automatic adjustment can be disabled by
-passing the keyword argument `exactsize=true`. 
+passing the keyword argument `exactsize=true`.
 
 If the image has different dimensions than `x`, the cells of `x` are distributed
 in a grid with the size of the image, and a gray level between white and black
@@ -63,7 +63,9 @@ is calculated for each element of the grid, proportional to the number of
 recurrent points contained in it. The levels of gray are coded as numbers of the
 same type as the black and white codes.
 """
-function recurrenceplot(x::AbstractMatrix, bwcode::Tuple{T,T}=(0.0,1.0); exactsize=false, kwargs...) where T<:Real
+function recurrenceplot(x::AbstractMatrix, bwcode::Tuple{TT,T}=(0.0,1.0);
+    exactsize=false, kwargs...) where {TT<:Real, T<:Real}
+
     dims = size(x)
     kwargs = Dict(kwargs)
     if haskey(kwargs, :width) && !haskey(kwargs, :height)
@@ -81,7 +83,8 @@ function recurrenceplot(x::AbstractMatrix, bwcode::Tuple{T,T}=(0.0,1.0); exactsi
     if exactsize
         width, height = Integer(kwargs[:width]), Integer(kwargs[:height])
     else
-        width, height = checkgridsize(Integer(kwargs[:width]), Integer(kwargs[:height]), dims)
+        width, height = checkgridsize(Integer(kwargs[:width]),
+        Integer(kwargs[:height]), dims)
     end
     # initial and final values of the horizontal and vertical blocks
     rows = overlapgrid(width, dims[1])
@@ -97,4 +100,3 @@ function recurrenceplot(x::AbstractMatrix, bwcode::Tuple{T,T}=(0.0,1.0); exactsi
     p .=  bwcode[1].*p .+ bwcode[2].*(1 .- p)
     pt = (T<:Integer) ? round.(T, p) : T.(p)
 end
-

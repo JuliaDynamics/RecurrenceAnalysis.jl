@@ -48,10 +48,6 @@ ami_fd = ami(x, (1,12), "FD")
 @test findmin(ami_fd)[2] == 10
 ami_15 = ami(x, (1,12), 15)
 gmi_10 = gmi(x, (1,12), 0.1)
-# Look for optimal embedding dimension
-fnnval  =  fnn(x, (1,5), 8, (15, 2))
-e1,e2   = afnn(x, (1,5), 8)
-ffnnval = ffnn(x, (1,5), 8)
 # Look for optimal threshold
 dd, rr = sorteddistances(x, theiler=1)
 # Distance and recurrence matrices
@@ -79,7 +75,7 @@ rqadiag = rqa(rmat, theiler=2, lmin=3, border=20, onlydiagonal=true)
 @test all([rqapar[p]==rqadiag[p] for p in keys(rqadiag)])
 # Fixed rate for recurrence matrix
 rmat2 = recurrencematrix(xe[1:3:end,:], 0.05; fixedrate=true)
-@test .049 < recurrencerate(rmat2) < .051 
+@test .049 < recurrencerate(rmat2) < .051
 # Windowed RQA
 rmatw = @windowed recurrencematrix(xe, 1.5) 50
 crmatw = @windowed(crossrecurrencematrix(x, y, 1.5),30)

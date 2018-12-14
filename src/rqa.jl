@@ -2,7 +2,7 @@
 
 """
     recurrencerate(x, theiler=0)
-    
+
 Calculate the recurrence rate (RR) of a recurrence matrix, ruling out
 the points within the Theiler window.
 """
@@ -59,7 +59,7 @@ function diagonalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=0, kwargs..
                     current_diag = 0
                 end
             end
-            previous_cell = x[c-d,c] 
+            previous_cell = x[c-d,c]
         end
     end
     # Add isolated points in first bin
@@ -101,7 +101,7 @@ end
 
 """
     determinism(x; lmin=2, theiler=0)
-    
+
 Calculate the determinism (DET) of a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
@@ -120,7 +120,7 @@ end
 
 """
     avgdiag(x; lmin=2, theiler=0)
-    
+
 Calculate the average diagonal length (L) in a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
@@ -139,7 +139,7 @@ end
 
 """
     maxdiag(x; theiler=0)
-    
+
 Calculate the longest diagonal (Lmax) in a recurrence matrix, ruling out
 the points within the Theiler window.
 """
@@ -148,7 +148,7 @@ maxdiag(x::AbstractMatrix; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
 
 """
     divergence(x; lmin=2, theiler=0)
-    
+
 Calculate the divergence of a recurrence matrix
 (actually the inverse of `maxdiag`.
 """
@@ -156,7 +156,7 @@ divergence(x; kwargs...) = typeof(0.0)( 1/maxdiag(x; kwargs...) )
 
 """
     entropy(x; lmin=2, theiler=0)
-    
+
 Calculate the entropy of diagonal lengths (ENT) of a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
@@ -180,7 +180,7 @@ end
 
 """
     trend(x; theiler=0, border=10)
-    
+
 Calculate the trend of recurrences in recurrence matrix towards its edges, ruling out
 the points within the Theiler window and in the outermost diagonals.
 """
@@ -231,7 +231,7 @@ function verticalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=0, kwargs..
                     current_vert = 0
                 end
             end
-            previous_cell = x[r,c] 
+            previous_cell = x[r,c]
         end
     end
     # Add isolated points in first bin
@@ -288,7 +288,7 @@ end
 
 """
     laminarity(x; lmin=2, theiler=0)
-    
+
 Calculate the laminarity (LAM) of a recurrence matrix, ruling out
 vertical lines shorter than a minimum value.
 """
@@ -297,7 +297,7 @@ laminarity(x::AbstractMatrix; kwargs...) = laminarity(verticalhistogram(x; kwarg
 
 """
     trappingtime(x; lmin=2, theiler=0)
-    
+
 Calculate the trapping time (TT) of a recurrence matrix, ruling out
 vertical lines shorter than a minimum value.
 """
@@ -306,15 +306,15 @@ trappingtime(x::AbstractMatrix; kwargs...) = trappingtime(verticalhistogram(x; k
 
 """
     maxvert(x; theiler=0)
-    
+
 Calculate the longest vertical line (Vmax) of a recurrence matrix.
 """
 maxvert(vert_hist::Vector; kwargs...) = length(vert_hist)
 maxvert(x::AbstractMatrix; kwargs...) = maxvert(verticalhistogram(x; kwargs...))
 
 """
-    rqa(x; <keyword arguments>)
-    
+    rqa(x; kwargs...)
+
 Calculate RQA parameters of a recurrence matrix. See the functions
 `recurrencerate`, `determinism`, `avgdiag`, `maxdiag`, `divergence`, `entropy`,
 `trend`, `laminarity`, `trappingtime` and `maxvert` for the definition of
@@ -375,4 +375,3 @@ function rqa(x; onlydiagonal=false, kwargs...)
         )
     end
 end
-

@@ -53,23 +53,26 @@ end
 """
     @windowed(f(x,...), width)
     @windowed(f(x,...); width, step=1)
-    
+
 Calculate windowed RQA parameters with a given window width.
 
-`f(x,...)` may be any call to RQA functions (e.g. `recurrencerate`, `determinism`, etc.),
+`f(x,...)` may be any call to RQA functions (e.g. [`recurrencerate`](@ref),
+[`determinism`](@ref), etc.),
 with `x` being a named variable that designates the recurrence matrix
-(do not use 'in-place' calculations of the recurrence matrix).
+(do not use in-place calculations of the recurrence matrix).
 The results are returned in a vector with one value for each position of the window.
 By default the window moves at one-point intervals, but a longer `step` length
-may be specified, together with the window `width`, by declaring those options as keyword arguments.
+may be specified, together with the window `width`,
+by declaring those options as keyword arguments.
 
 This macro may be also used with recurrence matrix constructors
 (`recurrencematrix`, `crossrecurrencematrix`, `jointrecurrencematrix`),
 to create 'incomplete' matrices that are suitable for such windowed RQA.
 The values of the resulting matrix in the diagonals within the window width will
 be equal to those obtained without the `@windowed` macro, if the distances are
-not scaled (using the option `scale=1`, see `?recurrencematrix`).
-Outside the window width, the values of the recurrence matrix will be undefined (mostly zero).
+not scaled (using the option `scale=1`, see [`recurrencematrix`](@ref)).
+Outside the window width, the values of the recurrence matrix will be undefined
+(mostly zero).
 """
 macro windowed(ex, options...)
     # Expression can be of type a = f(x...)
