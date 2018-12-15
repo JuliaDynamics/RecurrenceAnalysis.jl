@@ -1,5 +1,10 @@
 # RecurrenceAnalysis.jl News
 
+## v0.5.0
+* With this update core functionality of delay embedding and estimating embedding dimension is moved (and used from) the Julia package `DelayEmbeddings`.
+* `RecurrenceAnalysis` is also joining JuliaDynamics and **DynamicalSystems.jl** from 0.5.0 onwards.
+* Extensions have been implemented so that most functionality works also with `Dataset`s.
+
 ## 23-09-2018 - v0.4.0
 
 * Function `recurrenceplot` to facilitate the visualization of recurrence plots.
@@ -21,7 +26,7 @@
 ## 30-07-2018 - v0.3.0-beta
 
 * Break compatibility with 0.6
-* Breaking modifications of RQA functions, in order to match the outputs of 
+* Breaking modifications of RQA functions, in order to match the outputs of
   **crqa** (R) and **CRPToolbox** (Matlab):
     - The denominator of RR is fixed to N<sup>2</sup>.
     - Theiler window added to the calculation of LAM and TT.
