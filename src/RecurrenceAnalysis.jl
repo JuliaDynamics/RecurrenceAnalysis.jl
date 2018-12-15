@@ -4,6 +4,7 @@ using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, Stati
 import Base.Meta.parse
 
 export embed,
+       reconstruct,
        distancematrix,
        recurrencematrix,
        crossrecurrencematrix,
