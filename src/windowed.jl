@@ -4,7 +4,7 @@ rqa_funs = [
     :avgdiag,
     :maxdiag,
     :divergence,
-    :entropy,
+    :rqaentropy,
     :trend,
     :laminarity,
     :trappingtime,

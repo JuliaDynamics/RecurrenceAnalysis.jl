@@ -4,7 +4,8 @@ const METRICS = Dict(
     "inf"=>Chebyshev(),
     "cityblock"=>Cityblock(),
     "manhattan"=>Cityblock(),
-    "taxicab"=>Cityblock()
+    "taxicab"=>Cityblock(),
+    "min"=>Cityblock()
 )
 
 function getmetric(normtype::AbstractString)

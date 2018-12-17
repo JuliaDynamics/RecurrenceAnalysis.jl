@@ -156,19 +156,17 @@ maxdiag(x::AbstractMatrix; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
     divergence(x; lmin=2, theiler=0)
 
 Calculate the divergence of a recurrence matrix
-(actually the inverse of `maxdiag`.
+(actually the inverse of `maxdiag`).
 """
 divergence(x; kwargs...) = typeof(0.0)( 1/maxdiag(x; kwargs...) )
 
 """
-    entropy(x; lmin=2, theiler=0)
+    rqaentropy(x; lmin=2, theiler=0)
 
 Calculate the entropy of diagonal lengths (ENT) of a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
-
-This function is not exported and should be accessed like `RecurrenceAnalysis.entropy`.
 """
-function entropy(diag_hist::Vector; lmin=2, kwargs...)
+function rqaentropy(diag_hist::Vector; lmin=2, kwargs...)
     if lmin < 2
         error("lmin must be 2 or greater")
     end
@@ -182,8 +180,8 @@ function entropy(diag_hist::Vector; lmin=2, kwargs...)
     end
 end
 
-function entropy(x::AbstractMatrix; kwargs...)
-    entropy(diagonalhistogram(x; kwargs...); kwargs...)
+function rqaentropy(x::AbstractMatrix; kwargs...)
+    rqaentropy(diagonalhistogram(x; kwargs...); kwargs...)
 end
 
 """
@@ -326,7 +324,7 @@ maxvert(x::AbstractMatrix; kwargs...) = maxvert(verticalhistogram(x; kwargs...))
     rqa(x; kwargs...)
 
 Calculate RQA parameters of a recurrence matrix. See the functions
-`recurrencerate`, `determinism`, `avgdiag`, `maxdiag`, `divergence`, `entropy`,
+`recurrencerate`, `determinism`, `avgdiag`, `maxdiag`, `divergence`, `rqaentropy`,
 `trend`, `laminarity`, `trappingtime` and `maxvert` for the definition of
 the different parameters and the default values of the arguments.
 
@@ -343,7 +341,7 @@ The returned value is a dictionary with the following keys:
 * "L": average length of diagonal structures (see `avgdiag`)
 * "Lmax": maximum length of diagonal structures (see `maxdiag`)
 * "DIV": divergence (see `divergence`)
-* "ENT": entropy of diagonal structures (see `entropy`)
+* "ENT": entropy of diagonal structures (see `rqaentropy`)
 * "TND": trend of recurrences (see `trend`)
 * "LAM": laminarity (see `laminarity`)
 * "TT": trapping time (see `trappingtime`)
@@ -365,7 +363,7 @@ function rqa(x; onlydiagonal=false, kwargs...)
         "L"    => avgdiag(dhist; kw_d...),
         "Lmax" => maxdiag(dhist),
         "DIV"  => divergence(dhist),
-        "ENT"  => entropy(dhist; kw_d...)
+        "ENT"  => rqaentropy(dhist; kw_d...)
         )
    else
         kw_v = Dict(kwargs)
@@ -377,7 +375,7 @@ function rqa(x; onlydiagonal=false, kwargs...)
             "L"    => avgdiag(dhist; kw_d...),
             "Lmax" => maxdiag(dhist),
             "DIV"  => divergence(dhist),
-            "ENT"  => entropy(dhist; kw_d...),
+            "ENT"  => rqaentropy(dhist; kw_d...),
             "TND"  => trend(x; kw_d...),
             "LAM"  => laminarity(vhist; kw_v...),
             "TT"   => trappingtime(vhist; kw_v...),
