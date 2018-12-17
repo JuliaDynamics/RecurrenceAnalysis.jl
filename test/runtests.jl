@@ -41,13 +41,7 @@ sigma=10.; rho=28.; b=8/3;
 x0 = ones(3)
 lorenz_data = dynamical_system(x0, lorenz_eq(sigma,rho,b), .01, 1000)
 x = lorenz_data[501:2:end,1]
-# Look for optimal delay
-ami_def = ami(x, (1,12))
-@test findmin(ami_def)[2] == 9
-ami_fd = ami(x, (1,12), "FD")
-@test findmin(ami_fd)[2] == 10
-ami_15 = ami(x, (1,12), 15)
-gmi_10 = gmi(x, (1,12), 0.1)
+
 # Look for optimal threshold
 dd, rr = sorteddistances(x, theiler=1)
 # Distance and recurrence matrices
