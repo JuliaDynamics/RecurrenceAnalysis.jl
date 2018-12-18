@@ -172,8 +172,8 @@ end
 function _crossrecurrencematrix(x::Dataset, y::Dataset, ε, metric::Metric)
     x = x.data
     y = y.data
-    rowvals = Vector{Int64}()
-    colvals = Vector{Int64}()
+    rowvals = Vector{Int}()
+    colvals = Vector{Int}()
     for j in 1:length(y)
         nzcol = 0
         for i in 1:length(x)
