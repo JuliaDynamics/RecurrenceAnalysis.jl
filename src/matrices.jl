@@ -48,16 +48,18 @@ distancematrix(x::Vector, y::Vector, metric=Chebyshev()) = abs.(x .- y')
 # If the metric is supplied as a string, get the corresponding Metric from Distances
 distancematrix(x, y, metric::String) = distancematrix(x, y, getmetric(metric))
 
-const MAXDIM = 10
+const MAXDIM = 9
 function distancematrix(x::Tx, y::Ty, metric::Metric=Chebyshev()) where
          {Tx<:Union{AbstractMatrix, Dataset}} where {Ty<:Union{AbstractMatrix, Dataset}}
     sx, sy = size(x), size(y)
     if sx[2] != sy[2]
         error("the dimensions of `x` and `y` data points must be the equal")
     end
-    if sx[2] < MAXDIM # convert to Dataset here, it is significantly faster
+    if sx[2] < MAXDIM # faster Dataset for low dim (for all metrics)
         return _distancematrix(Dataset(x), Dataset(y), metric)
-    else
+    elseif sx[2] ≥ MAXDIM && metric == Euclidean() # Blas optimization
+        return _distancematrix(Matrix(x), Matrix(y), metric)
+    else # General case: no conversion
         return _distancematrix(x, y, metric)
     end
 end
