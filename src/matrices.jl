@@ -59,6 +59,8 @@ function distancematrix(x::Tx, y::Ty, metric::Metric=Chebyshev()) where
         return _distancematrix(Dataset(x), Dataset(y), metric)
     elseif sx[2] ≥ MAXDIM && metric == Euclidean() # Blas optimization
         return _distancematrix(Matrix(x), Matrix(y), metric)
+    elseif metric == Cityblock() # Dataset always faster here
+        return _distancematrix(Dataset(x), Dataset(y), metric)
     else # General case: no conversion
         return _distancematrix(x, y, metric)
     end
