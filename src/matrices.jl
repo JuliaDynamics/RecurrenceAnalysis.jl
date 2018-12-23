@@ -55,7 +55,7 @@ function distancematrix(x::Tx, y::Ty, metric::Metric=Chebyshev()) where
     if sx[2] != sy[2]
         error("the dimensions of `x` and `y` data points must be the equal")
     end
-    if sx[2] ≥ MAXDIM && metric == Euclidean() # Blas optimization
+    if sx[2] ≥ MAXDIM && typeof(metric) == Euclidean # Blas optimization
         return _distancematrix(Matrix(x), Matrix(y), metric)
     elseif Tx <: Matrix && Ty <: Matrix && metric == Chebyshev()
         return _distancematrix(x, y, metric)
