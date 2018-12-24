@@ -24,7 +24,8 @@ end
 Create a matrix with the distances between each pair of points of the
 time series `x` and `y` using `metric`.
 
-The time series `x` and `y` can be `Dataset`s or matrices with data points in rows.
+The time series `x` and `y` can be `Dataset`s or vectors or matrices with data points
+in rows.
 The data point dimensions (or number of columns) must be the same for `x` and `y`.
 The returned value is a `n×m` matrix, with `n` being the length (or number of rows)
 of `x`, and `m` the length of `y`.
@@ -97,7 +98,7 @@ The recurrence matrix is a numeric representation of a "recurrence plot" [1, 2],
 in the form of a sparse square matrix of Boolean values.
 
 `x` must be `Dataset` or a Vector or Matrix with data points in rows
-(possibly representing and embedded phase, space; see [`embed`](@ref)).
+(possibly representing and embedded phase space; see [`embed`](@ref)).
 If `d(x[i], x[j]) ≤ ε` (with `d` the distance function),
 then the cell `(i, j)` of the matrix will have a `true`
 value. The criteria to evaluate distances between data points are defined
@@ -137,7 +138,7 @@ Create a cross recurrence matrix from the time series `x` and `y`.
 
 The cross recurrence matrix is a bivariate extension of the recurrence matrix.
 For the time series `x`, `y`, of length `n` and `m`, respectively, it is a
-sparse `n×m` matrix of Boolean values, such that if `∥x[i] – y[j]∥ ≤ ε`,
+sparse `n×m` matrix of Boolean values, such that if `d(x[i], y[j]) ≤ ε`,
 then the cell `(i, j)` of the matrix will have a `true` value.
 
 See [`recurrencematrix`](@ref) for details, references and keywords.
