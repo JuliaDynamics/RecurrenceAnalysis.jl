@@ -19,7 +19,7 @@ function recurrencerate(x::ARM; theiler::Integer=0, kwargs...)
     return (nnz(x) - theiler_nz)/length(x)
 end
 
-function tau_recurrence(x::AbstractMatrix{Bool})
+function tau_recurrence(x::ARM)
     n = minimum(size(x))
     [count(!iszero, diag(x,d))/(n-d) for d in (0:n-1)]
 end
@@ -72,7 +72,7 @@ function diagonalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=0, kwargs..
     [allpoints - collect(2:nbins+1)'*bins; bins]
 end
 
-function diagonalhistogram(x::SparseMatrixCSC{Bool}; theiler::Integer=0, kwargs...)
+function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     theiler < 0 && error("Theiler window length must be greater than or equal to 0")
     m,n=size(x)
     rv = rowvals(x)
@@ -119,7 +119,7 @@ function determinism(diag_hist::Vector; lmin=2, kwargs...)
     (lmin > nbins) ? 0.0 : typeof(0.0)( sum(diag_points[lmin:nbins])/sum(diag_points) )
 end
 
-function determinism(x::AbstractMatrix; kwargs...)
+function determinism(x::ARM; kwargs...)
     determinism(diagonalhistogram(x; kwargs...); kwargs...)
 end
 
@@ -139,7 +139,7 @@ function avgdiag(diag_hist::Vector; lmin=2, kwargs...)
         Float64( sum(diag_points[lmin:nbins])/sum(diag_hist[lmin:nbins]) )
 end
 
-function avgdiag(x::AbstractMatrix; kwargs...)
+function avgdiag(x::ARM; kwargs...)
     avgdiag(diagonalhistogram(x; kwargs...); kwargs...)
 end
 
@@ -150,7 +150,7 @@ Calculate the longest diagonal (Lmax) in a recurrence matrix, ruling out
 the points within the Theiler window.
 """
 maxdiag(diag_hist::Vector; kwargs...) = length(diag_hist)
-maxdiag(x::AbstractMatrix; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
+maxdiag(x::ARM; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
 
 """
     divergence(x; lmin=2, theiler=0)
@@ -180,7 +180,7 @@ function rqaentropy(diag_hist::Vector; lmin=2, kwargs...)
     end
 end
 
-function rqaentropy(x::AbstractMatrix; kwargs...)
+function rqaentropy(x::ARM; kwargs...)
     rqaentropy(diagonalhistogram(x; kwargs...); kwargs...)
 end
 
@@ -199,7 +199,7 @@ function trend(npoints::Vector; theiler=0, border=10, kwargs...)
     typeof(0.0)( (w'*(rrk[a:b] .- mean(rrk[a:b])) ./ (w'*w))[1] )
 end
 
-function trend(x::AbstractMatrix; kwargs...)
+function trend(x::ARM; kwargs...)
     trend(tau_recurrence(x); kwargs...)
 end
 
@@ -210,7 +210,7 @@ function countsequences(diag_hist::Vector; lmin=2, kwargs...)
     overlap * diag_hist
 end
 
-function countsequences(x::AbstractMatrix; kwargs...)
+function countsequences(x::ARM; kwargs...)
     countsequences(diagonalhistogram(x; kwargs...); kwargs...)
 end
 
@@ -244,7 +244,7 @@ function verticalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=0, kwargs..
     [count(!iszero, x) - collect(2:nbins+1)'*bins; bins]
 end
 
-function verticalhistogram(x::SparseMatrixCSC{Bool}; theiler::Integer=0, kwargs...)
+function verticalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     m,n=size(x)
     bins = [0]
     nbins = 1
@@ -299,7 +299,7 @@ Calculate the laminarity (LAM) of a recurrence matrix, ruling out
 vertical lines shorter than a minimum value.
 """
 laminarity(vert_hist::Vector; kwargs...) = determinism(vert_hist; kwargs...)
-laminarity(x::AbstractMatrix; kwargs...) =
+laminarity(x::ARM; kwargs...) =
 laminarity(verticalhistogram(x; kwargs...); kwargs...)
 
 """
@@ -309,7 +309,7 @@ Calculate the trapping time (TT) of a recurrence matrix, ruling out
 vertical lines shorter than a minimum value.
 """
 trappingtime(vert_hist::Vector; kwargs...) = avgdiag(vert_hist; kwargs...)
-trappingtime(x::AbstractMatrix; kwargs...) =
+trappingtime(x::ARM; kwargs...) =
 trappingtime(verticalhistogram(x; kwargs...); kwargs...)
 
 """
@@ -318,7 +318,7 @@ trappingtime(verticalhistogram(x; kwargs...); kwargs...)
 Calculate the longest vertical line (Vmax) of a recurrence matrix.
 """
 maxvert(vert_hist::Vector; kwargs...) = length(vert_hist)
-maxvert(x::AbstractMatrix; kwargs...) = maxvert(verticalhistogram(x; kwargs...))
+maxvert(x::ARM; kwargs...) = maxvert(verticalhistogram(x; kwargs...))
 
 """
     rqa(x; kwargs...)
