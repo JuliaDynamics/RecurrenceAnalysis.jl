@@ -91,13 +91,13 @@ end
 abstract type AbstractRecurrenceMatrix end
 const ARM = AbstractRecurrenceMatrix
 struct RecurrenceMatrix <: AbstractRecurrenceMatrix
-    m::SparseMatrixCSC{Bool,Int64}
+    m::SparseMatrixCSC{Bool,Int}
 end
 struct CrossRecurrenceMatrix <: AbstractRecurrenceMatrix
-    m::SparseMatrixCSC{Bool,Int64}
+    m::SparseMatrixCSC{Bool,Int}
 end
 struct JointRecurrenceMatrix <: AbstractRecurrenceMatrix
-    m::SparseMatrixCSC{Bool,Int64}
+    m::SparseMatrixCSC{Bool,Int}
 end
 
 function Base.summary(R::AbstractRecurrenceMatrix)
