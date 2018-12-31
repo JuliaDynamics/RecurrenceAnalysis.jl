@@ -115,7 +115,7 @@ end
 begin
     extentions = [
         (:Base, (:getindex, :size, :length)),
-        (:LinearAlgebra, (:diag, :triu, :tril)),
+        (:LinearAlgebra, (:diag, :triu, :tril, :issymmetric)),
         (:SparseArrays, (:nnz, :rowvals))
     ]
     for (M, fs) in extentions
@@ -124,6 +124,7 @@ begin
         end
     end
 end
+LinearAlgebra.issymmetric(::RecurrenceMatrix) = true
 # column values in sparse matrix (parallel to rowvals)
 function colvals(x::SparseMatrixCSC)
     cv = zeros(Int,nnz(x))
