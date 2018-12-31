@@ -28,15 +28,6 @@ export embed,
        sorteddistances,
        @windowed
 
-# column values in sparse matrix (parallel to rowvals)
-function colvals(x::SparseMatrixCSC)
-    cv = zeros(Int,nnz(x))
-    @inbounds for c=1:size(x,2)
-        cv[nzrange(x,c)] .= c
-    end
-    cv
-end
-
 include("matrices.jl")
 include("plot.jl")
 include("rqa.jl")

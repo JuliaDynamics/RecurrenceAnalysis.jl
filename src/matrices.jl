@@ -89,6 +89,7 @@ end
 # Type
 #######################
 abstract type AbstractRecurrenceMatrix end
+const ARM = AbstractRecurrenceMatrix
 struct RecurrenceMatrix <: AbstractRecurrenceMatrix
     m::SparseMatrixCSC{Bool,Int64}
 end
@@ -111,17 +112,27 @@ function Base.show(io::IO, R::AbstractRecurrenceMatrix)
 end
 
 # Propagate used functions:
-for T in (:RecurrenceMatrix, :CrossRecurrenceMatrix, :JointRecurrenceMatrix)
-    for f in (:getindex, :size, :length)
-        @eval Base.$(f)(x::$T, args...) = $(f)(x.m, args...)
-    end
-    for f in (:diag, :triu, :tril)
-        @eval LinearAlgebra.$(f)(x::$T, args...) = $(f)(x.m, args...)
-    end
-    for f in (:nnz, :colvals, :rowvals)
-        @eval SparseArrays.$(f)(x::$T, args...) = $(f)(x.m, args...)
+begin
+    extentions = [
+        (:Base, (:getindex, :size, :length)),
+        (:LinearAlgebra, (:diag, :triu, :tril)),
+        (:SparseArrays, (:nnz, :rowvals))
+    ]
+    for (M, fs) in extentions
+        for f in fs
+            @eval $M.$(f)(x::ARM, args...) = $(f)(x.m, args...)
+        end
     end
 end
+# column values in sparse matrix (parallel to rowvals)
+function colvals(x::SparseMatrixCSC)
+    cv = zeros(Int,nnz(x))
+    @inbounds for c=1:size(x,2)
+        cv[nzrange(x,c)] .= c
+    end
+    cv
+end
+colvals(x::ARM) = colvals(x.m)
 
 export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix
 
