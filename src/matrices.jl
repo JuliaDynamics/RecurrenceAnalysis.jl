@@ -214,3 +214,25 @@ function jointrecurrencematrix(x, y, ε; kwargs...)
     rm2 = recurrencematrix(y[1:n,:], ε, kwargs...)
     return rm1 .* rm2
 end
+
+#######################
+# Type
+#######################
+abstract type AbstractRecurrenceMatrix end
+struct RecurrenceMatrix <: AbstractRecurrenceMatrix
+    m::SparseMatrixCSC{Bool,Int64}
+    name::String
+end
+
+function Base.summary(R::AbstractRecurrenceMatrix)
+    N = nnz(R.m)
+    return "$(R.name) matrix of size $(size(R.m)) with $N entries:"
+end
+function Base.show(io::IO, R::AbstractRecurrenceMatrix)
+    s = sprint(io -> show(IOContext(io, :limit=>true), MIME"text/plain"(), R.m))
+    s = join(split(s, '\n')[2:end], '\n')
+    tos = summary(R)*"\n"*s
+    println(io, tos)
+end
+
+export RecurrenceMatrix
