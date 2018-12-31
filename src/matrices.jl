@@ -110,9 +110,17 @@ function Base.show(io::IO, R::AbstractRecurrenceMatrix)
     println(io, tos)
 end
 
-# Propagate getindex:
+# Propagate used functions:
 for T in (:RecurrenceMatrix, :CrossRecurrenceMatrix, :JointRecurrenceMatrix)
-    @eval Base.getindex(x::$T, args...) = Base.getindex(x.m, args...)
+    for f in (:getindex, :size, :length)
+        @eval Base.$(f)(x::$T, args...) = $(f)(x.m, args...)
+    end
+    for f in (:diag, :triu, :tril)
+        @eval LinearAlgebra.$(f)(x::$T, args...) = $(f)(x.m, args...)
+    end
+    for f in (:nnz, :colvals, :rowvals)
+        @eval SparseArrays.$(f)(x::$T, args...) = $(f)(x.m, args...)
+    end
 end
 
 export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix
