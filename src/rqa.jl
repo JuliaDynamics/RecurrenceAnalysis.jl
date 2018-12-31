@@ -6,17 +6,17 @@
 Calculate the recurrence rate (RR) of a recurrence matrix, ruling out
 the points within the Theiler window.
 """
-function recurrencerate(x::AbstractMatrix; theiler::Integer=0, kwargs...)
+function recurrencerate(x::ARM; theiler::Integer=0, kwargs...)
     theiler < 0 && error("Theiler window length must be greater than or equal to 0")
     if theiler == 0
-        return typeof(0.0)( count(!iszero, x)/prod(size(x)) )
+        return nnz(x)/length(x)
     end
     diags_remove = -(theiler-1):(theiler-1)
     theiler_nz = 0
     for d in diags_remove
-        theiler_nz += count(!iszero, diag(x,d))
+        theiler_nz += nnz(diag(x,d))
     end
-    typeof(0.0)( (count(!iszero, x)-theiler_nz)/prod(size(x)) )
+    return (nnz(x) - theiler_nz)/length(x)
 end
 
 function tau_recurrence(x::AbstractMatrix{Bool})
@@ -76,7 +76,7 @@ function diagonalhistogram(x::SparseMatrixCSC{Bool}; theiler::Integer=0, kwargs.
     theiler < 0 && error("Theiler window length must be greater than or equal to 0")
     m,n=size(x)
     rv = rowvals(x)
-    dv = colvals(x) - rowvals(x)
+    dv = colvals(x) .- rowvals(x)
     loi_hist = Int[]
     if issymmetric(x)
         valid = (dv .>= max(theiler,1))
