@@ -126,7 +126,8 @@ use [`recurrenceplot`](@ref) to turn the result of these functions into a plotta
 recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
-recurrencematrix(x, ε; kwargs...) = crossrecurrencematrix(x, x, ε; kwargs...)
+recurrencematrix(x, ε; kwargs...) =
+crossrecurrencematrix(x, x, ε; kwargs..., name = "Recurrence")
 
 
 #### Cross recurrence matrix ####
@@ -144,14 +145,17 @@ then the cell `(i, j)` of the matrix will have a `true` value.
 See [`recurrencematrix`](@ref) for details, references and keywords.
 See also: [`jointrecurrencematrix`](@ref).
 """
-function crossrecurrencematrix(x, y, ε; scale=1, fixedrate=false, metric=Chebyshev())
+function crossrecurrencematrix(x, y, ε; scale=1, fixedrate=false, metric=Chebyshev(),
+    name = "Cross recurrence")
     # Check fixed recurrence rate - ε must be within (0, 1)
     if fixedrate
         sfun = (m) -> quantile(m[:], ε)
-        return crossrecurrencematrix(x, y, 1; scale=sfun, fixedrate=false, metric=metric)
+        return crossrecurrencematrix(x, y, 1; scale=sfun, fixedrate=false, metric=metric,
+        name = name)
     else
         scale_value = _computescale(scale, x, y, metric)
-        return _crossrecurrencematrix(x, y, ε*scale_value, metric)
+        spm = _crossrecurrencematrix(x, y, ε*scale_value, metric)
+        return RecurrenceMatrix(spm, name)
     end
 end
 
@@ -212,7 +216,7 @@ function jointrecurrencematrix(x, y, ε; kwargs...)
     n = min(size(x,1), size(y,1))
     rm1 = recurrencematrix(x[1:n,:], ε, kwargs...)
     rm2 = recurrencematrix(y[1:n,:], ε, kwargs...)
-    return rm1 .* rm2
+    return RecurrenceMatrix(rm1.m .* rm2.m, "Joint recurrence")
 end
 
 #######################
