@@ -5,6 +5,7 @@ import Base.Meta.parse
 
 export embed,
        reconstruct,
+       Dataset,
        distancematrix,
        recurrencematrix,
        crossrecurrencematrix,
