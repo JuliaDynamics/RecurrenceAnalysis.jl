@@ -46,10 +46,10 @@ x = lorenz_data[501:2:end,1]
 dd, rr = sorteddistances(x, theiler=1)
 # Distance and recurrence matrices
 xe = embed(x, 3, 8)
-rmat = recurrencematrix(xe, 1.5)
+rmat = RecurrenceMatrix(xe, 1.5)
 y = lorenz_data[701:2:end,3]
-crmat = crossrecurrencematrix(x, y, 1.5)
-jrmat = jointrecurrencematrix(x, y, 1.5)
+crmat = CrossRecurrenceMatrix(x, y, 1.5)
+jrmat = JointRecurrenceMatrix(x, y, 1.5)
 # Recurrence plot
 crp = recurrenceplot(crmat, width=125)
 @test size(crp)[1] == 75

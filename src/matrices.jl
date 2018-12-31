@@ -116,7 +116,7 @@ begin
     extentions = [
         (:Base, (:getindex, :size, :length)),
         (:LinearAlgebra, (:diag, :triu, :tril, :issymmetric)),
-        (:SparseArrays, (:nnz, :rowvals))
+        (:SparseArrays, (:nnz, :rowvals, :nzrange))
     ]
     for (M, fs) in extentions
         for f in fs
