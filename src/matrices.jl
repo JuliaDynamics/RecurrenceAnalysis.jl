@@ -114,7 +114,7 @@ end
 # Propagate used functions:
 begin
     extentions = [
-        (:Base, (:getindex, :size, :length)),
+        (:Base, (:getindex, :size, :length, :view)),
         (:LinearAlgebra, (:diag, :triu, :tril, :issymmetric)),
         (:SparseArrays, (:nnz, :rowvals, :nzrange))
     ]
