@@ -17,6 +17,32 @@ const rqa_types = Dict(
     )
 )
 
+"""
+    ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
+    
+Return the indices of the rows and columns of the nonzero values of a
+block-diagonal cross-recurrence matrix.
+
+If `m` is the cross-recurrence matrix of `x` and `y` (created with the 
+positional and keyword arguments `vargs` and `kwargs`), the indices returned by
+this function are limited to the "block-diagonal" indicated by
+`dindex ∈ {-1,0,1}`, as in the following graphical representation
+(`#` represents the regions that are included, and `O` the excluded regions):
+
+`dindex==-1`    `dindex==0`    `dindex==1`
+ OOOOOO          ##OOOO         OO##OO
+ OOOOOO          ##OOOO         OO##OO
+ ##OOOO          OO##OO         OOOO##
+ ##OOOO          OO##OO         OOOO##
+ OO##OO          OOOO##         OOOOOO
+ OO##OO          OOOO##         OOOOOO
+
+The size of the blocks is `bsize × bsize`. The last block may be smaller if
+`bsize` is not a divisor of the size of the whole cross-recurrence matrix.
+
+The returned value is a tuple of two arrays, the first containing the indices
+of the rows and columns of the nonzero values within the included regions.
+"""
 function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
     n = min(size(x,1), size(y,1))
     brange = 1:bsize
@@ -96,13 +122,14 @@ macro windowed(ex, options...)
         # fun(x,...) => [fun(x[i+w,i+w],...) for i=0:s:nw]
         if in(f, rqa_funs)
             x = ex.args[2]
-            submat = :(mtype($x[i.+w,i.+w]))
-            ex.args[2] = submat
+            submat = :(mtype($x[i.+w,i.+w])) # e.g. :(RecurrenceMatrix(x[i.+w,i.+w]))
+            ex.args[2] = submat # x is replaced by the windowed matrix
             ret_ex = quote
                 local w = 1:$(dict_op[:width])
                 local s = $(dict_op[:step])
+                # only calculate "complete" blocks - until `nw`
                 local nw = size($x,1) - $(dict_op[:width])
-                local mtype = typeof($x)
+                local mtype = typeof($x) # type of the recurrence matrix
                 ($(rqa_types[f]))[$ex for i=0:s:nw]
             end
             return esc(ret_ex)
@@ -116,7 +143,7 @@ macro windowed(ex, options...)
                 local w = 1:$(dict_op[:width])
                 local s = $(dict_op[:step])
                 local nw = size($x,1) - $(dict_op[:width])
-                local ni = div(nw, s)+1
+                local ni = div(nw, s)+1 # number of items
                 local mtype = typeof($x)
                 local rqa_dict = Dict(
                     "RR"   => zeros(Float64,ni),
@@ -148,11 +175,11 @@ macro windowed(ex, options...)
             ex.args[1] = :(RecurrenceAnalysis.ij_block_rmat)
             insert!(ex.args, 4, dict_op[:width])
             insert!(ex.args, 5, -1)
-            exd_lower  = :(local i, j = $(parse(string(ex))))
+            exd_lower  = :(local i, j = $(parse(string(ex)))) # lower diag block
             ex.args[5] = 0
-            exd_center = :(local ii, jj = $(parse(string(ex))))
+            exd_center = :(local ii, jj = $(parse(string(ex)))) # central diag block
             ex.args[5] = 1
-            exd_upper  = :(local ii, jj = $(parse(string(ex))))
+            exd_upper  = :(local ii, jj = $(parse(string(ex)))) # upper diag block
             ret_ex = quote
                 $exd_lower
                 $exd_center
@@ -172,12 +199,12 @@ macro windowed(ex, options...)
             insert!(ex.args, 3, x)
             insert!(ex.args, 4, dict_op[:width])
             insert!(ex.args, 5, -1)
-            exd_lower  = :(local i, j = $(parse(string(ex))))
+            exd_lower  = :(local i, j = $(parse(string(ex)))) # lower diag block
             ex.args[5] = 0
-            exd_center = :(local ii, jj = $(parse(string(ex))))
+            exd_center = :(local ii, jj = $(parse(string(ex)))) # central diag block
             ret_ex = quote
                 $exd_lower
-                i, j = [i;j], [j;i]
+                i, j = [i;j], [j;i] # the upper diag block is the transpose of the lower
                 $exd_center
                 append!(i,ii)
                 append!(j,jj)
@@ -192,6 +219,7 @@ macro windowed(ex, options...)
             minsz = :(min(size($x,1),size($y,1)))
             subx = :($x[1:$minsz,:])
             suby = :($y[1:$minsz,:])
+            # Call `@windowed RecurrenceMatrix` twice, recycling the argument (`x` and `y`)
             ex.args[1] = :RecurrenceMatrix
             deleteat!(ex.args, 3)
             ex.args[2] = subx
