@@ -95,103 +95,98 @@ macro windowed(ex, options...)
         # Iteration of RQA functions
         # fun(x,...) => [fun(x[i+w,i+w],...) for i=0:s:nw]
         if in(f, rqa_funs)
-            @gensym w s nw i mtype
             x = ex.args[2]
-            submat = :($mtype($x[$i.+$w,$i.+$w]))
+            submat = :(mtype($x[i.+w,i.+w]))
             ex.args[2] = submat
             ret_ex = quote
-                $w = 1:$(dict_op[:width])
-                $s = $(dict_op[:step])
-                $nw = size($x,1) - $(dict_op[:width])
-                $mtype = typeof($x)
-                ($(rqa_types[f]))[$ex for $i=0:$s:$nw]
+                local w = 1:$(dict_op[:width])
+                local s = $(dict_op[:step])
+                local nw = size($x,1) - $(dict_op[:width])
+                local mtype = typeof($x)
+                ($(rqa_types[f]))[$ex for i=0:s:nw]
             end
             return esc(ret_ex)
         end
         # Iteration of all RQA parameters
         if f == :rqa
-            @gensym w s nw ni rqa_dict i rqa_i k v mtype
             x = ex.args[2]
-            submat = :($mtype($x[($i-1)*$s.+$w,($i-1)*$s.+$w]))
+            submat = :(mtype($x[(i-1)*s.+w,(i-1)*s.+w]))
             ex.args[2] = submat
             ret_ex = quote
-                $w = 1:$(dict_op[:width])
-                $s = $(dict_op[:step])
-                $nw = size($x,1) - $(dict_op[:width])
-                $ni = div($nw, $s)+1
-                $mtype = typeof($x)
-                $rqa_dict = Dict(
-                    "RR"   => zeros(Float64,$ni),
-                    "DET"  => zeros(Float64,$ni),
-                    "L"    => zeros(Float64,$ni),
-                    "Lmax" => zeros(Int,$ni),
-                    "DIV"  => zeros(Float64,$ni),
-                    "ENT"  => zeros(Float64,$ni),
-                    "TND"  => zeros(Float64,$ni),
-                    "LAM"  => zeros(Float64,$ni),
-                    "TT"   => zeros(Float64,$ni),
-                    "Vmax" => zeros(Int,$ni)
+                local w = 1:$(dict_op[:width])
+                local s = $(dict_op[:step])
+                local nw = size($x,1) - $(dict_op[:width])
+                local ni = div(nw, s)+1
+                local mtype = typeof($x)
+                local rqa_dict = Dict(
+                    "RR"   => zeros(Float64,ni),
+                    "DET"  => zeros(Float64,ni),
+                    "L"    => zeros(Float64,ni),
+                    "Lmax" => zeros(Int,ni),
+                    "DIV"  => zeros(Float64,ni),
+                    "ENT"  => zeros(Float64,ni),
+                    "TND"  => zeros(Float64,ni),
+                    "LAM"  => zeros(Float64,ni),
+                    "TT"   => zeros(Float64,ni),
+                    "Vmax" => zeros(Int,ni)
                 )
-                for $i=1:$ni
-                    $rqa_i = $ex
-                    for ($k,$v) in $rqa_i
-                        $rqa_dict[$k][$i] = $v
+                for i=1:ni
+                    local rqa_i = $ex
+                    for (k,v) in rqa_i
+                        rqa_dict[k][i] = v
                     end
                 end
-                $rqa_dict
+                rqa_dict
             end
             return esc(ret_ex)
         end
         # Iteration of matrix construction functions
         if f == :CrossRecurrenceMatrix
             # ij_block_rmat(x,y,width,d,...) with d=-1,0,1
-            @gensym i j ii jj m
             x = ex.args[2]
             y = ex.args[3]
             ex.args[1] = :(RecurrenceAnalysis.ij_block_rmat)
             insert!(ex.args, 4, dict_op[:width])
             insert!(ex.args, 5, -1)
-            exd_lower  = :(($i,$j) = $(parse(string(ex))))
+            exd_lower  = :(local i, j = $(parse(string(ex))))
             ex.args[5] = 0
-            exd_center = :(($ii,$jj) = $(parse(string(ex))))
+            exd_center = :(local ii, jj = $(parse(string(ex))))
             ex.args[5] = 1
-            exd_upper  = :(($ii,$jj) = $(parse(string(ex))))
+            exd_upper  = :(local ii, jj = $(parse(string(ex))))
             ret_ex = quote
                 $exd_lower
                 $exd_center
-                append!($i, $ii)
-                append!($j, $jj)
+                append!(i, ii)
+                append!(j, jj)
                 $exd_upper
-                append!($i, $ii)
-                append!($j, $jj)
-                $m = RecurrenceAnalysis.sparse($i,$j,true,size($x,1),size($y,1))
-                CrossRecurrenceMatrix($m)
+                append!(i, ii)
+                append!(j, jj)
+                local m = RecurrenceAnalysis.sparse(i,j,true,size($x,1),size($y,1))
+                CrossRecurrenceMatrix(m)
             end
             return esc(ret_ex)
         elseif f == :RecurrenceMatrix
             # ij_block_rmat(x,x,width,d,...) with d=-1,0
-            @gensym i j ii jj n m
             ex.args[1] = :(RecurrenceAnalysis.ij_block_rmat)
             x = ex.args[2]
             insert!(ex.args, 3, x)
             insert!(ex.args, 4, dict_op[:width])
             insert!(ex.args, 5, -1)
-            exd_lower  = :(($i,$j) = $(parse(string(ex))))
+            exd_lower  = :(local i, j = $(parse(string(ex))))
             ex.args[5] = 0
-            exd_center = :(($ii,$jj) = $(parse(string(ex))))
+            exd_center = :(local ii, jj = $(parse(string(ex))))
             ret_ex = quote
                 $exd_lower
-                $i, $j = [$i;$j], [$j;$i]
+                i, j = [i;j], [j;i]
                 $exd_center
-                append!($i,$ii)
-                append!($j,$jj)
-                $n = size($x,1)
-                $m = RecurrenceAnalysis.sparse($i,$j,true,$n,$n)
-                RecurrenceMatrix($m)
+                append!(i,ii)
+                append!(j,jj)
+                local n = size($x,1)
+                local m = RecurrenceAnalysis.sparse(i,j,true,n,n)
+                RecurrenceMatrix(m)
             end
             return esc(ret_ex)
         elseif f == :JointRecurrenceMatrix
-            @gensym rm1 rm2
             x = ex.args[2]
             y = ex.args[3]
             minsz = :(min(size($x,1),size($y,1)))
@@ -200,13 +195,13 @@ macro windowed(ex, options...)
             ex.args[1] = :RecurrenceMatrix
             deleteat!(ex.args, 3)
             ex.args[2] = subx
-            ex_rmx = :($rm1 = @windowed($(parse(string(ex))),width=$(dict_op[:width])))
+            ex_rmx = :(local rm1 = @windowed($(parse(string(ex))),width=$(dict_op[:width])))
             ex.args[2] = suby
-            ex_rmy = :($rm2 = @windowed($(parse(string(ex))),width=$(dict_op[:width])))
+            ex_rmy = :(local rm2 = @windowed($(parse(string(ex))),width=$(dict_op[:width])))
             ret_ex = quote
                 $ex_rmx
                 $ex_rmy
-                JointRecurrenceMatrix($rm1.data .& $rm2.data)
+                JointRecurrenceMatrix(rm1.data .& rm2.data)
             end
             return esc(ret_ex)
         end
