@@ -91,21 +91,21 @@ end
 abstract type AbstractRecurrenceMatrix end
 const ARM = AbstractRecurrenceMatrix
 struct RecurrenceMatrix <: AbstractRecurrenceMatrix
-    m::SparseMatrixCSC{Bool,Int}
+    data::SparseMatrixCSC{Bool,Int}
 end
 struct CrossRecurrenceMatrix <: AbstractRecurrenceMatrix
-    m::SparseMatrixCSC{Bool,Int}
+    data::SparseMatrixCSC{Bool,Int}
 end
 struct JointRecurrenceMatrix <: AbstractRecurrenceMatrix
-    m::SparseMatrixCSC{Bool,Int}
+    data::SparseMatrixCSC{Bool,Int}
 end
 
 function Base.summary(R::AbstractRecurrenceMatrix)
-    N = nnz(R.m)
-    return "$(nameof(typeof(R))) of size $(size(R.m)) with $N entries:"
+    N = nnz(R.data)
+    return "$(nameof(typeof(R))) of size $(size(R.data)) with $N entries:"
 end
 function Base.show(io::IO, R::AbstractRecurrenceMatrix)
-    s = sprint(io -> show(IOContext(io, :limit=>true), MIME"text/plain"(), R.m))
+    s = sprint(io -> show(IOContext(io, :limit=>true), MIME"text/plain"(), R.data))
     s = join(split(s, '\n')[2:end], '\n')
     tos = summary(R)*"\n"*s
     println(io, tos)
@@ -120,7 +120,7 @@ begin
     ]
     for (M, fs) in extentions
         for f in fs
-            @eval $M.$(f)(x::ARM, args...) = $(f)(x.m, args...)
+            @eval $M.$(f)(x::ARM, args...) = $(f)(x.data, args...)
         end
     end
 end
@@ -133,7 +133,7 @@ function colvals(x::SparseMatrixCSC)
     end
     cv
 end
-colvals(x::ARM) = colvals(x.m)
+colvals(x::ARM) = colvals(x.data)
 
 export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix
 
@@ -272,5 +272,5 @@ function JointRecurrenceMatrix(x, y, ε; kwargs...)
     n = min(size(x,1), size(y,1))
     rm1 = RecurrenceMatrix( (@view x[1:n,:]), ε, kwargs...)
     rm2 = RecurrenceMatrix( (@view y[1:n,:]), ε, kwargs...)
-    return JointRecurrenceMatrix(rm1.m .* rm2.m)
+    return JointRecurrenceMatrix(rm1.data .* rm2.data)
 end
