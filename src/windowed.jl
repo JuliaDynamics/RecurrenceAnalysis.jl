@@ -95,39 +95,41 @@ macro windowed(ex, options...)
         # Iteration of RQA functions
         # fun(x,...) => [fun(x[i+w,i+w],...) for i=0:s:nw]
         if in(f, rqa_funs)
-            @gensym w s nw i
+            @gensym w s nw i mtype
             x = ex.args[2]
-            submat = :($x[$i.+$w,$i.+$w])
+            submat = :($mtype($x[$i.+$w,$i.+$w]))
             ex.args[2] = submat
             ret_ex = quote
                 $w = 1:$(dict_op[:width])
                 $s = $(dict_op[:step])
                 $nw = size($x,1) - $(dict_op[:width])
+                $mtype = typeof($x)
                 ($(rqa_types[f]))[$ex for $i=0:$s:$nw]
             end
             return esc(ret_ex)
         end
         # Iteration of all RQA parameters
         if f == :rqa
-            @gensym w s nw ni rqa_dict i rqa_i k v
+            @gensym w s nw ni rqa_dict i rqa_i k v mtype
             x = ex.args[2]
-            submat = :($x[($i-1)*$s.+$w,($i-1)*$s.+$w])
+            submat = :($mtype($x[($i-1)*$s.+$w,($i-1)*$s.+$w]))
             ex.args[2] = submat
             ret_ex = quote
                 $w = 1:$(dict_op[:width])
                 $s = $(dict_op[:step])
                 $nw = size($x,1) - $(dict_op[:width])
                 $ni = div($nw, $s)+1
+                $mtype = typeof($x)
                 $rqa_dict = Dict(
-                    "RR"   => zeros(typeof(0.0),$ni),
-                    "DET"  => zeros(typeof(0.0),$ni),
-                    "L"    => zeros(typeof(0.0),$ni),
+                    "RR"   => zeros(Float64,$ni),
+                    "DET"  => zeros(Float64,$ni),
+                    "L"    => zeros(Float64,$ni),
                     "Lmax" => zeros(Int,$ni),
-                    "DIV"  => zeros(typeof(0.0),$ni),
-                    "ENT"  => zeros(typeof(0.0),$ni),
-                    "TND"  => zeros(typeof(0.0),$ni),
-                    "LAM"  => zeros(typeof(0.0),$ni),
-                    "TT"   => zeros(typeof(0.0),$ni),
+                    "DIV"  => zeros(Float64,$ni),
+                    "ENT"  => zeros(Float64,$ni),
+                    "TND"  => zeros(Float64,$ni),
+                    "LAM"  => zeros(Float64,$ni),
+                    "TT"   => zeros(Float64,$ni),
                     "Vmax" => zeros(Int,$ni)
                 )
                 for $i=1:$ni
