@@ -13,7 +13,7 @@ rqa_funs = [
 
 rqa_types = Dict(
     zip(rqa_funs,
-    [eval(:(Base.return_types($f,(AbstractMatrix,))[1])) for f in rqa_funs]
+    [eval(:(Base.return_types($f,(AbstractRecurrenceMatrix,))[1])) for f in rqa_funs]
     )
 )
 
@@ -32,7 +32,7 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
         elseif dindex > 0
             ix = ix .- dindex*bsize
         end
-        rmat_b = crossrecurrencematrix(x[ix,:], y[iy,:], vargs...; kwargs...)
+        rmat_b = CrossRecurrenceMatrix(x[ix,:], y[iy,:], vargs...; kwargs...)
         append!(rws, rowvals(rmat_b) .+ix[1] .- 1)
         append!(cls, colvals(rmat_b) .+iy[1] .- 1)
     end
@@ -43,7 +43,7 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
     rx = ix1:ix2
     ry = iy1:iy2
     if length(rx) > 0 && length(ry) > 0
-        rmat_b = crossrecurrencematrix(x[ix1:ix2,:], y[iy1:iy2,:], vargs...; kwargs...)
+        rmat_b = CrossRecurrenceMatrix(x[ix1:ix2,:], y[iy1:iy2,:], vargs...; kwargs...)
         append!(rws, rowvals(rmat_b) .+ ix1 .- 1)
         append!(cls, colvals(rmat_b) .+ iy1 .- 1)
     end
@@ -66,11 +66,11 @@ may be specified, together with the window `width`,
 by declaring those options as keyword arguments.
 
 This macro may be also used with recurrence matrix constructors
-(`recurrencematrix`, `crossrecurrencematrix`, `jointrecurrencematrix`),
+(`RecurrenceMatrix`, `CrossRecurrenceMatrix`, `JointRecurrenceMatrix`),
 to create 'incomplete' matrices that are suitable for such windowed RQA.
 The values of the resulting matrix in the diagonals within the window width will
 be equal to those obtained without the `@windowed` macro, if the distances are
-not scaled (using the option `scale=1`, see [`recurrencematrix`](@ref)).
+not scaled (using the option `scale=1`, see [`RecurrenceMatrix`](@ref)).
 Outside the window width, the values of the recurrence matrix will be undefined
 (mostly zero).
 """
@@ -141,9 +141,9 @@ macro windowed(ex, options...)
             return esc(ret_ex)
         end
         # Iteration of matrix construction functions
-        if f == :crossrecurrencematrix
+        if f == :CrossRecurrenceMatrix
             # ij_block_rmat(x,y,width,d,...) with d=-1,0,1
-            @gensym i j ii jj
+            @gensym i j ii jj m
             x = ex.args[2]
             y = ex.args[3]
             ex.args[1] = :(RecurrenceAnalysis.ij_block_rmat)
@@ -162,12 +162,13 @@ macro windowed(ex, options...)
                 $exd_upper
                 append!($i, $ii)
                 append!($j, $jj)
-                RecurrenceAnalysis.sparse($i,$j,true,size($x,1),size($y,1))
+                $m = RecurrenceAnalysis.sparse($i,$j,true,size($x,1),size($y,1))
+                CrossRecurrenceMatrix($m)
             end
             return esc(ret_ex)
-        elseif f == :recurrencematrix
+        elseif f == :RecurrenceMatrix
             # ij_block_rmat(x,x,width,d,...) with d=-1,0
-            @gensym i j ii jj n
+            @gensym i j ii jj n m 
             ex.args[1] = :(RecurrenceAnalysis.ij_block_rmat)
             x = ex.args[2]
             insert!(ex.args, 3, x)
@@ -183,17 +184,18 @@ macro windowed(ex, options...)
                 append!($i,$ii)
                 append!($j,$jj)
                 $n = size($x,1)
-                RecurrenceAnalysis.sparse($i,$j,true,$n,$n)
+                $m = RecurrenceAnalysis.sparse($i,$j,true,$n,$n)
+                RecurrenceMatrix($m)
             end
             return esc(ret_ex)
-        elseif f == :jointrecurrencematrix
+        elseif f == :JointRecurrenceMatrix
             @gensym rm1 rm2
             x = ex.args[2]
             y = ex.args[3]
             minsz = :(min(size($x,1),size($y,1)))
             subx = :($x[1:$minsz,:])
             suby = :($y[1:$minsz,:])
-            ex.args[1] = :recurrencematrix
+            ex.args[1] = :RecurrenceMatrix
             deleteat!(ex.args, 3)
             ex.args[2] = subx
             ex_rmx = :($rm1 = @windowed($(parse(string(ex))),width=$(dict_op[:width])))
@@ -202,7 +204,7 @@ macro windowed(ex, options...)
             ret_ex = quote
                 $ex_rmx
                 $ex_rmy
-                $rm1 .& $rm2
+                JointRecurrenceMatrix($rm1 .& $rm2)
             end
             return esc(ret_ex)
         end

@@ -26,52 +26,6 @@ end
 
 # Based on diagonal lines
 
-function diagonalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=0, kwargs...)
-    theiler < 0 && error("Theiler window length must be greater than or equal to 0")
-    bins = [0]
-    nbins = 1
-    current_diag = 0
-    m, n = size(x)
-    # Iterate over diagonals - excluding LOI and Theiler window
-    # If the matrix is symmetric, examine only the upper triangle
-    diag_collection = collect(theiler:n-2)
-    xsym = issymmetric(x)
-    !xsym && prepend!(diag_collection, collect(-(m-2):-max(theiler,1)))
-    for d in diag_collection
-        increment = (xsym && d > 0) ? 2 : 1
-        previous_cell = false
-        first_c = max(1, d+1)
-        last_c = min(n, m+d)
-        for c = first_c:last_c
-            # Operate on existing diagonal line
-            if previous_cell
-                # Extend length with current cell
-                (extend = x[c-d,c]) && (current_diag += 1)
-                # If arrived to the end of a line
-                # add the current length to the corresponding bin
-                if (!extend || (c == last_c)) && (current_diag > 0)
-                    # Append new positions to the bins if needed
-                    if current_diag > nbins
-                        append!(bins, zeros(current_diag - nbins))
-                        nbins = current_diag
-                    end
-                    bins[current_diag] += increment
-                    current_diag = 0
-                end
-            end
-            previous_cell = x[c-d,c]
-        end
-    end
-    # Add isolated points in first bin
-    allpoints =
-    if theiler == 0
-        count(!iszero, x)
-    else
-        count(!iszero, triu(x, theiler)) + count(!iszero, tril(x,-theiler))
-    end
-    [allpoints - collect(2:nbins+1)'*bins; bins]
-end
-
 function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     theiler < 0 && error("Theiler window length must be greater than or equal to 0")
     m,n=size(x)
@@ -83,13 +37,13 @@ function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
         f = 2
         # If theiler==0, the LOI is counted separately to avoid duplication
         if theiler == 0
-            loi_hist = verticalhistogram(hcat(diag(x,0)))
+            loi_hist = verticalhistogram(CrossRecurrenceMatrix(hcat(diag(x,0))))
         end
     else
         valid = (abs.(dv) .>= theiler)
         f = 1
     end
-    vmat = sparse(rv[valid], dv[valid] .+ (m+1), true)
+    vmat = CrossRecurrenceMatrix(sparse(rv[valid], dv[valid] .+ (m+1), true))
     dh = f .* verticalhistogram(vmat; theiler=0)
     # Add frequencies of LOI if suitable
     if (nbins_loi = length(loi_hist)) > 0
@@ -215,34 +169,6 @@ function countsequences(x::ARM; kwargs...)
 end
 
 # 2. Based on vertical lines
-
-function verticalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=0, kwargs...)
-    bins = [0]
-    nbins = 1
-    current_vert = 0
-    m, n = size(x)
-    # Iterate over columns
-    for c = 1:n
-        previous_cell = false
-        for r = 1:m
-            if previous_cell
-                # Extend line if the cell is true and outside the Theiler window
-                (extend = x[r,c] && (abs(r-c) >= theiler)) && (current_vert += 1)
-                if (!extend || (r == n)) && (current_vert > 0)
-                    if current_vert > nbins
-                        append!(bins, zeros(current_vert - nbins))
-                        nbins = current_vert
-                    end
-                    bins[current_vert] += 1
-                    current_vert = 0
-                end
-            end
-            previous_cell = x[r,c]
-        end
-    end
-    # Add isolated points in first bin
-    [count(!iszero, x) - collect(2:nbins+1)'*bins; bins]
-end
 
 function verticalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     m,n=size(x)
