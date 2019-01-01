@@ -204,7 +204,7 @@ macro windowed(ex, options...)
             ret_ex = quote
                 $ex_rmx
                 $ex_rmy
-                JointRecurrenceMatrix($rm1 .& $rm2)
+                JointRecurrenceMatrix($rm1.m .& $rm2.m)
             end
             return esc(ret_ex)
         end
