@@ -6,7 +6,7 @@
 Calculate the recurrence rate (RR) of a recurrence matrix, ruling out
 the points within the Theiler window.
 """
-function recurrencerate(x::ARM; theiler::Integer=0, kwargs...)
+function recurrencerate(x::ARM; theiler::Integer=0, kwargs...)::Float64
     theiler < 0 && error("Theiler window length must be greater than or equal to 0")
     if theiler == 0
         return nnz(x)/length(x)
@@ -144,13 +144,13 @@ end
 Calculate the trend of recurrences in recurrence matrix towards its edges, ruling out
 the points within the Theiler window and in the outermost diagonals.
 """
-function trend(npoints::Vector; theiler=0, border=10, kwargs...)
+function trend(npoints::Vector; theiler=0, border=10, kwargs...)::Float64
     nmax = length(npoints)
     rrk = npoints./collect(nmax:-1:1)
     a = 1+theiler
     b = nmax-border
     w = collect(a:b) .- b/2
-    typeof(0.0)( (w'*(rrk[a:b] .- mean(rrk[a:b])) ./ (w'*w))[1] )
+    (w'*(rrk[a:b] .- mean(rrk[a:b])) ./ (w'*w))[1]
 end
 
 function trend(x::ARM; kwargs...)
