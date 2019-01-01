@@ -71,10 +71,10 @@ rqadiag = rqa(rmat, theiler=2, lmin=3, border=20, onlydiagonal=true)
 rmat2 = RecurrenceMatrix(xe[1:3:end,:], 0.05; fixedrate=true)
 @test .049 < recurrencerate(rmat2) < .051
 # Windowed RQA
-#rmatw = @windowed RecurrenceMatrix(xe, 1.5) 50
-#crmatw = @windowed(CrossRecurrenceMatrix(x, y, 1.5),30)
-#@windowed jrmatw = JointRecurrenceMatrix(x, y, 1.5) 30
-#@test jrmatw[33 .+ (1:30), 33 .+ (1:30)] == jrmat[33 .+ (1:30), 33 .+ (1:30)]
-#@windowed(rrw = recurrencerate(rmatw), width=50, step=40)
-#@windowed rqaw = rqa(rmatw) width=50 step=40
-#@test rqaw["RR"] == rrw
+rmatw = @windowed RecurrenceMatrix(xe, 1.5) 50
+crmatw = @windowed(CrossRecurrenceMatrix(x, y, 1.5),30)
+@windowed jrmatw = JointRecurrenceMatrix(x, y, 1.5) 30
+@test jrmatw[33 .+ (1:30), 33 .+ (1:30)] == jrmat[33 .+ (1:30), 33 .+ (1:30)]
+@windowed(rrw = recurrencerate(rmatw), width=50, step=40)
+@windowed rqaw = rqa(rmatw) width=50 step=40
+@test rqaw["RR"] == rrw

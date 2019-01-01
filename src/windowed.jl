@@ -1,4 +1,4 @@
-rqa_funs = [
+const rqa_funs = [
     :recurrencerate,
     :determinism,
     :avgdiag,
@@ -11,7 +11,7 @@ rqa_funs = [
     :maxvert
     ]
 
-rqa_types = Dict(
+const rqa_types = Dict(
     zip(rqa_funs,
     [eval(:(Base.return_types($f,(AbstractRecurrenceMatrix,))[1])) for f in rqa_funs]
     )
@@ -168,7 +168,7 @@ macro windowed(ex, options...)
             return esc(ret_ex)
         elseif f == :RecurrenceMatrix
             # ij_block_rmat(x,x,width,d,...) with d=-1,0
-            @gensym i j ii jj n m 
+            @gensym i j ii jj n m
             ex.args[1] = :(RecurrenceAnalysis.ij_block_rmat)
             x = ex.args[2]
             insert!(ex.args, 3, x)
