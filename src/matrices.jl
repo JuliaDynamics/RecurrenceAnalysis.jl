@@ -106,7 +106,9 @@ function Base.summary(R::AbstractRecurrenceMatrix)
 end
 function Base.show(io::IO, R::AbstractRecurrenceMatrix)
     s = sprint(io -> show(IOContext(io, :limit=>true), MIME"text/plain"(), R.data))
-    s = join(split(s, '\n')[2:end], '\n')
+    s = split(s, '\n')[2:end]
+    s = [replace(line, "=  true"=>"", count=1) for line in s]
+    s = join(s, '\n')
     tos = summary(R)*"\n"*s
     println(io, tos)
 end
