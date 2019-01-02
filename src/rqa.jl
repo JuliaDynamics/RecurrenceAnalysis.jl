@@ -117,7 +117,7 @@ divergence(x; kwargs...) = typeof(0.0)( 1/maxdiag(x; kwargs...) )
 """
     rqaentropy(x; lmin=2, theiler=0)
 
-Calculate the entropy of diagonal lengths (ENT) of a recurrence matrix, ruling out
+Calculate the Shannon entropy of diagonal lengths (ENT) of a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
 function rqaentropy(diag_hist::Vector; lmin=2, kwargs...)
@@ -128,7 +128,7 @@ function rqaentropy(diag_hist::Vector; lmin=2, kwargs...)
     if lmin <= nbins
         prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist[lmin:nbins])
         prob_bins = prob_bins[findall(!iszero, prob_bins)]
-        typeof(0.0)( -sum(prob_bins .* log.(prob_bins)) )
+        Float64( -sum(p*log(p) for p in prob_bins) )
     else
         0.0
     end
@@ -249,10 +249,12 @@ maxvert(x::ARM; kwargs...) = maxvert(verticalhistogram(x; kwargs...))
 """
     rqa(x; kwargs...)
 
-Calculate RQA parameters of a recurrence matrix. See the functions
+Calculate all RQA parameters of a recurrence matrix. See the functions
 `recurrencerate`, `determinism`, `avgdiag`, `maxdiag`, `divergence`, `rqaentropy`,
 `trend`, `laminarity`, `trappingtime` and `maxvert` for the definition of
 the different parameters and the default values of the arguments.
+Using this function is much more efficient than calling all individual functions
+one by one.
 
 The keyword arguments `theilerdiag`, `lmindiag` may be used to declare specific values
 that override the values of `theiler` and `lmin` in the calculation of

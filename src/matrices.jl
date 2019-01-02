@@ -168,7 +168,7 @@ by the following keyword arguments:
   and `scale` is ignored.
 * `metric` : metric of the distances, as in [`distancematrix`](@ref).
 
-See also: [`crossrecurrencematrix`](@ref), [`jointrecurrencematrix`](@ref) and
+See also: [`CrossRecurrenceMatrix`](@ref), [`JointRecurrenceMatrix`](@ref) and
 use [`recurrenceplot`](@ref) to turn the result of these functions into a plottable format.
 
 ## References
@@ -197,8 +197,8 @@ For the time series `x`, `y`, of length `n` and `m`, respectively, it is a
 sparse `n×m` matrix of Boolean values, such that if `d(x[i], y[j]) ≤ ε`,
 then the cell `(i, j)` of the matrix will have a `true` value.
 
-See [`recurrencematrix`](@ref) for details, references and keywords.
-See also: [`jointrecurrencematrix`](@ref).
+See [`RecurrenceMatrix`](@ref) for details, references and keywords.
+See also: [`JointRecurrenceMatrix`](@ref).
 """
 function CrossRecurrenceMatrix(x, y, ε; kwargs...)
     m = crossrecurrencematrix(x, y, ε; kwargs...)
@@ -267,8 +267,8 @@ simultaneously. It is calculated by the element-wise multiplication
 of the recurrence matrices of `x` and `y`. If `x` and `y` are of different
 length, the recurrences are only calculated until the length of the shortest one.
 
-See [`recurrencematrix`](@ref) for details, references and keywords.
-See also: [`crossrecurrencematrix`](@ref).
+See [`RecurrenceMatrix`](@ref) for details, references and keywords.
+See also: [`CrossRecurrenceMatrix`](@ref).
 """
 function JointRecurrenceMatrix(x, y, ε; kwargs...)
     n = min(size(x,1), size(y,1))
