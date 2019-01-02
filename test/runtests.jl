@@ -46,10 +46,10 @@ x = lorenz_data[501:2:end,1]
 dd, rr = sorteddistances(x, theiler=1)
 # Distance and recurrence matrices
 xe = embed(x, 3, 8)
-rmat = recurrencematrix(xe, 1.5)
+rmat = RecurrenceMatrix(xe, 1.5)
 y = lorenz_data[701:2:end,3]
-crmat = crossrecurrencematrix(x, y, 1.5)
-jrmat = jointrecurrencematrix(x, y, 1.5)
+crmat = CrossRecurrenceMatrix(x, y, 1.5)
+jrmat = JointRecurrenceMatrix(x, y, 1.5)
 # Recurrence plot
 crp = recurrenceplot(crmat, width=125)
 @test size(crp)[1] == 75
@@ -68,12 +68,12 @@ tol = 1e-5
 rqadiag = rqa(rmat, theiler=2, lmin=3, border=20, onlydiagonal=true)
 @test all([rqapar[p]==rqadiag[p] for p in keys(rqadiag)])
 # Fixed rate for recurrence matrix
-rmat2 = recurrencematrix(xe[1:3:end,:], 0.05; fixedrate=true)
+rmat2 = RecurrenceMatrix(xe[1:3:end,:], 0.05; fixedrate=true)
 @test .049 < recurrencerate(rmat2) < .051
 # Windowed RQA
-rmatw = @windowed recurrencematrix(xe, 1.5) 50
-crmatw = @windowed(crossrecurrencematrix(x, y, 1.5),30)
-@windowed jrmatw = jointrecurrencematrix(x, y, 1.5) 30
+rmatw = @windowed RecurrenceMatrix(xe, 1.5) 50
+crmatw = @windowed(CrossRecurrenceMatrix(x, y, 1.5),30)
+@windowed jrmatw = JointRecurrenceMatrix(x, y, 1.5) 30
 @test jrmatw[33 .+ (1:30), 33 .+ (1:30)] == jrmat[33 .+ (1:30), 33 .+ (1:30)]
 @windowed(rrw = recurrencerate(rmatw), width=50, step=40)
 @windowed rqaw = rqa(rmatw) width=50 step=40

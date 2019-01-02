@@ -6,90 +6,44 @@
 Calculate the recurrence rate (RR) of a recurrence matrix, ruling out
 the points within the Theiler window.
 """
-function recurrencerate(x::AbstractMatrix; theiler::Integer=0, kwargs...)
+function recurrencerate(x::ARM; theiler::Integer=0, kwargs...)::Float64
     theiler < 0 && error("Theiler window length must be greater than or equal to 0")
     if theiler == 0
-        return typeof(0.0)( count(!iszero, x)/prod(size(x)) )
+        return nnz(x)/length(x)
     end
     diags_remove = -(theiler-1):(theiler-1)
     theiler_nz = 0
     for d in diags_remove
-        theiler_nz += count(!iszero, diag(x,d))
+        theiler_nz += nnz(diag(x,d))
     end
-    typeof(0.0)( (count(!iszero, x)-theiler_nz)/prod(size(x)) )
+    return (nnz(x) - theiler_nz)/length(x)
 end
 
-function tau_recurrence(x::AbstractMatrix{Bool})
+function tau_recurrence(x::ARM)
     n = minimum(size(x))
     [count(!iszero, diag(x,d))/(n-d) for d in (0:n-1)]
 end
 
 # Based on diagonal lines
 
-function diagonalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=0, kwargs...)
-    theiler < 0 && error("Theiler window length must be greater than or equal to 0")
-    bins = [0]
-    nbins = 1
-    current_diag = 0
-    m, n = size(x)
-    # Iterate over diagonals - excluding LOI and Theiler window
-    # If the matrix is symmetric, examine only the upper triangle
-    diag_collection = collect(theiler:n-2)
-    xsym = issymmetric(x)
-    !xsym && prepend!(diag_collection, collect(-(m-2):-max(theiler,1)))
-    for d in diag_collection
-        increment = (xsym && d > 0) ? 2 : 1
-        previous_cell = false
-        first_c = max(1, d+1)
-        last_c = min(n, m+d)
-        for c = first_c:last_c
-            # Operate on existing diagonal line
-            if previous_cell
-                # Extend length with current cell
-                (extend = x[c-d,c]) && (current_diag += 1)
-                # If arrived to the end of a line
-                # add the current length to the corresponding bin
-                if (!extend || (c == last_c)) && (current_diag > 0)
-                    # Append new positions to the bins if needed
-                    if current_diag > nbins
-                        append!(bins, zeros(current_diag - nbins))
-                        nbins = current_diag
-                    end
-                    bins[current_diag] += increment
-                    current_diag = 0
-                end
-            end
-            previous_cell = x[c-d,c]
-        end
-    end
-    # Add isolated points in first bin
-    allpoints =
-    if theiler == 0
-        count(!iszero, x)
-    else
-        count(!iszero, triu(x, theiler)) + count(!iszero, tril(x,-theiler))
-    end
-    [allpoints - collect(2:nbins+1)'*bins; bins]
-end
-
-function diagonalhistogram(x::SparseMatrixCSC{Bool}; theiler::Integer=0, kwargs...)
+function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     theiler < 0 && error("Theiler window length must be greater than or equal to 0")
     m,n=size(x)
     rv = rowvals(x)
-    dv = colvals(x) - rowvals(x)
+    dv = colvals(x) .- rowvals(x)
     loi_hist = Int[]
     if issymmetric(x)
         valid = (dv .>= max(theiler,1))
         f = 2
         # If theiler==0, the LOI is counted separately to avoid duplication
         if theiler == 0
-            loi_hist = verticalhistogram(hcat(diag(x,0)))
+            loi_hist = verticalhistogram(CrossRecurrenceMatrix(hcat(diag(x,0))))
         end
     else
         valid = (abs.(dv) .>= theiler)
         f = 1
     end
-    vmat = sparse(rv[valid], dv[valid] .+ (m+1), true)
+    vmat = CrossRecurrenceMatrix(sparse(rv[valid], dv[valid] .+ (m+1), true))
     dh = f .* verticalhistogram(vmat; theiler=0)
     # Add frequencies of LOI if suitable
     if (nbins_loi = length(loi_hist)) > 0
@@ -119,7 +73,7 @@ function determinism(diag_hist::Vector; lmin=2, kwargs...)
     (lmin > nbins) ? 0.0 : typeof(0.0)( sum(diag_points[lmin:nbins])/sum(diag_points) )
 end
 
-function determinism(x::AbstractMatrix; kwargs...)
+function determinism(x::ARM; kwargs...)
     determinism(diagonalhistogram(x; kwargs...); kwargs...)
 end
 
@@ -139,7 +93,7 @@ function avgdiag(diag_hist::Vector; lmin=2, kwargs...)
         Float64( sum(diag_points[lmin:nbins])/sum(diag_hist[lmin:nbins]) )
 end
 
-function avgdiag(x::AbstractMatrix; kwargs...)
+function avgdiag(x::ARM; kwargs...)
     avgdiag(diagonalhistogram(x; kwargs...); kwargs...)
 end
 
@@ -150,7 +104,7 @@ Calculate the longest diagonal (Lmax) in a recurrence matrix, ruling out
 the points within the Theiler window.
 """
 maxdiag(diag_hist::Vector; kwargs...) = length(diag_hist)
-maxdiag(x::AbstractMatrix; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
+maxdiag(x::ARM; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
 
 """
     divergence(x; lmin=2, theiler=0)
@@ -163,7 +117,7 @@ divergence(x; kwargs...) = typeof(0.0)( 1/maxdiag(x; kwargs...) )
 """
     rqaentropy(x; lmin=2, theiler=0)
 
-Calculate the entropy of diagonal lengths (ENT) of a recurrence matrix, ruling out
+Calculate the Shannon entropy of diagonal lengths (ENT) of a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
 function rqaentropy(diag_hist::Vector; lmin=2, kwargs...)
@@ -174,13 +128,13 @@ function rqaentropy(diag_hist::Vector; lmin=2, kwargs...)
     if lmin <= nbins
         prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist[lmin:nbins])
         prob_bins = prob_bins[findall(!iszero, prob_bins)]
-        typeof(0.0)( -sum(prob_bins .* log.(prob_bins)) )
+        Float64( -sum(p*log(p) for p in prob_bins) )
     else
         0.0
     end
 end
 
-function rqaentropy(x::AbstractMatrix; kwargs...)
+function rqaentropy(x::ARM; kwargs...)
     rqaentropy(diagonalhistogram(x; kwargs...); kwargs...)
 end
 
@@ -190,16 +144,16 @@ end
 Calculate the trend of recurrences in recurrence matrix towards its edges, ruling out
 the points within the Theiler window and in the outermost diagonals.
 """
-function trend(npoints::Vector; theiler=0, border=10, kwargs...)
+function trend(npoints::Vector; theiler=0, border=10, kwargs...)::Float64
     nmax = length(npoints)
     rrk = npoints./collect(nmax:-1:1)
     a = 1+theiler
     b = nmax-border
     w = collect(a:b) .- b/2
-    typeof(0.0)( (w'*(rrk[a:b] .- mean(rrk[a:b])) ./ (w'*w))[1] )
+    (w'*(rrk[a:b] .- mean(rrk[a:b])) ./ (w'*w))[1]
 end
 
-function trend(x::AbstractMatrix; kwargs...)
+function trend(x::ARM; kwargs...)
     trend(tau_recurrence(x); kwargs...)
 end
 
@@ -210,41 +164,13 @@ function countsequences(diag_hist::Vector; lmin=2, kwargs...)
     overlap * diag_hist
 end
 
-function countsequences(x::AbstractMatrix; kwargs...)
+function countsequences(x::ARM; kwargs...)
     countsequences(diagonalhistogram(x; kwargs...); kwargs...)
 end
 
 # 2. Based on vertical lines
 
-function verticalhistogram(x::AbstractMatrix{Bool}; theiler::Integer=0, kwargs...)
-    bins = [0]
-    nbins = 1
-    current_vert = 0
-    m, n = size(x)
-    # Iterate over columns
-    for c = 1:n
-        previous_cell = false
-        for r = 1:m
-            if previous_cell
-                # Extend line if the cell is true and outside the Theiler window
-                (extend = x[r,c] && (abs(r-c) >= theiler)) && (current_vert += 1)
-                if (!extend || (r == n)) && (current_vert > 0)
-                    if current_vert > nbins
-                        append!(bins, zeros(current_vert - nbins))
-                        nbins = current_vert
-                    end
-                    bins[current_vert] += 1
-                    current_vert = 0
-                end
-            end
-            previous_cell = x[r,c]
-        end
-    end
-    # Add isolated points in first bin
-    [count(!iszero, x) - collect(2:nbins+1)'*bins; bins]
-end
-
-function verticalhistogram(x::SparseMatrixCSC{Bool}; theiler::Integer=0, kwargs...)
+function verticalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     m,n=size(x)
     bins = [0]
     nbins = 1
@@ -299,7 +225,7 @@ Calculate the laminarity (LAM) of a recurrence matrix, ruling out
 vertical lines shorter than a minimum value.
 """
 laminarity(vert_hist::Vector; kwargs...) = determinism(vert_hist; kwargs...)
-laminarity(x::AbstractMatrix; kwargs...) =
+laminarity(x::ARM; kwargs...) =
 laminarity(verticalhistogram(x; kwargs...); kwargs...)
 
 """
@@ -309,7 +235,7 @@ Calculate the trapping time (TT) of a recurrence matrix, ruling out
 vertical lines shorter than a minimum value.
 """
 trappingtime(vert_hist::Vector; kwargs...) = avgdiag(vert_hist; kwargs...)
-trappingtime(x::AbstractMatrix; kwargs...) =
+trappingtime(x::ARM; kwargs...) =
 trappingtime(verticalhistogram(x; kwargs...); kwargs...)
 
 """
@@ -318,15 +244,17 @@ trappingtime(verticalhistogram(x; kwargs...); kwargs...)
 Calculate the longest vertical line (Vmax) of a recurrence matrix.
 """
 maxvert(vert_hist::Vector; kwargs...) = length(vert_hist)
-maxvert(x::AbstractMatrix; kwargs...) = maxvert(verticalhistogram(x; kwargs...))
+maxvert(x::ARM; kwargs...) = maxvert(verticalhistogram(x; kwargs...))
 
 """
     rqa(x; kwargs...)
 
-Calculate RQA parameters of a recurrence matrix. See the functions
+Calculate all RQA parameters of a recurrence matrix. See the functions
 `recurrencerate`, `determinism`, `avgdiag`, `maxdiag`, `divergence`, `rqaentropy`,
 `trend`, `laminarity`, `trappingtime` and `maxvert` for the definition of
 the different parameters and the default values of the arguments.
+Using this function is much more efficient than calling all individual functions
+one by one.
 
 The keyword arguments `theilerdiag`, `lmindiag` may be used to declare specific values
 that override the values of `theiler` and `lmin` in the calculation of

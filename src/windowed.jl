@@ -1,4 +1,4 @@
-rqa_funs = [
+const rqa_funs = [
     :recurrencerate,
     :determinism,
     :avgdiag,
@@ -11,12 +11,38 @@ rqa_funs = [
     :maxvert
     ]
 
-rqa_types = Dict(
+const rqa_types = Dict(
     zip(rqa_funs,
-    [eval(:(Base.return_types($f,(AbstractMatrix,))[1])) for f in rqa_funs]
+    [eval(:(Base.return_types($f,(AbstractRecurrenceMatrix,))[1])) for f in rqa_funs]
     )
 )
 
+"""
+    ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
+    
+Return the indices of the rows and columns of the nonzero values of a
+block-diagonal cross-recurrence matrix.
+
+If `m` is the cross-recurrence matrix of `x` and `y` (created with the 
+positional and keyword arguments `vargs` and `kwargs`), the indices returned by
+this function are limited to the "block-diagonal" indicated by
+`dindex ∈ {-1,0,1}`, as in the following graphical representation
+(`#` represents the regions that are included, and `O` the excluded regions):
+
+`dindex==-1`    `dindex==0`    `dindex==1`
+ OOOOOO          ##OOOO         OO##OO
+ OOOOOO          ##OOOO         OO##OO
+ ##OOOO          OO##OO         OOOO##
+ ##OOOO          OO##OO         OOOO##
+ OO##OO          OOOO##         OOOOOO
+ OO##OO          OOOO##         OOOOOO
+
+The size of the blocks is `bsize × bsize`. The last block may be smaller if
+`bsize` is not a divisor of the size of the whole cross-recurrence matrix.
+
+The returned value is a tuple of two arrays, the first containing the indices
+of the rows and columns of the nonzero values within the included regions.
+"""
 function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
     n = min(size(x,1), size(y,1))
     brange = 1:bsize
@@ -32,7 +58,7 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
         elseif dindex > 0
             ix = ix .- dindex*bsize
         end
-        rmat_b = crossrecurrencematrix(x[ix,:], y[iy,:], vargs...; kwargs...)
+        rmat_b = CrossRecurrenceMatrix(x[ix,:], y[iy,:], vargs...; kwargs...)
         append!(rws, rowvals(rmat_b) .+ix[1] .- 1)
         append!(cls, colvals(rmat_b) .+iy[1] .- 1)
     end
@@ -43,7 +69,7 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
     rx = ix1:ix2
     ry = iy1:iy2
     if length(rx) > 0 && length(ry) > 0
-        rmat_b = crossrecurrencematrix(x[ix1:ix2,:], y[iy1:iy2,:], vargs...; kwargs...)
+        rmat_b = CrossRecurrenceMatrix(x[ix1:ix2,:], y[iy1:iy2,:], vargs...; kwargs...)
         append!(rws, rowvals(rmat_b) .+ ix1 .- 1)
         append!(cls, colvals(rmat_b) .+ iy1 .- 1)
     end
@@ -66,11 +92,11 @@ may be specified, together with the window `width`,
 by declaring those options as keyword arguments.
 
 This macro may be also used with recurrence matrix constructors
-(`recurrencematrix`, `crossrecurrencematrix`, `jointrecurrencematrix`),
+(`RecurrenceMatrix`, `CrossRecurrenceMatrix`, `JointRecurrenceMatrix`),
 to create 'incomplete' matrices that are suitable for such windowed RQA.
 The values of the resulting matrix in the diagonals within the window width will
 be equal to those obtained without the `@windowed` macro, if the distances are
-not scaled (using the option `scale=1`, see [`recurrencematrix`](@ref)).
+not scaled (using the option `scale=1`, see [`RecurrenceMatrix`](@ref)).
 Outside the window width, the values of the recurrence matrix will be undefined
 (mostly zero).
 """
@@ -95,114 +121,115 @@ macro windowed(ex, options...)
         # Iteration of RQA functions
         # fun(x,...) => [fun(x[i+w,i+w],...) for i=0:s:nw]
         if in(f, rqa_funs)
-            @gensym w s nw i
             x = ex.args[2]
-            submat = :($x[$i.+$w,$i.+$w])
-            ex.args[2] = submat
+            submat = :(mtype($x[i.+w,i.+w])) # e.g. :(RecurrenceMatrix(x[i.+w,i.+w]))
+            ex.args[2] = submat # x is replaced by the windowed matrix
             ret_ex = quote
-                $w = 1:$(dict_op[:width])
-                $s = $(dict_op[:step])
-                $nw = size($x,1) - $(dict_op[:width])
-                ($(rqa_types[f]))[$ex for $i=0:$s:$nw]
+                local w = 1:$(dict_op[:width])
+                local s = $(dict_op[:step])
+                # only calculate "complete" blocks - until `nw`
+                local nw = size($x,1) - $(dict_op[:width])
+                local mtype = typeof($x) # type of the recurrence matrix
+                ($(rqa_types[f]))[$ex for i=0:s:nw]
             end
             return esc(ret_ex)
         end
         # Iteration of all RQA parameters
         if f == :rqa
-            @gensym w s nw ni rqa_dict i rqa_i k v
             x = ex.args[2]
-            submat = :($x[($i-1)*$s.+$w,($i-1)*$s.+$w])
+            submat = :(mtype($x[(i-1)*s.+w,(i-1)*s.+w]))
             ex.args[2] = submat
             ret_ex = quote
-                $w = 1:$(dict_op[:width])
-                $s = $(dict_op[:step])
-                $nw = size($x,1) - $(dict_op[:width])
-                $ni = div($nw, $s)+1
-                $rqa_dict = Dict(
-                    "RR"   => zeros(typeof(0.0),$ni),
-                    "DET"  => zeros(typeof(0.0),$ni),
-                    "L"    => zeros(typeof(0.0),$ni),
-                    "Lmax" => zeros(Int,$ni),
-                    "DIV"  => zeros(typeof(0.0),$ni),
-                    "ENT"  => zeros(typeof(0.0),$ni),
-                    "TND"  => zeros(typeof(0.0),$ni),
-                    "LAM"  => zeros(typeof(0.0),$ni),
-                    "TT"   => zeros(typeof(0.0),$ni),
-                    "Vmax" => zeros(Int,$ni)
+                local w = 1:$(dict_op[:width])
+                local s = $(dict_op[:step])
+                local nw = size($x,1) - $(dict_op[:width])
+                local ni = div(nw, s)+1 # number of items
+                local mtype = typeof($x)
+                local rqa_dict = Dict(
+                    "RR"   => zeros(Float64,ni),
+                    "DET"  => zeros(Float64,ni),
+                    "L"    => zeros(Float64,ni),
+                    "Lmax" => zeros(Int,ni),
+                    "DIV"  => zeros(Float64,ni),
+                    "ENT"  => zeros(Float64,ni),
+                    "TND"  => zeros(Float64,ni),
+                    "LAM"  => zeros(Float64,ni),
+                    "TT"   => zeros(Float64,ni),
+                    "Vmax" => zeros(Int,ni)
                 )
-                for $i=1:$ni
-                    $rqa_i = $ex
-                    for ($k,$v) in $rqa_i
-                        $rqa_dict[$k][$i] = $v
+                for i=1:ni
+                    local rqa_i = $ex
+                    for (k,v) in rqa_i
+                        rqa_dict[k][i] = v
                     end
                 end
-                $rqa_dict
+                rqa_dict
             end
             return esc(ret_ex)
         end
         # Iteration of matrix construction functions
-        if f == :crossrecurrencematrix
+        if f == :CrossRecurrenceMatrix
             # ij_block_rmat(x,y,width,d,...) with d=-1,0,1
-            @gensym i j ii jj
             x = ex.args[2]
             y = ex.args[3]
             ex.args[1] = :(RecurrenceAnalysis.ij_block_rmat)
             insert!(ex.args, 4, dict_op[:width])
             insert!(ex.args, 5, -1)
-            exd_lower  = :(($i,$j) = $(parse(string(ex))))
+            exd_lower  = :(local i, j = $(parse(string(ex)))) # lower diag block
             ex.args[5] = 0
-            exd_center = :(($ii,$jj) = $(parse(string(ex))))
+            exd_center = :(local ii, jj = $(parse(string(ex)))) # central diag block
             ex.args[5] = 1
-            exd_upper  = :(($ii,$jj) = $(parse(string(ex))))
+            exd_upper  = :(local ii, jj = $(parse(string(ex)))) # upper diag block
             ret_ex = quote
                 $exd_lower
                 $exd_center
-                append!($i, $ii)
-                append!($j, $jj)
+                append!(i, ii)
+                append!(j, jj)
                 $exd_upper
-                append!($i, $ii)
-                append!($j, $jj)
-                RecurrenceAnalysis.sparse($i,$j,true,size($x,1),size($y,1))
+                append!(i, ii)
+                append!(j, jj)
+                local m = RecurrenceAnalysis.sparse(i,j,true,size($x,1),size($y,1))
+                CrossRecurrenceMatrix(m)
             end
             return esc(ret_ex)
-        elseif f == :recurrencematrix
+        elseif f == :RecurrenceMatrix
             # ij_block_rmat(x,x,width,d,...) with d=-1,0
-            @gensym i j ii jj n
             ex.args[1] = :(RecurrenceAnalysis.ij_block_rmat)
             x = ex.args[2]
             insert!(ex.args, 3, x)
             insert!(ex.args, 4, dict_op[:width])
             insert!(ex.args, 5, -1)
-            exd_lower  = :(($i,$j) = $(parse(string(ex))))
+            exd_lower  = :(local i, j = $(parse(string(ex)))) # lower diag block
             ex.args[5] = 0
-            exd_center = :(($ii,$jj) = $(parse(string(ex))))
+            exd_center = :(local ii, jj = $(parse(string(ex)))) # central diag block
             ret_ex = quote
                 $exd_lower
-                $i, $j = [$i;$j], [$j;$i]
+                i, j = [i;j], [j;i] # the upper diag block is the transpose of the lower
                 $exd_center
-                append!($i,$ii)
-                append!($j,$jj)
-                $n = size($x,1)
-                RecurrenceAnalysis.sparse($i,$j,true,$n,$n)
+                append!(i,ii)
+                append!(j,jj)
+                local n = size($x,1)
+                local m = RecurrenceAnalysis.sparse(i,j,true,n,n)
+                RecurrenceMatrix(m)
             end
             return esc(ret_ex)
-        elseif f == :jointrecurrencematrix
-            @gensym rm1 rm2
+        elseif f == :JointRecurrenceMatrix
             x = ex.args[2]
             y = ex.args[3]
             minsz = :(min(size($x,1),size($y,1)))
             subx = :($x[1:$minsz,:])
             suby = :($y[1:$minsz,:])
-            ex.args[1] = :recurrencematrix
+            # Call `@windowed RecurrenceMatrix` twice, recycling the argument (`x` and `y`)
+            ex.args[1] = :RecurrenceMatrix
             deleteat!(ex.args, 3)
             ex.args[2] = subx
-            ex_rmx = :($rm1 = @windowed($(parse(string(ex))),width=$(dict_op[:width])))
+            ex_rmx = :(local rm1 = @windowed($(parse(string(ex))),width=$(dict_op[:width])))
             ex.args[2] = suby
-            ex_rmy = :($rm2 = @windowed($(parse(string(ex))),width=$(dict_op[:width])))
+            ex_rmy = :(local rm2 = @windowed($(parse(string(ex))),width=$(dict_op[:width])))
             ret_ex = quote
                 $ex_rmx
                 $ex_rmy
-                $rm1 .& $rm2
+                JointRecurrenceMatrix(rm1.data .& rm2.data)
             end
             return esc(ret_ex)
         end

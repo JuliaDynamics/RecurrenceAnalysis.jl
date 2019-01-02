@@ -8,13 +8,13 @@ function checkgridsize(width::T, height::T, dims::Tuple{T,T}) where T<:Integer
                      (height,width-1) => height/(width-1))
     distances = Dict(d=>(r-ratio) for (d,r) in intratios)
     distancesigns = sign.(collect(values(distances)))
-    if all(distancesigns .>= 0) || all(distancesigns .<= 0)
+    if all(x -> x >= 0, distancesigns) || all(x -> x <= 0, distancesigns)
         width_adj = round(Integer, height*dims[1]/dims[2])
         height_adj = round(Integer, width*dims[2]/dims[1])
         width = min(width, width_adj)
         height = min(height, height_adj)
-        @warn """the specified dimensions are not proportional to the matrix size
-              The size of the plot will be $width×$height."""
+        @warn "The specified dimensions are not proportional to the matrix size. "*
+              "The size of the plot will be $width×$height."
     end
     (width, height)
 end
@@ -29,7 +29,7 @@ function overlapgrid(m::T, n::T) where T<:Integer
 end
 
 # Calculate the level of "gray" (0=white, 1=black) corresponding to a matrix block
-function block2grayscale(x::AbstractMatrix, rind::Tuple{T,T}, cind::Tuple{T,T}) where T<:Integer
+function block2grayscale(x, rind::Tuple{T,T}, cind::Tuple{T,T}) where T<:Integer
     submat = @view x[rind[1]:rind[2], cind[1]:cind[2]]
     ratio = count(!iszero, submat)/prod(size(submat))
 end
@@ -63,7 +63,7 @@ is calculated for each element of the grid, proportional to the number of
 recurrent points contained in it. The levels of gray are coded as numbers of the
 same type as the black and white codes.
 """
-function recurrenceplot(x::AbstractMatrix, bwcode::Tuple{TT,T}=(0.0,1.0);
+function recurrenceplot(x, bwcode::Tuple{TT,T}=(0.0,1.0);
     exactsize=false, kwargs...) where {TT<:Real, T<:Real}
 
     dims = size(x)

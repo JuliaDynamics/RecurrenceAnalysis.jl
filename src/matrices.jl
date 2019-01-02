@@ -84,11 +84,66 @@ function _distancematrix(x::Dataset{S,Tx}, y::Dataset{S,Ty},
 end
 
 
-#### Recurrence matrix ####
-# Defined as a wrapper of crossrecurrencematrix
+
+#######################
+# Type
+#######################
+abstract type AbstractRecurrenceMatrix end
+const ARM = AbstractRecurrenceMatrix
+struct RecurrenceMatrix <: AbstractRecurrenceMatrix
+    data::SparseMatrixCSC{Bool,Int}
+end
+struct CrossRecurrenceMatrix <: AbstractRecurrenceMatrix
+    data::SparseMatrixCSC{Bool,Int}
+end
+struct JointRecurrenceMatrix <: AbstractRecurrenceMatrix
+    data::SparseMatrixCSC{Bool,Int}
+end
+
+function Base.summary(R::AbstractRecurrenceMatrix)
+    N = nnz(R.data)
+    return "$(nameof(typeof(R))) of size $(size(R.data)) with $N entries:"
+end
+function Base.show(io::IO, R::AbstractRecurrenceMatrix)
+    s = sprint(io -> show(IOContext(io, :limit=>true), MIME"text/plain"(), R.data))
+    s = split(s, '\n')[2:end]
+    s = [replace(line, "=  true"=>"", count=1) for line in s]
+    s = join(s, '\n')
+    tos = summary(R)*"\n"*s
+    println(io, tos)
+end
+
+# Propagate used functions:
+begin
+    extentions = [
+        (:Base, (:getindex, :size, :length, :view, :iterate)),
+        (:LinearAlgebra, (:diag, :triu, :tril, :issymmetric)),
+        (:SparseArrays, (:nnz, :rowvals, :nzrange))
+    ]
+    for (M, fs) in extentions
+        for f in fs
+            @eval $M.$(f)(x::ARM, args...) = $(f)(x.data, args...)
+        end
+    end
+end
+LinearAlgebra.issymmetric(::RecurrenceMatrix) = true
+# column values in sparse matrix (parallel to rowvals)
+function colvals(x::SparseMatrixCSC)
+    cv = zeros(Int,nnz(x))
+    @inbounds for c=1:size(x,2)
+        cv[nzrange(x,c)] .= c
+    end
+    cv
+end
+colvals(x::ARM) = colvals(x.data)
+
+@deprecate recurrencematrix RecurrenceMatrix
+@deprecate crossrecurrencematrix CrossRecurrenceMatrix
+@deprecate jointrecurrencematrix JointRecurrenceMatrix
+
 
 """
-    recurrencematrix(x, ε; kwargs...)
+    RecurrenceMatrix(x, ε; kwargs...)
 
 Create a recurrence matrix from an embedded time series.
 
@@ -115,7 +170,7 @@ by the following keyword arguments:
   and `scale` is ignored.
 * `metric` : metric of the distances, as in [`distancematrix`](@ref).
 
-See also: [`crossrecurrencematrix`](@ref), [`jointrecurrencematrix`](@ref) and
+See also: [`CrossRecurrenceMatrix`](@ref), [`JointRecurrenceMatrix`](@ref) and
 use [`recurrenceplot`](@ref) to turn the result of these functions into a plottable format.
 
 ## References
@@ -126,13 +181,16 @@ use [`recurrenceplot`](@ref) to turn the result of these functions into a plotta
 recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
-recurrencematrix(x, ε; kwargs...) = crossrecurrencematrix(x, x, ε; kwargs...)
+function RecurrenceMatrix(x, ε; kwargs...)
+    m = crossrecurrencematrix(x, x, ε; kwargs...)
+    return RecurrenceMatrix(m)
+end
 
 
 #### Cross recurrence matrix ####
 
 """
-    crossrecurrencematrix(x, y, ε; kwargs...)
+    CrossRecurrenceMatrix(x, y, ε; kwargs...)
 
 Create a cross recurrence matrix from the time series `x` and `y`.
 
@@ -141,9 +199,14 @@ For the time series `x`, `y`, of length `n` and `m`, respectively, it is a
 sparse `n×m` matrix of Boolean values, such that if `d(x[i], y[j]) ≤ ε`,
 then the cell `(i, j)` of the matrix will have a `true` value.
 
-See [`recurrencematrix`](@ref) for details, references and keywords.
-See also: [`jointrecurrencematrix`](@ref).
+See [`RecurrenceMatrix`](@ref) for details, references and keywords.
+See also: [`JointRecurrenceMatrix`](@ref).
 """
+function CrossRecurrenceMatrix(x, y, ε; kwargs...)
+    m = crossrecurrencematrix(x, y, ε; kwargs...)
+    return CrossRecurrenceMatrix(m)
+end
+
 function crossrecurrencematrix(x, y, ε; scale=1, fixedrate=false, metric=Chebyshev())
     # Check fixed recurrence rate - ε must be within (0, 1)
     if fixedrate
@@ -151,7 +214,8 @@ function crossrecurrencematrix(x, y, ε; scale=1, fixedrate=false, metric=Chebys
         return crossrecurrencematrix(x, y, 1; scale=sfun, fixedrate=false, metric=metric)
     else
         scale_value = _computescale(scale, x, y, metric)
-        return _crossrecurrencematrix(x, y, ε*scale_value, metric)
+        spm = _crossrecurrencematrix(x, y, ε*scale_value, metric)
+        return spm
     end
 end
 
@@ -195,7 +259,7 @@ end
 #### Joint recurrence matrix ####
 
 """
-    jointrecurrencematrix(x, y, ε; kwargs...)
+    JointRecurrenceMatrix(x, y, ε; kwargs...)
 
 Create a joint recurrence matrix from the time series `x` and `y`.
 
@@ -205,12 +269,12 @@ simultaneously. It is calculated by the element-wise multiplication
 of the recurrence matrices of `x` and `y`. If `x` and `y` are of different
 length, the recurrences are only calculated until the length of the shortest one.
 
-See [`recurrencematrix`](@ref) for details, references and keywords.
-See also: [`crossrecurrencematrix`](@ref).
+See [`RecurrenceMatrix`](@ref) for details, references and keywords.
+See also: [`CrossRecurrenceMatrix`](@ref).
 """
-function jointrecurrencematrix(x, y, ε; kwargs...)
+function JointRecurrenceMatrix(x, y, ε; kwargs...)
     n = min(size(x,1), size(y,1))
-    rm1 = recurrencematrix(x[1:n,:], ε, kwargs...)
-    rm2 = recurrencematrix(y[1:n,:], ε, kwargs...)
-    return rm1 .* rm2
+    rm1 = RecurrenceMatrix( (@view x[1:n,:]), ε, kwargs...)
+    rm2 = RecurrenceMatrix( (@view y[1:n,:]), ε, kwargs...)
+    return JointRecurrenceMatrix(rm1.data .* rm2.data)
 end

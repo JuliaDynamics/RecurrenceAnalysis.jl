@@ -3,8 +3,10 @@ module RecurrenceAnalysis
 using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, StaticArrays
 import Base.Meta.parse
 
+export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix
 export embed,
        reconstruct,
+       Dataset,
        distancematrix,
        recurrencematrix,
        crossrecurrencematrix,
@@ -21,20 +23,8 @@ export embed,
        trappingtime,
        maxvert,
        rqa,
-       autocorrelation,
-       ami,
-       gmi,
        sorteddistances,
        @windowed
-
-# column values in sparse matrix (parallel to rowvals)
-function colvals(x::SparseMatrixCSC)
-    cv = zeros(Int,nnz(x))
-    @inbounds for c=1:size(x,2)
-        cv[nzrange(x,c)] .= c
-    end
-    cv
-end
 
 include("matrices.jl")
 include("plot.jl")
