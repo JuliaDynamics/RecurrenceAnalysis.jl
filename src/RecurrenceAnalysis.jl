@@ -3,6 +3,7 @@ module RecurrenceAnalysis
 using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, StaticArrays
 import Base.Meta.parse
 
+export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix
 export embed,
        reconstruct,
        Dataset,
@@ -22,9 +23,6 @@ export embed,
        trappingtime,
        maxvert,
        rqa,
-       autocorrelation,
-       ami,
-       gmi,
        sorteddistances,
        @windowed
 

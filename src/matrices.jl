@@ -137,7 +137,9 @@ function colvals(x::SparseMatrixCSC)
 end
 colvals(x::ARM) = colvals(x.data)
 
-export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix
+@deprecate recurrencematrix RecurrenceMatrix
+@deprecate crossrecurrencematrix CrossRecurrenceMatrix
+@deprecate jointrecurrencematrix JointRecurrenceMatrix
 
 
 """
