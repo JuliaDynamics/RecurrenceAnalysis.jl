@@ -210,7 +210,7 @@ function CrossRecurrenceMatrix(x, y, ε; kwargs...)
     return CrossRecurrenceMatrix(m)
 end
 
-function crossrecurrencematrix(x, y, ε; scale=1, fixedrate=false, metric=Chebyshev())
+function crossrecurrencematrix(x, y, ε; scale=1, fixedrate=false, metric=DEFAULT_METRIC)
     # Check fixed recurrence rate - ε must be within (0, 1)
     if fixedrate
         sfun = (m) -> quantile(m[:], ε)
@@ -234,7 +234,7 @@ _crossrecurrencematrix(x, y, ε, getmetric(metric))
 
 # Convert the inputs to Datasets (better performance in all cases)
 function _crossrecurrencematrix(x::AbstractVecOrMat, y::AbstractVecOrMat,
-                                ε, metric::Metric=Chebyshev())
+                                ε, metric::Metric=DEFAULT_METRIC)
     return _crossrecurrencematrix(Dataset(x), Dataset(y), ε, metric)
 end
 
