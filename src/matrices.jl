@@ -8,6 +8,8 @@ const METRICS = Dict(
     "min"=>Cityblock()
 )
 
+const DEFAULT_METRIC = Euclidean()
+
 function getmetric(normtype::AbstractString)
     normtype = lowercase(normtype)
     !haskey(METRICS,normtype) && error("incorrect norm type. Accepted values are \""
@@ -19,7 +21,7 @@ end
 #### Distance matrix ####
 
 """
-    distancematrix(x [, y = x], metric = Chebyshev())
+    distancematrix(x [, y = x], metric = "euclidean")
 
 Create a matrix with the distances between each pair of points of the
 time series `x` and `y` using `metric`.
@@ -35,22 +37,22 @@ the [`Distances` package](https://github.com/JuliaStats/Distances.jl).
 The list of strings available to define the metric are:
 
 * `"max"` or `"inf"` for the maximum or L∞ norm
-  (`Chebyshev()` in the `Distances` package, used by default).
-* `"euclidean"` for the L2 or Euclidean norm
+  (`Chebyshev()` in the `Distances` package).
+* `"euclidean"` for the L2 or Euclidean norm, used by default
   (`Euclidean()` in `Distances`).
 * `"manhattan"`, `"cityblock"`, `"taxicab"` or `"min"` for the Manhattan or L1 norm
   (`Cityblock()` in `Distances`).
 """
-distancematrix(x, metric::Union{Metric,String}=Chebyshev()) = distancematrix(x, x, metric)
+distancematrix(x, metric::Union{Metric,String}=DEFAULT_METRIC) = distancematrix(x, x, metric)
 
 # For 1-dimensional arrays (vectors), the distance does not depend on the metric
-distancematrix(x::Vector, y::Vector, metric=Chebyshev()) = abs.(x .- y')
+distancematrix(x::Vector, y::Vector, metric=DEFAULT_METRIC) = abs.(x .- y')
 
 # If the metric is supplied as a string, get the corresponding Metric from Distances
 distancematrix(x, y, metric::String) = distancematrix(x, y, getmetric(metric))
 
 const MAXDIM = 9
-function distancematrix(x::Tx, y::Ty, metric::Metric=Chebyshev()) where
+function distancematrix(x::Tx, y::Ty, metric::Metric=DEFAULT_METRIC) where
          {Tx<:Union{AbstractMatrix, Dataset}} where {Ty<:Union{AbstractMatrix, Dataset}}
     sx, sy = size(x), size(y)
     if sx[2] != sy[2]
@@ -145,21 +147,21 @@ colvals(x::ARM) = colvals(x.data)
 """
     RecurrenceMatrix(x, ε; kwargs...)
 
-Create a recurrence matrix from an embedded time series.
+Create a recurrence matrix from trajectory `x`.
 
 ## Description
 
 The recurrence matrix is a numeric representation of a "recurrence plot" [1, 2],
 in the form of a sparse square matrix of Boolean values.
 
-`x` must be `Dataset` or a Vector or Matrix with data points in rows
+`x` must be a `Vector` or a `Dataset` or a `Matrix` with data points in rows
 (possibly representing and embedded phase space; see [`embed`](@ref)).
 If `d(x[i], x[j]) ≤ ε` (with `d` the distance function),
 then the cell `(i, j)` of the matrix will have a `true`
 value. The criteria to evaluate distances between data points are defined
 by the following keyword arguments:
 
-* `scale` : a function of the distance matrix (see [`distancematrix`](@ref)),
+* `scale=1` : a function of the distance matrix (see [`distancematrix`](@ref)),
   or a fixed number, used to scale the value of `ε`. Typical choices are
   `maximum` or `mean`, such that the threshold `ε` is defined as a ratio of the
   maximum or the mean distance between data points, respectively.
@@ -168,7 +170,8 @@ by the following keyword arguments:
   taken as a target fixed recurrence rate (see [`recurrencerate`](@ref)).
   If `fixedrate` is set to `true`, `ε` must be a value between 0 and 1,
   and `scale` is ignored.
-* `metric` : metric of the distances, as in [`distancematrix`](@ref).
+* `metric="euclidean"` : metric of the distances, either `Metric` or a string,
+   as in [`distancematrix`](@ref).
 
 See also: [`CrossRecurrenceMatrix`](@ref), [`JointRecurrenceMatrix`](@ref) and
 use [`recurrenceplot`](@ref) to turn the result of these functions into a plottable format.
@@ -192,7 +195,7 @@ end
 """
     CrossRecurrenceMatrix(x, y, ε; kwargs...)
 
-Create a cross recurrence matrix from the time series `x` and `y`.
+Create a cross recurrence matrix from trajectories `x` and `y`.
 
 The cross recurrence matrix is a bivariate extension of the recurrence matrix.
 For the time series `x`, `y`, of length `n` and `m`, respectively, it is a
@@ -261,7 +264,7 @@ end
 """
     JointRecurrenceMatrix(x, y, ε; kwargs...)
 
-Create a joint recurrence matrix from the time series `x` and `y`.
+Create a joint recurrence matrix from `x` and `y`.
 
 The joint recurrence matrix considers the recurrences of the trajectories
 of `x` and `y` separately, and looks for points where both recur
