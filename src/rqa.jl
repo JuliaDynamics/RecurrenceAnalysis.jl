@@ -64,18 +64,16 @@ end
 Calculate the determinism (DET) of a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
-function determinism(diag_hist::Vector; lmin=2, kwargs...)
+function determinism(diag_hist::Vector; lmin=2, kwargs...)::Float64
     if lmin < 2
         error("lmin must be 2 or greater")
     end
     nbins = length(diag_hist)
     diag_points = collect(1:nbins) .* diag_hist
-    (lmin > nbins) ? 0.0 : typeof(0.0)( sum(diag_points[lmin:nbins])/sum(diag_points) )
+    return (lmin > nbins) ? 0.0 : sum(diag_points[lmin:nbins])/sum(diag_points)
 end
 
-function determinism(x::ARM; kwargs...)
-    determinism(diagonalhistogram(x; kwargs...); kwargs...)
-end
+determinism(x::ARM; kwargs...) = determinism(diagonalhistogram(x; kwargs...); kwargs...)
 
 """
     avgdiag(x; lmin=2, theiler=0)
@@ -83,19 +81,16 @@ end
 Calculate the average diagonal length (L) in a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
-function avgdiag(diag_hist::Vector; lmin=2, kwargs...)
+function avgdiag(diag_hist::Vector; lmin=2, kwargs...)::Float64
     if lmin < 2
         error("lmin must be 2 or greater")
     end
     nbins = length(diag_hist)
     diag_points = collect(1:nbins) .* diag_hist
-    return (lmin > nbins) ? 0.0 :
-        Float64( sum(diag_points[lmin:nbins])/sum(diag_hist[lmin:nbins]) )
+    return (lmin > nbins) ? 0.0 : sum(diag_points[lmin:nbins])/sum(diag_hist[lmin:nbins])
 end
 
-function avgdiag(x::ARM; kwargs...)
-    avgdiag(diagonalhistogram(x; kwargs...); kwargs...)
-end
+avgdiag(x::ARM; kwargs...) =  avgdiag(diagonalhistogram(x; kwargs...); kwargs...)
 
 """
     maxdiag(x; theiler=0)
@@ -112,7 +107,7 @@ maxdiag(x::ARM; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
 Calculate the divergence of a recurrence matrix
 (actually the inverse of `maxdiag`).
 """
-divergence(x; kwargs...) = typeof(0.0)( 1/maxdiag(x; kwargs...) )
+divergence(x; kwargs...) = Float64( 1/maxdiag(x; kwargs...) )
 
 """
     rqaentropy(x; lmin=2, theiler=0)
@@ -120,7 +115,7 @@ divergence(x; kwargs...) = typeof(0.0)( 1/maxdiag(x; kwargs...) )
 Calculate the Shannon entropy of diagonal lengths (ENT) of a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
-function rqaentropy(diag_hist::Vector; lmin=2, kwargs...)
+function rqaentropy(diag_hist::Vector; lmin=2, kwargs...)::Float64
     if lmin < 2
         error("lmin must be 2 or greater")
     end
@@ -128,15 +123,13 @@ function rqaentropy(diag_hist::Vector; lmin=2, kwargs...)
     if lmin <= nbins
         prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist[lmin:nbins])
         prob_bins = prob_bins[findall(!iszero, prob_bins)]
-        Float64( -sum(p*log(p) for p in prob_bins) )
+        return -sum(prob_bins .* log.(prob_bins))
     else
-        0.0
+        return 0.0
     end
 end
 
-function rqaentropy(x::ARM; kwargs...)
-    rqaentropy(diagonalhistogram(x; kwargs...); kwargs...)
-end
+rqaentropy(x::ARM; kwargs...) = rqaentropy(diagonalhistogram(x; kwargs...); kwargs...)
 
 """
     trend(x; theiler=0, border=10)
@@ -153,9 +146,7 @@ function trend(npoints::Vector; theiler=0, border=10, kwargs...)::Float64
     (w'*(rrk[a:b] .- mean(rrk[a:b])) ./ (w'*w))[1]
 end
 
-function trend(x::ARM; kwargs...)
-    trend(tau_recurrence(x); kwargs...)
-end
+trend(x::ARM; kwargs...) = trend(tau_recurrence(x); kwargs...)
 
 # Number of l-length sequences, based on diagonals
 function countsequences(diag_hist::Vector; lmin=2, kwargs...)
@@ -164,9 +155,7 @@ function countsequences(diag_hist::Vector; lmin=2, kwargs...)
     overlap * diag_hist
 end
 
-function countsequences(x::ARM; kwargs...)
-    countsequences(diagonalhistogram(x; kwargs...); kwargs...)
-end
+countsequences(x::ARM; kwargs...) = countsequences(diagonalhistogram(x; kwargs...); kwargs...)
 
 # 2. Based on vertical lines
 
@@ -176,42 +165,42 @@ function verticalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     nbins = 1
     rv = rowvals(x)
     # Iterate over columns
-    for d = 1:n
-        rvd = rv[nzrange(x,d)]
+    for c = 1:n
+        rvc = rv[nzrange(x,c)]
         # Remove theiler window if needed
         if theiler != 0
-            rvd = rvd[(rvd .<= d-theiler) .| (rvd .>= d+theiler)]
+            rvc = rvc[(rvc .<= c-theiler) .| (rvc .>= c+theiler)]
         end
-        nd = length(rvd)
-        if nd>1
-            r1 = rvd[1]
+        nc = length(rvc)
+        if nc>1
+            r1 = rvc[1]
             rprev = r1
-            for r in rvd[2:end]
+            for r in rvc[2:end]
                 # Look for nonzero that starts a new column fragment
                 # (more than one row after the previous one)
                 if r-rprev != 1
-                    current_diag = rprev-r1+1
-                    if current_diag > nbins
-                        append!(bins, zeros(current_diag-nbins))
-                        nbins = current_diag
+                    current_vert = rprev-r1+1
+                    if current_vert > nbins
+                        append!(bins, zeros(current_vert-nbins))
+                        nbins = current_vert
                     end
-                    bins[current_diag] += 1
+                    bins[current_vert] += 1
                     r1 = r
                 end
                 rprev = r
             end
             # Last column fragment
-            if rprev-rvd[end-1] == 1
-                current_diag = rprev-r1+1
-                if current_diag > nbins
-                    append!(bins, zeros(current_diag-nbins))
-                    nbins = current_diag
+            if rprev-rvc[end-1] == 1
+                current_vert = rprev-r1+1
+                if current_vert > nbins
+                    append!(bins, zeros(current_vert-nbins))
+                    nbins = current_vert
                 end
-                bins[current_diag] += 1
+                bins[current_vert] += 1
             else
                 bins[1] += 1
             end
-        elseif nd==1
+        elseif nc==1
             bins[1] += 1
         end
     end
