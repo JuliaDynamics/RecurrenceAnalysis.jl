@@ -193,7 +193,7 @@ end
 
 # macro extend ex # the expression must be of the type h[p] += 1
 
-function verticalhistogram(x::ARM; theiler::Integer=0, whitelines=true, kwargs...)
+function verticalhistogram_old(x::ARM; theiler::Integer=0, whitelines=true, kwargs...)
     m,n=size(x)
     # histogram for "black lines"
     bins = [0]
@@ -212,8 +212,6 @@ function verticalhistogram(x::ARM; theiler::Integer=0, whitelines=true, kwargs..
         nc = length(rvc)
         if nc>1
             r1 = rvc[1]
-            # add white line prior to the first point if it exists
-            whitelines && (r1 != 1) && (nbins_w = extendhistogram!(bins_w, nbins_w, r1-1))
             rprev = r1
             for r in rvc[2:end]
                 # Look for nonzero that starts a new column fragment
@@ -235,19 +233,75 @@ function verticalhistogram(x::ARM; theiler::Integer=0, whitelines=true, kwargs..
             else
                 bins[1] += 1
             end
-            # add white lines after the last point if it exists
-            whitelines && (rprev != m) && (nbins_w = extendhistogram!(bins_w, nbins_w, m-rprev))
         elseif nc==1
-            # add a single black point, and white lines around it
             bins[1] += 1
-            whitelines && begin
-               (rvc[1] != 1) && (nbins_w = extendhistogram!(bins_w, nbins_w, rvc[1]-1))
-             (rvc[1] != m) && (nbins_w = extendhistogram!(bins_w, nbins_w, m-rvc[1]))
-            end
-        else # add full column as white line
-            whitelines && (nbins_w = extendhistogram!(bins_w, nbins_w, m))
         end
     end
+    return (bins, bins_w)
+end
+
+function verticalhistogram(x::ARM; theiler::Integer=0, whitelines=true, kwargs...)
+    m,n=size(x)
+    rv = rowvals(x)
+    cv = colvals(x)
+    return _linehistogram(rv,cv,theiler,whitelines)
+end
+
+function _linehistogram(rows::T, cols::T, theiler::Integer=0, whitelines=true) where {T<:AbstractVector{Int}}
+    # check bounds
+    n = length(rows)
+    if length(cols) != n
+        error("mismatch between number of row and column indices")
+    end
+    # histogram for "black lines"
+    bins = [0]
+    nbins = 1
+    # histogram for "white lines"
+    bins_w = [0]
+    nbins_w = 1
+    # find first point outside the Theiler window
+    firstindex = 1
+    while (firstindex<=n) && (abs(rows[firstindex]-cols[firstindex])<theiler)
+        firstindex += 1
+    end
+    if firstindex > n
+        return ([0],[0])
+    end
+    # Iterate over columns
+    cprev = cols[firstindex]
+    r1 = rows[firstindex]
+    rprev = r1 - 1 # coerce that (a) is not hit in the first iteration
+    @inbounds for i=firstindex:n
+        r = rows[i]
+        c = cols[i]
+        if abs(r-c)>=theiler
+        # Search for more than one point in the same column
+        if c == cprev # true in the first iteration and after the first of each column
+            # Look for nonzero that starts a new column fragment
+            # (more than one row after the previous one)
+            if r-rprev !=1 # (a)
+                # white line
+                whitelines && (nbins_w = extendhistogram!(bins_w, nbins_w, r-rprev-1))
+                # black line
+                current_vert = rprev-r1+1
+                nbins = extendhistogram!(bins, nbins, current_vert)
+                r1 = r
+            end
+            rprev = r
+        else # false in the first of each column except the first of all
+            # process last fragment of the previous column
+            current_vert = rprev-r1+1
+            nbins = extendhistogram!(bins, nbins, current_vert)
+            # common
+            cprev = c # update column
+            r1 = r
+            rprev = r
+        end
+        end
+    end
+    # Last fragment
+    current_vert = rprev-r1+1
+    extendhistogram!(bins, nbins, current_vert)
     return (bins, bins_w)
 end
 
