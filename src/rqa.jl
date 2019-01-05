@@ -1,5 +1,7 @@
 # Recurrence parameters as defined by Marwan et al. (2007)
 
+# Recurrence rate
+
 """
     recurrencerate(x; theiler=0)
 
@@ -24,98 +26,7 @@ function tau_recurrence(x::ARM)
     [count(!iszero, diag(x,d))/(n-d) for d in (0:n-1)]
 end
 
-function recurrencestructures(x::ARM; diagonal=true, vertical=true, recurrencetimes=true, kwargs...)
-    
-    # Parse arguments for diagonal and vertical structures
-    histograms = Dict{String,Vector{Int}}()
-    if diagonal
-        kw_d = Dict(kwargs)
-        haskey(kw_d, :theilerdiag) && (kw_d[:theiler] = kw_d[:theilerdiag])
-        haskey(kw_d, :lmindiag) && (kw_d[:lmin] = kw_d[:lmindiag])
-        histograms["diagonal"] = diagonalhistogram(x; kw_d...)
-    end
-    if vertical || recurrencetimes
-        kw_v = Dict(kwargs)
-        haskey(kw_v, :theilervert) && (kw_v[:theiler] = kw_v[:theilervert])
-        haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
-        vhist = verticalhistogram(x; kw_v...)
-        vertical && (histograms["vertical"] = vhist[1])
-        recurrencetimes && (histograms["recurrencetimes"] = vhist[2])
-    end
-    return histograms
-end
-
-# Based on diagonal lines
-
-function diagonalhistogram_old(x::ARM; theiler::Integer=0, kwargs...)
-    theiler < 0 && error("Theiler window length must be greater than or equal to 0")
-    m,n=size(x)
-    rv = rowvals(x)
-    dv = colvals(x) .- rowvals(x)
-    loi_hist = Int[]
-    if issymmetric(x)
-        valid = (dv .>= max(theiler,1))
-        f = 2
-        # If theiler==0, the LOI is counted separately to avoid duplication
-        if theiler == 0
-            loi_hist = verticalhistogram_old(CrossRecurrenceMatrix(hcat(diag(x,0))))[1]
-        end
-    else
-        valid = (abs.(dv) .>= theiler)
-        f = 1
-    end
-    vmat = CrossRecurrenceMatrix(sparse(rv[valid], dv[valid] .+ (m+1), true))
-    dh = f .* verticalhistogram_old(vmat; theiler=0)[1]
-    # Add frequencies of LOI if suitable
-    if (nbins_loi = length(loi_hist)) > 0
-        nbins = length(dh)
-        if nbins_loi > nbins
-            loi_hist[1:nbins] .+= dh
-            dh = loi_hist
-        else
-            dh[1:nbins_loi] .+= loi_hist
-        end
-    end
-    dh
-end
-
-function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
-    theiler < 0 && error("Theiler window length must be greater than or equal to 0")
-    m,n=size(x)
-    rv = rowvals(x)[:]
-    dv = colvals(x) .- rowvals(x)
-    loi_hist = Int[]
-    if issymmetric(x)
-        # If theiler==0, the LOI is counted separately to avoid duplication
-        if theiler == 0
-            loi_hist = verticalhistogram(CrossRecurrenceMatrix(hcat(diag(x,0))))[1]
-        end
-        inside = (dv .< max(theiler,1))
-        f = 2
-    else
-        inside = (abs.(dv) .< theiler)
-        f = 1
-    end
-    # remove Theiler window and short by diagonals
-    deleteat!(rv, inside)
-    deleteat!(dv, inside)
-    rv = rv[sortperm(dv)]
-    dv = sort!(dv)
-    dh = f.*_linehistogram(rv, dv, 0, false)[1]
-    # Add frequencies of LOI if suitable
-    if (nbins_loi = length(loi_hist)) > 0
-        nbins = length(dh)
-        if nbins_loi > nbins
-            loi_hist[1:nbins] .+= dh
-            dh = loi_hist
-        else
-            dh[1:nbins_loi] .+= loi_hist
-        end
-    end
-    return dh
-end
-
-
+# 1. Based on diagonal lines
 
 """
     determinism(x; lmin=2, theiler=0)
@@ -218,131 +129,6 @@ countsequences(x::ARM; kwargs...) = countsequences(diagonalhistogram(x; kwargs..
 
 # 2. Based on vertical lines
 
-# Add one item to position `p` in the histogram `h` that has precalculated length `n`
-# - update the histogram and return its new length
-@inline function extendhistogram!(h::Vector{Int}, n::Int, p::Int)
-    if p > n
-        append!(h, zeros(p-n))
-        n = p
-    end
-    h[p] += 1
-    return n
-end
-
-# macro extend ex # the expression must be of the type h[p] += 1
-
-function verticalhistogram_old(x::ARM; theiler::Integer=0, whitelines=true, kwargs...)
-    m,n=size(x)
-    # histogram for "black lines"
-    bins = [0]
-    nbins = 1
-    # histogram for "white lines"
-    bins_w = [0]
-    nbins_w = 1
-    rv = rowvals(x)
-    # Iterate over columns
-    for c = 1:n
-        rvc = rv[nzrange(x,c)]
-        # Remove theiler window if needed
-        if theiler != 0
-            rvc = rvc[(rvc .<= c-theiler) .| (rvc .>= c+theiler)]
-        end
-        nc = length(rvc)
-        if nc>1
-            r1 = rvc[1]
-            rprev = r1
-            for r in rvc[2:end]
-                # Look for nonzero that starts a new column fragment
-                # (more than one row after the previous one)
-                if r-rprev != 1
-                    # white line
-                    whitelines && (nbins_w = extendhistogram!(bins_w, nbins_w, r-rprev-1))
-                    # black line
-                    current_vert = rprev-r1+1
-                    nbins = extendhistogram!(bins, nbins, current_vert)
-                    r1 = r
-                end
-                rprev = r
-            end
-            # Last column fragment
-            if rprev-rvc[end-1] == 1
-                current_vert = rprev-r1+1
-                nbins = extendhistogram!(bins, nbins, current_vert)
-            else
-                bins[1] += 1
-            end
-        elseif nc==1
-            bins[1] += 1
-        end
-    end
-    return (bins, bins_w)
-end
-
-function verticalhistogram(x::ARM; theiler::Integer=0, whitelines=true, kwargs...)
-    m,n=size(x)
-    rv = rowvals(x)
-    cv = colvals(x)
-    return _linehistogram(rv,cv,theiler,whitelines)
-end
-
-function _linehistogram(rows::T, cols::T, theiler::Integer=0, whitelines=true) where {T<:AbstractVector{Int}}
-    # check bounds
-    n = length(rows)
-    if length(cols) != n
-        error("mismatch between number of row and column indices")
-    end
-    # histogram for "black lines"
-    bins = [0]
-    nbins = 1
-    # histogram for "white lines"
-    bins_w = [0]
-    nbins_w = 1
-    # find first point outside the Theiler window
-    firstindex = 1
-    while (firstindex<=n) && (abs(rows[firstindex]-cols[firstindex])<theiler)
-        firstindex += 1
-    end
-    if firstindex > n
-        return ([0],[0])
-    end
-    # Iterate over columns
-    cprev = cols[firstindex]
-    r1 = rows[firstindex]
-    rprev = r1 - 1 # coerce that (a) is not hit in the first iteration
-    @inbounds for i=firstindex:n
-        r = rows[i]
-        c = cols[i]
-        if abs(r-c)>=theiler
-        # Search for more than one point in the same column
-        if c == cprev # true in the first iteration and after the first of each column
-            # Look for nonzero that starts a new column fragment
-            # (more than one row after the previous one)
-            if r-rprev !=1 # (a)
-                # white line
-                whitelines && (nbins_w = extendhistogram!(bins_w, nbins_w, r-rprev-1))
-                # black line
-                current_vert = rprev-r1+1
-                nbins = extendhistogram!(bins, nbins, current_vert)
-                r1 = r
-            end
-            rprev = r
-        else # false in the first of each column except the first of all
-            # process last fragment of the previous column
-            current_vert = rprev-r1+1
-            nbins = extendhistogram!(bins, nbins, current_vert)
-            # common
-            cprev = c # update column
-            r1 = r
-            rprev = r
-        end
-        end
-    end
-    # Last fragment
-    current_vert = rprev-r1+1
-    extendhistogram!(bins, nbins, current_vert)
-    return (bins, bins_w)
-end
-
 """
     laminarity(x; lmin=2, theiler=0)
 
@@ -436,3 +222,225 @@ function rqa(x; onlydiagonal=false, kwargs...)
         )
     end
 end
+
+### Histograms of recurrence structures ###
+
+## (to delete: old methods)
+
+function verticalhistogram_old(x::ARM; theiler::Integer=0, whitelines=true, kwargs...)
+    m,n=size(x)
+    # histogram for "black lines"
+    bins = [0]
+    nbins = 1
+    # histogram for "white lines"
+    bins_w = [0]
+    nbins_w = 1
+    rv = rowvals(x)
+    # Iterate over columns
+    for c = 1:n
+        rvc = rv[nzrange(x,c)]
+        # Remove theiler window if needed
+        if theiler != 0
+            rvc = rvc[(rvc .<= c-theiler) .| (rvc .>= c+theiler)]
+        end
+        nc = length(rvc)
+        if nc>1
+            r1 = rvc[1]
+            rprev = r1
+            for r in rvc[2:end]
+                # Look for nonzero that starts a new column fragment
+                # (more than one row after the previous one)
+                if r-rprev != 1
+                    # white line
+                    whitelines && (nbins_w = extendhistogram!(bins_w, nbins_w, r-rprev-1))
+                    # black line
+                    current_vert = rprev-r1+1
+                    nbins = extendhistogram!(bins, nbins, current_vert)
+                    r1 = r
+                end
+                rprev = r
+            end
+            # Last column fragment
+            if rprev-rvc[end-1] == 1
+                current_vert = rprev-r1+1
+                nbins = extendhistogram!(bins, nbins, current_vert)
+            else
+                bins[1] += 1
+            end
+        elseif nc==1
+            bins[1] += 1
+        end
+    end
+    return (bins, bins_w)
+end
+
+function diagonalhistogram_old(x::ARM; theiler::Integer=0, kwargs...)
+    theiler < 0 && error("Theiler window length must be greater than or equal to 0")
+    m,n=size(x)
+    rv = rowvals(x)
+    dv = colvals(x) .- rowvals(x)
+    loi_hist = Int[]
+    if issymmetric(x)
+        valid = (dv .>= max(theiler,1))
+        f = 2
+        # If theiler==0, the LOI is counted separately to avoid duplication
+        if theiler == 0
+            loi_hist = verticalhistogram_old(CrossRecurrenceMatrix(hcat(diag(x,0))))[1]
+        end
+    else
+        valid = (abs.(dv) .>= theiler)
+        f = 1
+    end
+    vmat = CrossRecurrenceMatrix(sparse(rv[valid], dv[valid] .+ (m+1), true))
+    dh = f .* verticalhistogram_old(vmat; theiler=0)[1]
+    # Add frequencies of LOI if suitable
+    if (nbins_loi = length(loi_hist)) > 0
+        nbins = length(dh)
+        if nbins_loi > nbins
+            loi_hist[1:nbins] .+= dh
+            dh = loi_hist
+        else
+            dh[1:nbins_loi] .+= loi_hist
+        end
+    end
+    dh
+end
+## (end: to delete) ##
+
+
+# Add one item to position `p` in the histogram `h` that has precalculated length `n`
+# - update the histogram and return its new length
+@inline function extendhistogram!(h::Vector{Int}, n::Int, p::Int)
+    if p > n
+        append!(h, zeros(p-n))
+        n = p
+    end
+    h[p] += 1
+    return n
+end
+
+function _linehistogram(rows::T, cols::T, theiler::Integer=0,
+    whitelines=true) where {T<:AbstractVector{Int}}
+    
+    # check bounds
+    n = length(rows)
+    if length(cols) != n
+        error("mismatch between number of row and column indices")
+    end
+    # histogram for "black lines"
+    bins = [0]
+    nbins = 1
+    # histogram for "white lines"
+    bins_w = [0]
+    nbins_w = 1
+    # find first point outside the Theiler window
+    firstindex = 1
+    while (firstindex<=n) && (abs(rows[firstindex]-cols[firstindex])<theiler)
+        firstindex += 1
+    end
+    if firstindex > n
+        return ([0],[0])
+    end
+    # Iterate over columns
+    cprev = cols[firstindex]
+    r1 = rows[firstindex]
+    rprev = r1 - 1 # coerce that (a) is not hit in the first iteration
+    @inbounds for i=firstindex:n
+        r = rows[i]
+        c = cols[i]
+        if abs(r-c)>=theiler
+        # Search for more than one point in the same column
+        if c == cprev # true in the first iteration and after the first of each column
+            # Look for nonzero that starts a new column fragment
+            # (more than one row after the previous one)
+            if r-rprev !=1 # (a)
+                # white line
+                whitelines && (nbins_w = extendhistogram!(bins_w, nbins_w, r-rprev-1))
+                # black line
+                current_vert = rprev-r1+1
+                nbins = extendhistogram!(bins, nbins, current_vert)
+                r1 = r
+            end
+            rprev = r
+        else # false in the first of each column except the first of all
+            # process last fragment of the previous column
+            current_vert = rprev-r1+1
+            nbins = extendhistogram!(bins, nbins, current_vert)
+            # common
+            cprev = c # update column
+            r1 = r
+            rprev = r
+        end
+        end
+    end
+    # Last fragment
+    current_vert = rprev-r1+1
+    extendhistogram!(bins, nbins, current_vert)
+    return (bins, bins_w)
+end
+
+function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
+    theiler < 0 && error("Theiler window length must be greater than or equal to 0")
+    m,n=size(x)
+    rv = rowvals(x)[:]
+    dv = colvals(x) .- rowvals(x)
+    loi_hist = Int[]
+    if issymmetric(x)
+        # If theiler==0, the LOI is counted separately to avoid duplication
+        if theiler == 0
+            loi_hist = verticalhistogram(CrossRecurrenceMatrix(hcat(diag(x,0))))[1]
+        end
+        inside = (dv .< max(theiler,1))
+        f = 2
+    else
+        inside = (abs.(dv) .< theiler)
+        f = 1
+    end
+    # remove Theiler window and short by diagonals
+    deleteat!(rv, inside)
+    deleteat!(dv, inside)
+    rv = rv[sortperm(dv)]
+    dv = sort!(dv)
+    dh = f.*_linehistogram(rv, dv, 0, false)[1]
+    # Add frequencies of LOI if suitable
+    if (nbins_loi = length(loi_hist)) > 0
+        nbins = length(dh)
+        if nbins_loi > nbins
+            loi_hist[1:nbins] .+= dh
+            dh = loi_hist
+        else
+            dh[1:nbins_loi] .+= loi_hist
+        end
+    end
+    return dh
+end
+
+function verticalhistogram(x::ARM; theiler::Integer=0, whitelines=true, kwargs...)
+    m,n=size(x)
+    rv = rowvals(x)
+    cv = colvals(x)
+    return _linehistogram(rv,cv,theiler,whitelines)
+end
+
+function recurrencestructures(x::ARM;
+    diagonal=true, vertical=true, recurrencetimes=true, kwargs...)
+    
+    # Parse arguments for diagonal and vertical structures
+    histograms = Dict{String,Vector{Int}}()
+    if diagonal
+        kw_d = Dict(kwargs)
+        haskey(kw_d, :theilerdiag) && (kw_d[:theiler] = kw_d[:theilerdiag])
+        haskey(kw_d, :lmindiag) && (kw_d[:lmin] = kw_d[:lmindiag])
+        histograms["diagonal"] = diagonalhistogram(x; kw_d...)
+    end
+    if vertical || recurrencetimes
+        kw_v = Dict(kwargs)
+        haskey(kw_v, :theilervert) && (kw_v[:theiler] = kw_v[:theilervert])
+        haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
+        vhist = verticalhistogram(x; kw_v...)
+        vertical && (histograms["vertical"] = vhist[1])
+        recurrencetimes && (histograms["recurrencetimes"] = vhist[2])
+    end
+    return histograms
+end
+
