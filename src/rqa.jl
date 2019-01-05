@@ -47,7 +47,7 @@ end
 
 # Based on diagonal lines
 
-function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
+function diagonalhistogram_old(x::ARM; theiler::Integer=0, kwargs...)
     theiler < 0 && error("Theiler window length must be greater than or equal to 0")
     m,n=size(x)
     rv = rowvals(x)
@@ -58,14 +58,14 @@ function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
         f = 2
         # If theiler==0, the LOI is counted separately to avoid duplication
         if theiler == 0
-            loi_hist = verticalhistogram(CrossRecurrenceMatrix(hcat(diag(x,0))))[1]
+            loi_hist = verticalhistogram_old(CrossRecurrenceMatrix(hcat(diag(x,0))))[1]
         end
     else
         valid = (abs.(dv) .>= theiler)
         f = 1
     end
     vmat = CrossRecurrenceMatrix(sparse(rv[valid], dv[valid] .+ (m+1), true))
-    dh = f .* verticalhistogram(vmat; theiler=0)[1]
+    dh = f .* verticalhistogram_old(vmat; theiler=0)[1]
     # Add frequencies of LOI if suitable
     if (nbins_loi = length(loi_hist)) > 0
         nbins = length(dh)
@@ -78,6 +78,44 @@ function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     end
     dh
 end
+
+function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
+    theiler < 0 && error("Theiler window length must be greater than or equal to 0")
+    m,n=size(x)
+    rv = rowvals(x)[:]
+    dv = colvals(x) .- rowvals(x)
+    loi_hist = Int[]
+    if issymmetric(x)
+        # If theiler==0, the LOI is counted separately to avoid duplication
+        if theiler == 0
+            loi_hist = verticalhistogram(CrossRecurrenceMatrix(hcat(diag(x,0))))[1]
+        end
+        inside = (dv .< max(theiler,1))
+        f = 2
+    else
+        inside = (abs.(dv) .< theiler)
+        f = 1
+    end
+    # remove Theiler window and short by diagonals
+    deleteat!(rv, inside)
+    deleteat!(dv, inside)
+    rv = rv[sortperm(dv)]
+    dv = sort!(dv)
+    dh = f.*_linehistogram(rv, dv, 0, false)[1]
+    # Add frequencies of LOI if suitable
+    if (nbins_loi = length(loi_hist)) > 0
+        nbins = length(dh)
+        if nbins_loi > nbins
+            loi_hist[1:nbins] .+= dh
+            dh = loi_hist
+        else
+            dh[1:nbins_loi] .+= loi_hist
+        end
+    end
+    return dh
+end
+
+
 
 """
     determinism(x; lmin=2, theiler=0)
