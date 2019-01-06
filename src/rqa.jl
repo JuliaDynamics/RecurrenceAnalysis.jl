@@ -354,8 +354,8 @@ end
 # from the indices of rows and columns/diagonals of the matrix
 # `theiler` is used for histograms of vertical structures
 # `distances` is used to simplify calculations of the distances are not wanted
-function _linehistograms(rows::T, cols::T, theiler::Integer=0,
-     distances=true) where {T<:AbstractVector{Int}}
+function _linehistograms(rows::T, cols::T, theiler::Integer=0, lmin::Integer=1,
+     distances::Bool=true) where {T<:AbstractVector{Int}}
     
     # check bounds
     n = length(rows)
@@ -390,16 +390,22 @@ function _linehistograms(rows::T, cols::T, theiler::Integer=0,
                 if r-rprev !=1 # (a): there is a separation between rprev and r
                     # update histogram of segments
                     current_vert = rprev-r1+1
-                    nbins = extendhistogram!(bins, nbins, current_vert)
-                    if  distances
-                        # update histogram of distances if it there were at least
-                        # two previous segments in the column
-                        halfline = div(current_vert, 2)
-                            if dist != 0
-                                nbins_d = extendhistogram!(bins_d, nbins_d, dist+halfline)
-                            end
-                        # update the distance
-                        dist = r-rprev+halfline-1
+                    if current_vert >= lmin
+                        nbins = extendhistogram!(bins, nbins, current_vert)
+                    end
+                    # update histogram of distances if it there were at least
+                    # two previous segments in the column
+                    if distances
+                        if current_vert >= lmin
+                            halfline = div(current_vert, 2)
+                                if dist != 0
+                                    nbins_d = extendhistogram!(bins_d, nbins_d, dist+halfline)
+                                end                        
+                            # update the distance
+                            dist = r-rprev+halfline-1
+                        else
+                            dist += r - r1
+                        end
                     end
                     r1 = r # update the start of the next segment
                 end
@@ -407,9 +413,11 @@ function _linehistograms(rows::T, cols::T, theiler::Integer=0,
             else # hit in the first point of a new column
                 # process the last fragment of the previous column
                 current_vert = rprev-r1+1
-                nbins = extendhistogram!(bins, nbins, current_vert)
+                if current_vert >= lmin
+                    nbins = extendhistogram!(bins, nbins, current_vert)
+                end
                 if  distances
-                    if dist != 0
+                    if dist!= 0 && current_vert >= lmin
                         halfline = div(current_vert, 2)
                         nbins_d = extendhistogram!(bins_d, nbins_d, dist+halfline)
                     end
@@ -424,9 +432,9 @@ function _linehistograms(rows::T, cols::T, theiler::Integer=0,
     end
     # Process the latest fragment
     current_vert = rprev-r1+1
-    nbins = extendhistogram!(bins, nbins, current_vert)
-    if  distances
-        if dist != 0
+    if current_vert >= lmin
+        nbins = extendhistogram!(bins, nbins, current_vert)
+        if  distances && dist != 0
             halfline = div(current_vert, 2)
             nbins_d = extendhistogram!(bins_d, nbins_d, dist+halfline)
         end
@@ -434,7 +442,7 @@ function _linehistograms(rows::T, cols::T, theiler::Integer=0,
     return (bins, bins_d)
 end
 
-function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
+function diagonalhistogram(x::ARM; theiler::Integer=0, lmin::Integer=1, kwargs...)
     theiler < 0 && error("Theiler window length must be greater than or equal to 0")
     m,n=size(x)
     rv = rowvals(x)[:]
@@ -443,7 +451,7 @@ function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     if issymmetric(x)
         # If theiler==0, the LOI is counted separately to avoid duplication
         if theiler == 0
-            loi_hist = verticalhistograms(CrossRecurrenceMatrix(hcat(diag(x,0))))[1]
+            loi_hist = verticalhistograms(CrossRecurrenceMatrix(hcat(diag(x,0))),lmin=lmin)[1]
         end
         inside = (dv .< max(theiler,1))
         f = 2
@@ -456,7 +464,7 @@ function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     deleteat!(dv, inside)
     rv = rv[sortperm(dv)]
     dv = sort!(dv)
-    dh = f.*_linehistograms(rv, dv, 0, false)[1]
+    dh = f.*_linehistograms(rv, dv, 0, lmin, false)[1]
     # Add frequencies of LOI if suitable
     if (nbins_loi = length(loi_hist)) > 0
         nbins = length(dh)
@@ -470,11 +478,11 @@ function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     return dh
 end
 
-function verticalhistograms(x::ARM; theiler::Integer=0,  distances=true, kwargs...)
+function verticalhistograms(x::ARM; theiler::Integer=0, lmin::Integer=1,  distances=true, kwargs...)
     m,n=size(x)
     rv = rowvals(x)
     cv = colvals(x)
-    return _linehistograms(rv,cv,theiler, distances)
+    return _linehistograms(rv,cv,theiler,lmin,distances)
 end
 
 """
