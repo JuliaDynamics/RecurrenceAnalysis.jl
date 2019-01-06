@@ -185,7 +185,7 @@ recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
 function RecurrenceMatrix(x, ε; kwargs...)
-    m = crossrecurrencematrix(x, x, ε; kwargs...)
+    m = recurrence_matrix(x, x, ε; kwargs...)
     return RecurrenceMatrix(m)
 end
 
@@ -206,18 +206,18 @@ See [`RecurrenceMatrix`](@ref) for details, references and keywords.
 See also: [`JointRecurrenceMatrix`](@ref).
 """
 function CrossRecurrenceMatrix(x, y, ε; kwargs...)
-    m = crossrecurrencematrix(x, y, ε; kwargs...)
+    m = recurrence_matrix(x, y, ε; kwargs...)
     return CrossRecurrenceMatrix(m)
 end
 
-function crossrecurrencematrix(x, y, ε; scale=1, fixedrate=false, metric=DEFAULT_METRIC)
+function recurrence_matrix(x, y, ε; scale=1, fixedrate=false, metric=DEFAULT_METRIC)
     # Check fixed recurrence rate - ε must be within (0, 1)
     if fixedrate
         sfun = (m) -> quantile(m[:], ε)
-        return crossrecurrencematrix(x, y, 1; scale=sfun, fixedrate=false, metric=metric)
+        return recurrence_matrix(x, y, 1; scale=sfun, fixedrate=false, metric=metric)
     else
         scale_value = _computescale(scale, x, y, metric)
-        spm = _crossrecurrencematrix(x, y, ε*scale_value, metric)
+        spm = _recurrence_matrix(x, y, ε*scale_value, metric)
         return spm
     end
 end
@@ -229,17 +229,17 @@ _computescale(scale::Real, args...) = scale
 
 # Internal methods to calculate the matrix:
 # If the metric is supplied as a string, get the corresponding Metric from Distances
-_crossrecurrencematrix(x, y, ε, metric::String="max") =
-_crossrecurrencematrix(x, y, ε, getmetric(metric))
+_recurrence_matrix(x, y, ε, metric::String="max") =
+_recurrence_matrix(x, y, ε, getmetric(metric))
 
 # Convert the inputs to Datasets (better performance in all cases)
-function _crossrecurrencematrix(x::AbstractVecOrMat, y::AbstractVecOrMat,
+function _recurrence_matrix(x::AbstractVecOrMat, y::AbstractVecOrMat,
                                 ε, metric::Metric=DEFAULT_METRIC)
-    return _crossrecurrencematrix(Dataset(x), Dataset(y), ε, metric)
+    return _recurrence_matrix(Dataset(x), Dataset(y), ε, metric)
 end
 
 # Core function
-function _crossrecurrencematrix(x::Dataset, y::Dataset, ε, metric::Metric)
+function _recurrence_matrix(x::Dataset, y::Dataset, ε, metric::Metric)
     x = x.data
     y = y.data
     rowvals = Vector{Int}()
