@@ -1,80 +1,54 @@
 using RecurrenceAnalysis
-using Test
+using Test, DynamicalSystemsBase
 
-# Functions for dynamic systems
-# Increment of x[ix] through RK4-integration
-# dxdh is the array of derivatives, dt is the time increment
-function dx_rk4(dxdt, x, ix, dt)
-    x = collect(x)
-    incr = zeros(length(x))
-    k1 = dxdt[ix](x...)
-    incr[ix] = dt*k1/2
-    k2 = dxdt[ix]((x+incr)...)
-    incr[ix] = dt*k2/2
-    k3 = dxdt[ix]((x+incr)...)
-    incr[ix] = dt*k3
-    k4 = dxdt[ix]((x+incr)...)
-    dt/6*(k1 + 2k2 + 2k3 + k4)
+systems = (Systems.lorenz(),)
+
+testvalues = (
+[426/234^2, 364/426, 364/50, 23, 2.02058292, 3.21794972e-7, 92/426, 92/30, 4],
+)
+
+u0s = (ones(3),)
+
+dt = 0.01
+for (ds, vals, u0) in zip(systems, testvalues, u0s)
+
+    data = trajectory(ds, dt*1000, u0; dt = dt)
+    x = data[501:2:end,1]
+
+    # Look for optimal threshold
+    dd, rr = sorteddistances(x, theiler=1)
+    # Distance and recurrence matrices
+    xe = embed(x, 3, 8)
+    rmat = RecurrenceMatrix(xe, 1.5, metric="max")
+    y = data[701:2:end,3]
+    crmat = CrossRecurrenceMatrix(x, y, 1.5)
+    jrmat = JointRecurrenceMatrix(x, y, 1.5)
+    # Recurrence plot
+    crp = recurrenceplot(crmat, width=125)
+    @test size(crp)[1] == 75
+    # RQA
+    rqapar = rqa(rmat, theiler=2, lmin=3, border=20)
+    tol = 1e-5
+    @test rqapar["RR"] ≈ vals[1]    atol = tol
+    @test rqapar["DET"] ≈ vals[2]   atol = tol
+    @test rqapar["L"] ≈ vals[3]     atol = tol
+    @test rqapar["Lmax"] ≈ vals[4]  atol = tol
+    @test rqapar["ENT"] ≈ vals[5]   atol = tol
+    @test rqapar["TND"] ≈ vals[6]   atol = tol
+    @test rqapar["LAM"] ≈ vals[7]   atol = tol
+    @test rqapar["TT"] ≈ vals[8]    atol = tol
+    @test rqapar["Vmax"] ≈ vals[9]  atol = tol
+    rqadiag = rqa(rmat, theiler=2, lmin=3, border=20, onlydiagonal=true)
+    @test all([rqapar[p]==rqadiag[p] for p in keys(rqadiag)])
+    # Fixed rate for recurrence matrix
+    rmat2 = RecurrenceMatrix(xe[1:3:end,:], 0.05; fixedrate=true)
+    @test .049 < recurrencerate(rmat2) < .051
+    # Windowed RQA
+    rmatw = @windowed RecurrenceMatrix(xe, 1.5, metric=RecurrenceAnalysis.Chebyshev()) 50
+    crmatw = @windowed(CrossRecurrenceMatrix(x, y, 1.5),30)
+    @windowed jrmatw = JointRecurrenceMatrix(x, y, 1.5) 30
+    @test jrmatw[33 .+ (1:30), 33 .+ (1:30)] == jrmat[33 .+ (1:30), 33 .+ (1:30)]
+    @windowed(rrw = recurrencerate(rmatw), width=50, step=40)
+    @windowed rqaw = rqa(rmatw) width=50 step=40
+    @test rqaw["RR"] == rrw
 end
-# Integrate dynamical system through n intervals of length dt
-function dynamical_system(x0, dxdt, dt, n)
-    m = length(x0)
-    x = zeros(n,m)
-    x[1,:] = collect(x0)
-    for t=1:n-1
-        dx = zeros(m)
-        for ix=1:m
-            dx[ix] = dx_rk4(dxdt, x[t,:], ix, dt)
-        end
-        x[t+1,:] = x[t,:][:] + dx
-    end
-    x
-end
-
-# Test with Lorenz system
-lorenz_eq(sigma, rho, b) = (
-  (x,y,z) -> sigma*(y - x),
-  (x,y,z) -> x*(rho - z) - y,
-  (x,y,z) -> x*y - b*z)
-
-sigma=10.; rho=28.; b=8/3;
-x0 = ones(3)
-lorenz_data = dynamical_system(x0, lorenz_eq(sigma,rho,b), .01, 1000)
-x = lorenz_data[501:2:end,1]
-
-# Look for optimal threshold
-dd, rr = sorteddistances(x, theiler=1)
-# Distance and recurrence matrices
-xe = embed(x, 3, 8)
-rmat = RecurrenceMatrix(xe, 1.5, metric="max")
-y = lorenz_data[701:2:end,3]
-crmat = CrossRecurrenceMatrix(x, y, 1.5)
-jrmat = JointRecurrenceMatrix(x, y, 1.5)
-# Recurrence plot
-crp = recurrenceplot(crmat, width=125)
-@test size(crp)[1] == 75
-# RQA
-rqapar = rqa(rmat, theiler=2, lmin=3, border=20)
-tol = 1e-5
-@test rqapar["RR"] == 426/234^2
-@test rqapar["DET"] == 364/426
-@test rqapar["L"] == 364/50
-@test rqapar["Lmax"] == 23
-@test rqapar["ENT"] ≈ 2.02058292
-@test rqapar["TND"] ≈ 3.21794972e-7
-@test rqapar["LAM"] == 92/426
-@test rqapar["TT"] == 92/30
-@test rqapar["Vmax"] == 4
-rqadiag = rqa(rmat, theiler=2, lmin=3, border=20, onlydiagonal=true)
-@test all([rqapar[p]==rqadiag[p] for p in keys(rqadiag)])
-# Fixed rate for recurrence matrix
-rmat2 = RecurrenceMatrix(xe[1:3:end,:], 0.05; fixedrate=true)
-@test .049 < recurrencerate(rmat2) < .051
-# Windowed RQA
-rmatw = @windowed RecurrenceMatrix(xe, 1.5, metric=RecurrenceAnalysis.Chebyshev()) 50
-crmatw = @windowed(CrossRecurrenceMatrix(x, y, 1.5),30)
-@windowed jrmatw = JointRecurrenceMatrix(x, y, 1.5) 30
-@test jrmatw[33 .+ (1:30), 33 .+ (1:30)] == jrmat[33 .+ (1:30), 33 .+ (1:30)]
-@windowed(rrw = recurrencerate(rmatw), width=50, step=40)
-@windowed rqaw = rqa(rmatw) width=50 step=40
-@test rqaw["RR"] == rrw
