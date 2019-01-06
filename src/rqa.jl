@@ -65,8 +65,8 @@ Calculate the determinism (DET) of a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
 function determinism(diag_hist::Vector; lmin=2, kwargs...)
-    if lmin < 2
-        error("lmin must be 2 or greater")
+    if lmin < 1
+        error("lmin must be 1 or greater")
     end
     nbins = length(diag_hist)
     diag_points = collect(1:nbins) .* diag_hist
@@ -84,8 +84,8 @@ Calculate the average diagonal length (L) in a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
 function avgdiag(diag_hist::Vector; lmin=2, kwargs...)
-    if lmin < 2
-        error("lmin must be 2 or greater")
+    if lmin < 1
+        error("lmin must be 1 or greater")
     end
     nbins = length(diag_hist)
     diag_points = collect(1:nbins) .* diag_hist
@@ -121,8 +121,8 @@ Calculate the Shannon entropy of diagonal lengths (ENT) of a recurrence matrix, 
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
 function rqaentropy(diag_hist::Vector; lmin=2, kwargs...)
-    if lmin < 2
-        error("lmin must be 2 or greater")
+    if lmin < 1
+        error("lmin must be 1 or greater")
     end
     nbins = length(diag_hist)
     if lmin <= nbins
