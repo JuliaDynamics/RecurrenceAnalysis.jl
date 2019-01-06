@@ -137,7 +137,7 @@ vertical lines shorter than a minimum value.
 """
 laminarity(vert_hist::Vector; kwargs...) = determinism(vert_hist; kwargs...)
 laminarity(x::ARM; kwargs...) =
-laminarity(verticalhistogram(x; kwargs...)[1]; kwargs...)
+laminarity(verticalhistograms(x; kwargs...)[1]; kwargs...)
 
 """
     trappingtime(x; lmin=2, theiler=0)
@@ -147,7 +147,7 @@ vertical lines shorter than a minimum value.
 """
 trappingtime(vert_hist::Vector; kwargs...) = avgdiag(vert_hist; kwargs...)
 trappingtime(x::ARM; kwargs...) =
-trappingtime(verticalhistogram(x; kwargs...)[1]; kwargs...)
+trappingtime(verticalhistograms(x; kwargs...)[1]; kwargs...)
 
 """
     maxvert(x; theiler=0)
@@ -155,7 +155,38 @@ trappingtime(verticalhistogram(x; kwargs...)[1]; kwargs...)
 Calculate the longest vertical line (Vmax) of a recurrence matrix.
 """
 maxvert(vert_hist::Vector; kwargs...) = length(vert_hist)
-maxvert(x::ARM; kwargs...) = maxvert(verticalhistogram(x; kwargs...)[1])
+maxvert(x::ARM; kwargs...) = maxvert(verticalhistograms(x; kwargs...)[1])
+
+# 3. Based on recurrence times
+
+"""
+    meanrecurrencetime(x[; theiler=0])
+
+Calculate the mean recurrence time (MRT) of a recurrence matrix.
+"""
+meanrecurrencetime(vert_hist::Vector) = avgdiag(vert_hist)
+meanrecurrencetime(x::ARM; kwargs...) =
+meanrecurrencetime(verticalhistograms(x; kwargs...)[2])
+
+"""
+    recurrencetimeentropy(x[; theiler=0])
+
+Calculate the entropy of the distribution of recurrence times (RTE)
+of a recurrence matrix.
+"""
+recurrencetimeentropy(vert_hist::Vector) = rqaentropy(vert_hist)
+recurrencetimeentropy(x::ARM; kwargs...) =
+recurrencetimeentropy(verticalhistograms(x; kwargs...)[2])
+
+"""
+    maxnumberrecurrencetime(x[; theiler=0])
+    
+"""
+maxnumberrecurrencetime(verth_hist::Vector) = maximum(verthist)
+maxnumberrecurrencetime(x::ARM, kwargs...) = 
+maxnumberrecurrencetime(verticalhistograms(x; kwargs...)[2])
+
+# 4. All in one
 
 """
     rqa(x; kwargs...)
@@ -208,7 +239,7 @@ function rqa(x; onlydiagonal=false, kwargs...)
         kw_v = Dict(kwargs)
         haskey(kw_v, :theilervert) && (kw_v[:theiler] = kw_v[:theilervert])
         haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
-        vhist = verticalhistogram(x; kw_v...)[1]
+        vhist = verticalhistograms(x; kw_v...)[1]
         return Dict("RR"  => recurrencerate(x; kwargs...),
             "DET"  => determinism(dhist; kw_d...),
             "L"    => avgdiag(dhist; kw_d...),
@@ -227,14 +258,14 @@ end
 
 ## (to delete: old methods)
 
-function verticalhistogram_old(x::ARM; theiler::Integer=0, whitelines=true, kwargs...)
+function verticalhistograms_old(x::ARM; theiler::Integer=0,  distances=true, kwargs...)
     m,n=size(x)
     # histogram for "black lines"
     bins = [0]
     nbins = 1
     # histogram for "white lines"
-    bins_w = [0]
-    nbins_w = 1
+    bins_d = [0]
+    nbins_d = 1
     rv = rowvals(x)
     # Iterate over columns
     for c = 1:n
@@ -252,7 +283,7 @@ function verticalhistogram_old(x::ARM; theiler::Integer=0, whitelines=true, kwar
                 # (more than one row after the previous one)
                 if r-rprev != 1
                     # white line
-                    whitelines && (nbins_w = extendhistogram!(bins_w, nbins_w, r-rprev-1))
+                     distances && (nbins_d = extendhistogram!(bins_d, nbins_d, r-rprev-1))
                     # black line
                     current_vert = rprev-r1+1
                     nbins = extendhistogram!(bins, nbins, current_vert)
@@ -271,7 +302,7 @@ function verticalhistogram_old(x::ARM; theiler::Integer=0, whitelines=true, kwar
             bins[1] += 1
         end
     end
-    return (bins, bins_w)
+    return (bins, bins_d)
 end
 
 function diagonalhistogram_old(x::ARM; theiler::Integer=0, kwargs...)
@@ -285,14 +316,14 @@ function diagonalhistogram_old(x::ARM; theiler::Integer=0, kwargs...)
         f = 2
         # If theiler==0, the LOI is counted separately to avoid duplication
         if theiler == 0
-            loi_hist = verticalhistogram_old(CrossRecurrenceMatrix(hcat(diag(x,0))))[1]
+            loi_hist = verticalhistograms_old(CrossRecurrenceMatrix(hcat(diag(x,0))))[1]
         end
     else
         valid = (abs.(dv) .>= theiler)
         f = 1
     end
     vmat = CrossRecurrenceMatrix(sparse(rv[valid], dv[valid] .+ (m+1), true))
-    dh = f .* verticalhistogram_old(vmat; theiler=0)[1]
+    dh = f .* verticalhistograms_old(vmat; theiler=0)[1]
     # Add frequencies of LOI if suitable
     if (nbins_loi = length(loi_hist)) > 0
         nbins = length(dh)
@@ -319,21 +350,25 @@ end
     return n
 end
 
-function _linehistogram(rows::T, cols::T, theiler::Integer=0,
-    whitelines=true) where {T<:AbstractVector{Int}}
+# Calculate the histograms of segments and distances between segments
+# from the indices of rows and columns/diagonals of the matrix
+# `theiler` is used for histograms of vertical structures
+# `distances` is used to simplify calculations of the distances are not wanted
+function _linehistograms(rows::T, cols::T, theiler::Integer=0,
+     distances=true) where {T<:AbstractVector{Int}}
     
     # check bounds
     n = length(rows)
     if length(cols) != n
         error("mismatch between number of row and column indices")
     end
-    # histogram for "black lines"
+    # histogram for segments
     bins = [0]
     nbins = 1
-    # histogram for "white lines"
-    bins_w = [0]
-    nbins_w = 1
-    # find first point outside the Theiler window
+    # histogram for distances between segments
+    bins_d = [0]
+    nbins_d = 1
+    # find the first point outside the Theiler window
     firstindex = 1
     while (firstindex<=n) && (abs(rows[firstindex]-cols[firstindex])<theiler)
         firstindex += 1
@@ -345,38 +380,58 @@ function _linehistogram(rows::T, cols::T, theiler::Integer=0,
     cprev = cols[firstindex]
     r1 = rows[firstindex]
     rprev = r1 - 1 # coerce that (a) is not hit in the first iteration
+    dist = 0 # placeholder for distances between segments
     @inbounds for i=firstindex:n
         r = rows[i]
         c = cols[i]
         if abs(r-c)>=theiler
-        # Search for more than one point in the same column
-        if c == cprev # true in the first iteration and after the first of each column
-            # Look for nonzero that starts a new column fragment
-            # (more than one row after the previous one)
-            if r-rprev !=1 # (a)
-                # white line
-                whitelines && (nbins_w = extendhistogram!(bins_w, nbins_w, r-rprev-1))
-                # black line
+            # Search the second and later segments in the column
+            if c == cprev
+                if r-rprev !=1 # (a): there is a separation between rprev and r
+                    # update histogram of segments
+                    current_vert = rprev-r1+1
+                    nbins = extendhistogram!(bins, nbins, current_vert)
+                    if  distances
+                        # update histogram of distances if it there were at least
+                        # two previous segments in the column
+                        halfline = div(current_vert, 2)
+                            if dist != 0
+                                nbins_d = extendhistogram!(bins_d, nbins_d, dist+halfline)
+                            end
+                        # update the distance
+                        dist = r-rprev+halfline-1
+                    end
+                    r1 = r # update the start of the next segment
+                end
+                rprev = r  # update the previous position
+            else # hit in the first point of a new column
+                # process the last fragment of the previous column
                 current_vert = rprev-r1+1
                 nbins = extendhistogram!(bins, nbins, current_vert)
+                if  distances
+                    if dist != 0
+                        halfline = div(current_vert, 2)
+                        nbins_d = extendhistogram!(bins_d, nbins_d, dist+halfline)
+                    end
+                    dist = 0
+                end
+                # initialize values for searching new fragments
+                cprev = c
                 r1 = r
+                rprev = r
             end
-            rprev = r
-        else # false in the first of each column except the first of all
-            # process last fragment of the previous column
-            current_vert = rprev-r1+1
-            nbins = extendhistogram!(bins, nbins, current_vert)
-            # common
-            cprev = c # update column
-            r1 = r
-            rprev = r
-        end
         end
     end
-    # Last fragment
+    # Process the latest fragment
     current_vert = rprev-r1+1
-    extendhistogram!(bins, nbins, current_vert)
-    return (bins, bins_w)
+    nbins = extendhistogram!(bins, nbins, current_vert)
+    if  distances
+        if dist != 0
+            halfline = div(current_vert, 2)
+            nbins_d = extendhistogram!(bins_d, nbins_d, dist+halfline)
+        end
+    end
+    return (bins, bins_d)
 end
 
 function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
@@ -388,7 +443,7 @@ function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     if issymmetric(x)
         # If theiler==0, the LOI is counted separately to avoid duplication
         if theiler == 0
-            loi_hist = verticalhistogram(CrossRecurrenceMatrix(hcat(diag(x,0))))[1]
+            loi_hist = verticalhistograms(CrossRecurrenceMatrix(hcat(diag(x,0))))[1]
         end
         inside = (dv .< max(theiler,1))
         f = 2
@@ -401,7 +456,7 @@ function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     deleteat!(dv, inside)
     rv = rv[sortperm(dv)]
     dv = sort!(dv)
-    dh = f.*_linehistogram(rv, dv, 0, false)[1]
+    dh = f.*_linehistograms(rv, dv, 0, false)[1]
     # Add frequencies of LOI if suitable
     if (nbins_loi = length(loi_hist)) > 0
         nbins = length(dh)
@@ -415,13 +470,16 @@ function diagonalhistogram(x::ARM; theiler::Integer=0, kwargs...)
     return dh
 end
 
-function verticalhistogram(x::ARM; theiler::Integer=0, whitelines=true, kwargs...)
+function verticalhistograms(x::ARM; theiler::Integer=0,  distances=true, kwargs...)
     m,n=size(x)
     rv = rowvals(x)
     cv = colvals(x)
-    return _linehistogram(rv,cv,theiler,whitelines)
+    return _linehistograms(rv,cv,theiler, distances)
 end
 
+"""
+    recurrencestructures(x[; diagonal, vertical, recurrencetimes, kwargs...]) 
+"""
 function recurrencestructures(x::ARM;
     diagonal=true, vertical=true, recurrencetimes=true, kwargs...)
     
@@ -437,7 +495,7 @@ function recurrencestructures(x::ARM;
         kw_v = Dict(kwargs)
         haskey(kw_v, :theilervert) && (kw_v[:theiler] = kw_v[:theilervert])
         haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
-        vhist = verticalhistogram(x; kw_v...)
+        vhist = verticalhistograms(x; kw_v...)
         vertical && (histograms["vertical"] = vhist[1])
         recurrencetimes && (histograms["recurrencetimes"] = vhist[2])
     end
