@@ -5,8 +5,8 @@
 """
     recurrencerate(x; theiler=0)
 
-Calculate the recurrence rate (RR) of a recurrence matrix, ruling out
-the points within the Theiler window.
+Calculate the recurrence rate (RR) of the recurrence matrix `x`, ruling out
+the points within the Theiler window of size `theiler`.
 """
 function recurrencerate(x::ARM; theiler::Integer=0, kwargs...)::Float64
     theiler < 0 && error("Theiler window length must be greater than or equal to 0")
@@ -21,82 +21,115 @@ function recurrencerate(x::ARM; theiler::Integer=0, kwargs...)::Float64
     return (nnz(x) - theiler_nz)/length(x)
 end
 
-function tau_recurrence(x::ARM)
-    n = minimum(size(x))
-    [count(!iszero, diag(x,d))/(n-d) for d in (0:n-1)]
-end
-
 # 1. Based on diagonal lines
 
 """
-    determinism(x; lmin=2, theiler=0)
+    determinism(x::AbstractRecurrenceMatrix; lmin=2, theiler=0)
 
-Calculate the determinism (DET) of a recurrence matrix, ruling out
-the points within the Theiler window and diagonals shorter than a minimum value.
+Calculate the determinism (DET) of the recurrence matrix `x`, ruling out
+the points within the Theiler window of size `theiler` and diagonals shorter
+than `lmin`.
+
+
+    determinism(h::Vector{<:Integer}, npoints)
+
+Calculate the determinism from the histogram of diagonal lines `h`,
+e.g. obtained from [`recurrencestructures`](@ref), and the total number of points
+(`npoints`).
 """
-function determinism(diag_hist::Vector, npoints)::Float64
-    diag_points = (1:length(diag_hist)) .* diag_hist
-    return sum(diag_points)/npoints
+function determinism(x::ARM; kwargs...)
+    npoints = recurrencerate(x; kwargs...)*length(x)
+    return determinism(diagonalhistogram(x; kwargs...), npoints)
 end
 
-function determinism(x::ARM; lmin=2, kwargs...)
-    npoints = recurrencerate(x)*length(x)
-    return determinism(diagonalhistogram(x; lmin=lmin, kwargs...), npoints)
+function determinism(diag_hist::Vector{<:Integer}, npoints)::Float64
+    diag_points = (1:length(diag_hist)) .* diag_hist
+    return sum(diag_points)/npoints
 end
 
 """
     avgdiag(x; lmin=2, theiler=0)
 
-Calculate the average diagonal length (L) in a recurrence matrix, ruling out
-the points within the Theiler window and diagonals shorter than a minimum value.
+Calculate the average diagonal length (L) in the recurrence matrix `x`, ruling out
+the points within the Theiler window of size `theiler` and diagonals shorter
+than `lmin`.
+
+    avgdiag(h::Vector{<:Integer})
+
+Calculate the average diagonal length from the histogram of diagonal lines `h`,
+e.g. obtained from [`recurrencestructures`](@ref).
 """
-function avgdiag(diag_hist::Vector)::Float64
+avgdiag(x::ARM; kwargs...) = avgdiag(diagonalhistogram(x; kwargs...))
+
+function avgdiag(diag_hist::Vector{<:Integer})::Float64
     diag_points = collect(1:length(diag_hist)) .* diag_hist
     return sum(diag_points)/sum(diag_hist)
 end
 
-#avgdiag(x::ARM; lmin=2, kwargs...) =
-#    avgdiag(diagonalhistogram(x; lmin=lmin, kwargs...))
-
 """
     maxdiag(x; theiler=0)
 
-Calculate the longest diagonal (Lmax) in a recurrence matrix, ruling out
-the points within the Theiler window.
+Calculate the longest diagonal (Lmax) in the recurrence matrix `x`, ruling out
+the points within the Theiler window of size `theiler`.
+
+    maxdiag(h::Vector{<:Integer})
+
+Calculate the longest diagonal from the histogram of diagonal lines `h`,
+e.g. obtained from [`recurrencestructures`](@ref).
 """
-maxdiag(diag_hist::Vector) = length(diag_hist)
-#maxdiag(x::ARM; lmin=2, kwargs...) =
-#    maxdiag(diagonalhistogram(x; kwargs...))
+maxdiag(x::ARM, kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
+    
+maxdiag(diag_hist::Vector{<:Integer}) = length(diag_hist)
 
 """
-    divergence(x; lmin=2, theiler=0)
+    divergence(x; theiler=0)
 
-Calculate the divergence of a recurrence matrix
-(actually the inverse of `maxdiag`).
+Calculate the divergence of the recurrence matrix `x`
+(actually the inverse of [`maxdiag`](@ref)), ruling out
+the points within the Theiler window of size `theiler`.
+
+    divergence(h::Vector{<:Integer})
+
+Calculate the divergence from the histogram of diagonal  lines `h`,
+e.g. obtained from [`recurrencestructures`](@ref).
 """
 divergence(x; kwargs...) = Float64( 1/maxdiag(x; kwargs...) )
 
 """
     rqaentropy(x; lmin=2, theiler=0)
 
-Calculate the Shannon entropy of diagonal lengths (ENT) of a recurrence matrix, ruling out
-the points within the Theiler window and diagonals shorter than a minimum value.
+Calculate the Shannon entropy of diagonal lengths (ENT) of
+the recurrence matrix `x`, ruling out the points within the Theiler window of
+size `theiler`.
+
+    rqaentropy(h::Vector{<:Integer})
+
+Calculate the RQA entropy from the histogram of diagonal lines `h`,
+e.g. obtained from [`recurrencestructures`](@ref).
 """
+rqaentropy(x::ARM, kwargs...) = rqaentropy(diagonalhistogram(x; kwargs...))
+    
 function rqaentropy(diag_hist::Vector)::Float64
     prob_bins = diag_hist ./ sum(diag_hist)
     prob_bins = prob_bins[findall(!iszero, prob_bins)]
     return -sum(prob_bins .* log.(prob_bins))
 end
 
-#rqaentropy(x::ARM; kwargs...) = rqaentropy(diagonalhistogram(x; kwargs...); kwargs...)
-
 """
     trend(x; theiler=0, border=10)
 
-Calculate the trend of recurrences in recurrence matrix towards its edges, ruling out
-the points within the Theiler window and in the outermost diagonals.
+Calculate the trend of recurrences in the recurrence matrix `x`
+towards its edges, ruling out the points within the Theiler window of size `theiler`
+and in the outermost diagonals (at `border` from the corners of the matrix).
 """
-function trend(npoints::Vector; theiler=0, border=10, kwargs...)::Float64
+trend(x::ARM; kwargs...) = _trend(tau_recurrence(x); kwargs...)
+
+function tau_recurrence(x::ARM)
+    n = minimum(size(x))
+    [count(!iszero, diag(x,d))/(n-d) for d in (0:n-1)]
+end
+
+function _trend(npoints::Vector; theiler=0, border=10, kwargs...)::Float64
     nmax = length(npoints)
     rrk = npoints./collect(nmax:-1:1)
     a = 1+theiler
@@ -105,23 +138,13 @@ function trend(npoints::Vector; theiler=0, border=10, kwargs...)::Float64
     (w'*(rrk[a:b] .- mean(rrk[a:b])) ./ (w'*w))[1]
 end
 
-trend(x::ARM; kwargs...) = trend(tau_recurrence(x); kwargs...)
-
 # Number of l-length sequences, based on diagonals
+countsequences(x::ARM; kwargs...) = countsequences(diagonalhistogram(x; kwargs...))
+
 function countsequences(diag_hist::Vector; lmin=2, kwargs...)
     overlap = (1:length(diag_hist))' .- (lmin+1)
     overlap[overlap .< 0] = 0
     overlap * diag_hist
-end
-
-countsequences(x::ARM; kwargs...) = countsequences(diagonalhistogram(x; kwargs...); kwargs...)
-
-# Functions for AbstractRecurrenceMatrix
-
-for fun in [:avgdiag, :maxdiag, :rqaentropy]
-    @eval begin $(fun)(x::ARM; lmin=2, kwargs...) =
-        $(fun)(diagonalhistogram(x; lmin=lmin, kwargs...))
-    end
 end
 
 
@@ -130,38 +153,53 @@ end
 """
     laminarity(x; lmin=2, theiler=0)
 
-Calculate the laminarity (LAM) of a recurrence matrix, ruling out
-vertical lines shorter than a minimum value.
-"""
-laminarity(vert_hist, npoints) = determinism(vert_hist, npoints)
+Calculate the laminarity (LAM) of the recurrence matrix `x`, ruling out the
+points within the Theiler window of size `theiler` and diagonals shorter
+than `lmin`.
 
-function laminarity(x::ARM; lmin=2, kwargs...)
+    laminarity(h::Vector{<:Integer}, npoints)
+
+Calculate the laminarity from the histogram of diagonal lines `h`,
+e.g. obtained from [`recurrencestructures`](@ref), and the total number of points
+(`npoints`).
+"""
+function laminarity(x::ARM; kwargs...)
     npoints = recurrencerate(x)*length(x)
-    return laminarity(verticalhistograms(x; lmin=lmin, kwargs...)[1], npoints)
+    return laminarity(verticalhistograms(x; kwargs...)[1], npoints)
 end
+
+laminarity(vert_hist::Vector{<:Integer}, npoints) = determinism(vert_hist, npoints)
 
 """
     trappingtime(x; lmin=2, theiler=0)
 
-Calculate the trapping time (TT) of a recurrence matrix, ruling out
-vertical lines shorter than a minimum value.
+Calculate the trapping time (TT) of the recurrence matrix `x`, ruling out the
+points within the Theiler window of size `theiler` and diagonals shorter
+than `lmin`.
+
+    trappingtime(h::Vector{<:Integer})
+
+Calculate the trapping time from the histogram of diagonal lines `h`,
+e.g. obtained from [`recurrencestructures`](@ref).
 """
-trappingtime(vert_hist::Vector) = avgdiag(vert_hist)
+trappingtime(x::ARM; kwargs...) = trappingtime(verticalhistograms(x; kwargs...)[1])
+trappingtime(vert_hist::Vector{<:Integer}) = avgdiag(vert_hist)
 
 """
     maxvert(x; theiler=0)
 
-Calculate the longest vertical line (Vmax) of a recurrence matrix.
+Calculate the longest vertical line (Vmax) of the recurrence matrix `x`,
+ruling out the points within the Theiler window of size `theiler`.
+
+    maxvert(h::Vector{<:Integer})
+
+Calculate the trapping time from the histogram of diagonal lines `h`,
+e.g. obtained from [`recurrencestructures`](@ref).
+
 """
-maxvert(vert_hist::Vector) = length(vert_hist)
+maxvert(x::ARM; kwargs...) = maxvert(verticalhistograms(x; kwargs...)[1])
+maxvert(vert_hist::Vector{<:Integer}) = length(vert_hist)
 
-# Functions for AbstractRecurrenceMatrix
-
-for fun in [:trappingtime, :maxvert]
-    @eval begin $(fun)(x::ARM; lmin=2, kwargs...) =
-        $(fun)(verticalhistograms(x; lmin=lmin, kwargs...)[1])
-    end
-end
 
 # 3. Based on recurrence times
 
@@ -365,7 +403,7 @@ end
 # from the indices of rows and columns/diagonals of the matrix
 # `theiler` is used for histograms of vertical structures
 # `distances` is used to simplify calculations of the distances are not wanted
-function _linehistograms(rows::T, cols::T, theiler::Integer=0, lmin::Integer=1,
+function _linehistograms(rows::T, cols::T, lmin::Integer=1, theiler::Integer=0, 
      distances::Bool=true) where {T<:AbstractVector{Int}}
     
     # check bounds
@@ -453,7 +491,7 @@ function _linehistograms(rows::T, cols::T, theiler::Integer=0, lmin::Integer=1,
     return (bins, bins_d)
 end
 
-function diagonalhistogram(x::ARM; theiler::Integer=0, lmin::Integer=1, kwargs...)
+function diagonalhistogram(x::ARM; lmin::Integer=2, theiler::Integer=0, kwargs...)
     (theiler < 0) && error("Theiler window length must be greater than or equal to 0")
     (lmin < 1) && error("lmin must be 1 or greater")
     m,n=size(x)
@@ -476,7 +514,7 @@ function diagonalhistogram(x::ARM; theiler::Integer=0, lmin::Integer=1, kwargs..
     deleteat!(dv, inside)
     rv = rv[sortperm(dv)]
     dv = sort!(dv)
-    dh = f.*_linehistograms(rv, dv, 0, lmin, false)[1]
+    dh = f.*_linehistograms(rv, dv, lmin, 0, false)[1]
     # Add frequencies of LOI if suitable
     if (nbins_loi = length(loi_hist)) > 0
         nbins = length(dh)
@@ -490,19 +528,49 @@ function diagonalhistogram(x::ARM; theiler::Integer=0, lmin::Integer=1, kwargs..
     return dh
 end
 
-function verticalhistograms(x::ARM; theiler::Integer=0, lmin::Integer=1,  distances=true, kwargs...)
+function verticalhistograms(x::ARM;
+    lmin::Integer=2, theiler::Integer=0, distances=true, kwargs...)
     (lmin < 1) && error("lmin must be 1 or greater")
     m,n=size(x)
     rv = rowvals(x)
     cv = colvals(x)
-    return _linehistograms(rv,cv,theiler,lmin,distances)
+    return _linehistograms(rv,cv,lmin,theiler,distances)
 end
 
 """
-    recurrencestructures(x[; diagonal, vertical, recurrencetimes, kwargs...]) 
+    recurrencestructures(x::AbstractRecurrenceMatrix;
+                             diagonal=true,
+                             vertical=true,
+                             recurrencetimes=true,
+                             kwargs...)
+    
+Histograms of the recurrence structures contained in the recurrence matrix `x`.
+
+## Description:
+
+Returns a dictionary with the keys `"diagonal"`, `"vertical"` or
+`"recurrencetimes"`, depending on what keyword arguments are given as `true`.
+Each item of the dictionary is a vector of integers, such that the `i`-th
+element of the vector is the number of lines of length `i` contained in `x`.
+
+* `"diagonal"` counts the diagonal lines, i.e. the recurrent trajectories.
+* `"vertical"` counts the vertical lines, i.e. the laminar states.
+* `"recurrencetimes"` counts the vertical distances between recurrent states,
+    i.e. the recurrence times. These are calculated as the distance between
+    the middle points of consecutive vertical lines.
+
+All the points of the matrix are counted by default. Extra keyword arguments can
+be passed to rule out the lines shorter than a minimum length or around the main
+diagonal. See the arguments of the function [`rqa`](@ref) for further details.
+
+## References:
+
+N. Marwan & C.L. Webber, "Mathematical and computational foundations of
+recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
+Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
 function recurrencestructures(x::ARM;
-    diagonal=true, vertical=true, recurrencetimes=true, kwargs...)
+    diagonal=true, vertical=true, recurrencetimes=true, lmin=1, theiler=0, kwargs...)
     
     # Parse arguments for diagonal and vertical structures
     histograms = Dict{String,Vector{Int}}()
