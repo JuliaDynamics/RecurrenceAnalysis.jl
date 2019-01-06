@@ -34,16 +34,15 @@ end
 Calculate the determinism (DET) of a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
-function determinism(diag_hist::Vector; lmin=2, kwargs...)::Float64
-    if lmin < 2
-        error("lmin must be 2 or greater")
-    end
-    nbins = length(diag_hist)
-    diag_points = collect(1:nbins) .* diag_hist
-    return (lmin > nbins) ? 0.0 : sum(diag_points[lmin:nbins])/sum(diag_points)
+function determinism(diag_hist::Vector, npoints)::Float64
+    diag_points = (1:length(diag_hist)) .* diag_hist
+    return sum(diag_points)/npoints
 end
 
-determinism(x::ARM; kwargs...) = determinism(diagonalhistogram(x; kwargs...); kwargs...)
+function determinism(x::ARM; lmin=2, kwargs...)
+    npoints = recurrencerate(x)*length(x)
+    return determinism(diagonalhistogram(x; lmin=lmin, kwargs...), npoints)
+end
 
 """
     avgdiag(x; lmin=2, theiler=0)
@@ -51,16 +50,13 @@ determinism(x::ARM; kwargs...) = determinism(diagonalhistogram(x; kwargs...); kw
 Calculate the average diagonal length (L) in a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
-function avgdiag(diag_hist::Vector; lmin=2, kwargs...)::Float64
-    if lmin < 2
-        error("lmin must be 2 or greater")
-    end
-    nbins = length(diag_hist)
-    diag_points = collect(1:nbins) .* diag_hist
-    return (lmin > nbins) ? 0.0 : sum(diag_points[lmin:nbins])/sum(diag_hist[lmin:nbins])
+function avgdiag(diag_hist::Vector)::Float64
+    diag_points = collect(1:length(diag_hist)) .* diag_hist
+    return sum(diag_points)/sum(diag_hist)
 end
 
-avgdiag(x::ARM; kwargs...) =  avgdiag(diagonalhistogram(x; kwargs...); kwargs...)
+#avgdiag(x::ARM; lmin=2, kwargs...) =
+#    avgdiag(diagonalhistogram(x; lmin=lmin, kwargs...))
 
 """
     maxdiag(x; theiler=0)
@@ -68,8 +64,9 @@ avgdiag(x::ARM; kwargs...) =  avgdiag(diagonalhistogram(x; kwargs...); kwargs...
 Calculate the longest diagonal (Lmax) in a recurrence matrix, ruling out
 the points within the Theiler window.
 """
-maxdiag(diag_hist::Vector; kwargs...) = length(diag_hist)
-maxdiag(x::ARM; kwargs...) = maxdiag(diagonalhistogram(x; kwargs...))
+maxdiag(diag_hist::Vector) = length(diag_hist)
+#maxdiag(x::ARM; lmin=2, kwargs...) =
+#    maxdiag(diagonalhistogram(x; kwargs...))
 
 """
     divergence(x; lmin=2, theiler=0)
@@ -85,21 +82,13 @@ divergence(x; kwargs...) = Float64( 1/maxdiag(x; kwargs...) )
 Calculate the Shannon entropy of diagonal lengths (ENT) of a recurrence matrix, ruling out
 the points within the Theiler window and diagonals shorter than a minimum value.
 """
-function rqaentropy(diag_hist::Vector; lmin=2, kwargs...)::Float64
-    if lmin < 2
-        error("lmin must be 2 or greater")
-    end
-    nbins = length(diag_hist)
-    if lmin <= nbins
-        prob_bins = diag_hist[lmin:nbins] ./ sum(diag_hist[lmin:nbins])
-        prob_bins = prob_bins[findall(!iszero, prob_bins)]
-        return -sum(prob_bins .* log.(prob_bins))
-    else
-        return 0.0
-    end
+function rqaentropy(diag_hist::Vector)::Float64
+    prob_bins = diag_hist ./ sum(diag_hist)
+    prob_bins = prob_bins[findall(!iszero, prob_bins)]
+    return -sum(prob_bins .* log.(prob_bins))
 end
 
-rqaentropy(x::ARM; kwargs...) = rqaentropy(diagonalhistogram(x; kwargs...); kwargs...)
+#rqaentropy(x::ARM; kwargs...) = rqaentropy(diagonalhistogram(x; kwargs...); kwargs...)
 
 """
     trend(x; theiler=0, border=10)
@@ -127,6 +116,15 @@ end
 
 countsequences(x::ARM; kwargs...) = countsequences(diagonalhistogram(x; kwargs...); kwargs...)
 
+# Functions for AbstractRecurrenceMatrix
+
+for fun in [:avgdiag, :maxdiag, :rqaentropy]
+    @eval begin $(fun)(x::ARM; lmin=2, kwargs...) =
+        $(fun)(diagonalhistogram(x; lmin=lmin, kwargs...))
+    end
+end
+
+
 # 2. Based on vertical lines
 
 """
@@ -135,9 +133,12 @@ countsequences(x::ARM; kwargs...) = countsequences(diagonalhistogram(x; kwargs..
 Calculate the laminarity (LAM) of a recurrence matrix, ruling out
 vertical lines shorter than a minimum value.
 """
-laminarity(vert_hist::Vector; kwargs...) = determinism(vert_hist; kwargs...)
-laminarity(x::ARM; kwargs...) =
-laminarity(verticalhistograms(x; kwargs...)[1]; kwargs...)
+laminarity(vert_hist, npoints) = determinism(vert_hist, npoints)
+
+function laminarity(x::ARM; lmin=2, kwargs...)
+    npoints = recurrencerate(x)*length(x)
+    return laminarity(verticalhistograms(x; lmin=lmin, kwargs...)[1], npoints)
+end
 
 """
     trappingtime(x; lmin=2, theiler=0)
@@ -145,17 +146,22 @@ laminarity(verticalhistograms(x; kwargs...)[1]; kwargs...)
 Calculate the trapping time (TT) of a recurrence matrix, ruling out
 vertical lines shorter than a minimum value.
 """
-trappingtime(vert_hist::Vector; kwargs...) = avgdiag(vert_hist; kwargs...)
-trappingtime(x::ARM; kwargs...) =
-trappingtime(verticalhistograms(x; kwargs...)[1]; kwargs...)
+trappingtime(vert_hist::Vector) = avgdiag(vert_hist)
 
 """
     maxvert(x; theiler=0)
 
 Calculate the longest vertical line (Vmax) of a recurrence matrix.
 """
-maxvert(vert_hist::Vector; kwargs...) = length(vert_hist)
-maxvert(x::ARM; kwargs...) = maxvert(verticalhistograms(x; kwargs...)[1])
+maxvert(vert_hist::Vector) = length(vert_hist)
+
+# Functions for AbstractRecurrenceMatrix
+
+for fun in [:trappingtime, :maxvert]
+    @eval begin $(fun)(x::ARM; lmin=2, kwargs...) =
+        $(fun)(verticalhistograms(x; lmin=lmin, kwargs...)[1])
+    end
+end
 
 # 3. Based on recurrence times
 
@@ -165,8 +171,6 @@ maxvert(x::ARM; kwargs...) = maxvert(verticalhistograms(x; kwargs...)[1])
 Calculate the mean recurrence time (MRT) of a recurrence matrix.
 """
 meanrecurrencetime(vert_hist::Vector) = avgdiag(vert_hist)
-meanrecurrencetime(x::ARM; kwargs...) =
-meanrecurrencetime(verticalhistograms(x; kwargs...)[2])
 
 """
     recurrencetimeentropy(x[; theiler=0])
@@ -175,16 +179,21 @@ Calculate the entropy of the distribution of recurrence times (RTE)
 of a recurrence matrix.
 """
 recurrencetimeentropy(vert_hist::Vector) = rqaentropy(vert_hist)
-recurrencetimeentropy(x::ARM; kwargs...) =
-recurrencetimeentropy(verticalhistograms(x; kwargs...)[2])
 
 """
     maxnumberrecurrencetime(x[; theiler=0])
     
 """
 maxnumberrecurrencetime(verth_hist::Vector) = maximum(verthist)
-maxnumberrecurrencetime(x::ARM, kwargs...) = 
-maxnumberrecurrencetime(verticalhistograms(x; kwargs...)[2])
+
+# Functions for AbstractRecurrenceMatrix
+
+for fun in [:meanrecurrencetime, :recurrencetimeentropy, :maxnumberrecurrencetime]
+    @eval begin $(fun)(x::ARM; lmin=2, kwargs...) =
+        $(fun)(verticalhistograms(x; lmin=lmin, kwargs...)[2])
+    end
+end
+
 
 # 4. All in one
 
@@ -227,28 +236,30 @@ function rqa(x; onlydiagonal=false, kwargs...)
     haskey(kw_d, :theilerdiag) && (kw_d[:theiler] = kw_d[:theilerdiag])
     haskey(kw_d, :lmindiag) && (kw_d[:lmin] = kw_d[:lmindiag])
     dhist = diagonalhistogram(x; kw_d...)
+    rr_d = recurrencerate(x; kw_d...)
     if onlydiagonal
         return Dict("RR"  => recurrencerate(x; kwargs...),
-        "DET"  => determinism(dhist; kw_d...),
-        "L"    => avgdiag(dhist; kw_d...),
+        "DET"  => determinism(dhist, rr_d*length(x)),
+        "L"    => avgdiag(dhist),
         "Lmax" => maxdiag(dhist),
         "DIV"  => divergence(dhist),
-        "ENT"  => rqaentropy(dhist; kw_d...)
+        "ENT"  => rqaentropy(dhist)
         )
    else
         kw_v = Dict(kwargs)
         haskey(kw_v, :theilervert) && (kw_v[:theiler] = kw_v[:theilervert])
         haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
         vhist = verticalhistograms(x; kw_v...)[1]
+        rr_v = recurrencerate(x; kw_v...)
         return Dict("RR"  => recurrencerate(x; kwargs...),
-            "DET"  => determinism(dhist; kw_d...),
-            "L"    => avgdiag(dhist; kw_d...),
+            "DET"  => determinism(dhist, rr_d*length(x)),
+            "L"    => avgdiag(dhist),
             "Lmax" => maxdiag(dhist),
             "DIV"  => divergence(dhist),
-            "ENT"  => rqaentropy(dhist; kw_d...),
+            "ENT"  => rqaentropy(dhist),
             "TND"  => trend(x; kw_d...),
-            "LAM"  => laminarity(vhist; kw_v...),
-            "TT"   => trappingtime(vhist; kw_v...),
+            "LAM"  => laminarity(vhist, rr_v*length(x)),
+            "TT"   => trappingtime(vhist),
             "Vmax" => maxvert(vhist)
         )
     end
@@ -443,7 +454,8 @@ function _linehistograms(rows::T, cols::T, theiler::Integer=0, lmin::Integer=1,
 end
 
 function diagonalhistogram(x::ARM; theiler::Integer=0, lmin::Integer=1, kwargs...)
-    theiler < 0 && error("Theiler window length must be greater than or equal to 0")
+    (theiler < 0) && error("Theiler window length must be greater than or equal to 0")
+    (lmin < 1) && error("lmin must be 1 or greater")
     m,n=size(x)
     rv = rowvals(x)[:]
     dv = colvals(x) .- rowvals(x)
@@ -479,6 +491,7 @@ function diagonalhistogram(x::ARM; theiler::Integer=0, lmin::Integer=1, kwargs..
 end
 
 function verticalhistograms(x::ARM; theiler::Integer=0, lmin::Integer=1,  distances=true, kwargs...)
+    (lmin < 1) && error("lmin must be 1 or greater")
     m,n=size(x)
     rv = rowvals(x)
     cv = colvals(x)
