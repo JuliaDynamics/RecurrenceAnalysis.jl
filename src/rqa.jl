@@ -9,7 +9,8 @@ Calculate the recurrence rate (RR) of the recurrence matrix `x`, ruling out
 the points within the Theiler window of size `theiler`.
 """
 function recurrencerate(x::ARM; theiler::Integer=0, kwargs...)::Float64
-    theiler < 0 && error("Theiler window length must be greater than or equal to 0")
+    (theiler < 0) && throw(ErrorException(
+        "Theiler window length must be greater than or equal to 0"))
     if theiler == 0
         return nnz(x)/length(x)
     end
@@ -409,7 +410,7 @@ function _linehistograms(rows::T, cols::T, lmin::Integer=1, theiler::Integer=0,
     # check bounds
     n = length(rows)
     if length(cols) != n
-        error("mismatch between number of row and column indices")
+        throw(ErrorException("mismatch between number of row and column indices"))
     end
     # histogram for segments
     bins = [0]
@@ -492,8 +493,9 @@ function _linehistograms(rows::T, cols::T, lmin::Integer=1, theiler::Integer=0,
 end
 
 function diagonalhistogram(x::ARM; lmin::Integer=2, theiler::Integer=0, kwargs...)
-    (theiler < 0) && error("Theiler window length must be greater than or equal to 0")
-    (lmin < 1) && error("lmin must be 1 or greater")
+    (theiler < 0) && throw(ErrorException(
+        "Theiler window length must be greater than or equal to 0"))
+    (lmin < 1) && throw(ErrorException("lmin must be 1 or greater"))
     m,n=size(x)
     rv = rowvals(x)[:]
     dv = colvals(x) .- rowvals(x)
@@ -530,7 +532,9 @@ end
 
 function verticalhistograms(x::ARM;
     lmin::Integer=2, theiler::Integer=0, distances=true, kwargs...)
-    (lmin < 1) && error("lmin must be 1 or greater")
+    (theiler < 0) && throw(ErrorException(
+        "Theiler window length must be greater than or equal to 0"))
+    (lmin < 1) && throw(ErrorException("lmin must be 1 or greater"))
     m,n=size(x)
     rv = rowvals(x)
     cv = colvals(x)
