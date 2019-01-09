@@ -151,8 +151,8 @@ macro windowed(ex, options...)
                     "L"    => zeros(Float64,ni),
                     "Lmax" => zeros(Int,ni),
                     "DIV"  => zeros(Float64,ni),
-                    "ENT"  => zeros(Float64,ni),
-                    "TND"  => zeros(Float64,ni),
+                    "ENTR"  => zeros(Float64,ni),
+                    "TREND"  => zeros(Float64,ni),
                     "LAM"  => zeros(Float64,ni),
                     "TT"   => zeros(Float64,ni),
                     "Vmax" => zeros(Int,ni)
