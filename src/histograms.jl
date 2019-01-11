@@ -196,13 +196,13 @@ function recurrencestructures(x::ARM;
         kw_d = Dict(kwargs)
         haskey(kw_d, :theilerdiag) && (kw_d[:theiler] = kw_d[:theilerdiag])
         haskey(kw_d, :lmindiag) && (kw_d[:lmin] = kw_d[:lmindiag])
-        histograms["diagonal"] = diagonalhistogram(x; kw_d...)
+        histograms["diagonal"] = diagonalhistogram(x; lmin=lmin, theiler=theiler, kw_d...)
     end
     if vertical || recurrencetimes
         kw_v = Dict(kwargs)
         haskey(kw_v, :theilervert) && (kw_v[:theiler] = kw_v[:theilervert])
         haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
-        vhist = verticalhistograms(x; kw_v...)
+        vhist = verticalhistograms(x; lmin=lmin, theiler=theiler, kw_v...)
         vertical && (histograms["vertical"] = vhist[1])
         recurrencetimes && (histograms["recurrencetimes"] = vhist[2])
     end
