@@ -128,6 +128,11 @@ begin
         end
     end
 end
+
+for operator in [:(==), :(!=)]
+    @eval Base.$operator(x::ARM, y::ARM) = $operator(x.data, y.data)
+end
+
 LinearAlgebra.issymmetric(::RecurrenceMatrix) = true
 # column values in sparse matrix (parallel to rowvals)
 function colvals(x::SparseMatrixCSC)
