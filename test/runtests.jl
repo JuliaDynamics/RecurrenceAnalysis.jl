@@ -60,8 +60,8 @@ tol = 1e-5
 @test rqapar["DET"] == 364/426
 @test rqapar["L"] == 364/50
 @test rqapar["Lmax"] == 23
-@test rqapar["ENT"] ≈ 2.02058292
-@test rqapar["TND"] ≈ 3.21794972e-7
+@test rqapar["ENTR"] ≈ 2.02058292
+@test rqapar["TREND"] ≈ 3.21794972e-7
 @test rqapar["LAM"] == 92/426
 @test rqapar["TT"] == 92/30
 @test rqapar["Vmax"] == 4

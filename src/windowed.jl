@@ -151,8 +151,8 @@ macro windowed(ex, options...)
                     "L"    => zeros(Float64,ni),
                     "Lmax" => zeros(Int,ni),
                     "DIV"  => zeros(Float64,ni),
-                    "ENT"  => zeros(Float64,ni),
-                    "TND"  => zeros(Float64,ni),
+                    "ENTR"  => zeros(Float64,ni),
+                    "TREND"  => zeros(Float64,ni),
                     "LAM"  => zeros(Float64,ni),
                     "TT"   => zeros(Float64,ni),
                     "Vmax" => zeros(Int,ni)
@@ -234,8 +234,8 @@ macro windowed(ex, options...)
             return esc(ret_ex)
         end
         # Throw error if it is not a valid function
-        error("$(string(ex.args[1])) is not a valid function for windowing")
+        throw(ErrorException("$(string(ex.args[1])) is not a valid function for windowing"))
     end
     # Throw error if it didn't return
-    error("Invalid expression for windowing")
+    throw(ErrorException("invalid expression for windowing"))
 end
