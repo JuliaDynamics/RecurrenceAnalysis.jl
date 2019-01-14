@@ -162,9 +162,8 @@ Calculate the trapping time of the recurrence matrix `x`, ruling out the
 points within the Theiler window of size `theiler` and diagonals shorter
 than `lmin`.
 
-
-This parameter is the average of the vertical line structures;
-see [`vl_average](@ref).
+The trapping time is the average of the vertical line structures and thus equal
+to [`vl_average`](@ref).
 """
 trappingtime(x::ARM; kwargs...) = vl_average(x; kwargs...)
 
