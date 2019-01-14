@@ -40,7 +40,7 @@ macro histogram_params(keyword, description, hist_fun)
                 return -sum(prob_bins .* log.(prob_bins))
             end
         )
-        
+
     ret = quote end
     for (name, param) in combined_descriptions
         fname = Symbol("$(keyword)_$(name)")
@@ -49,7 +49,7 @@ macro histogram_params(keyword, description, hist_fun)
         doc = """
                 $fname(x; lmin=2, theiler=0)
 
-            Calculate the $(param) contained in the recurrence matrix `x`, 
+            Calculate the $(param) contained in the recurrence matrix `x`,
             ruling out the points within the Theiler window of size `theiler`
             and diagonals shorter than `lmin`.
             """
@@ -63,7 +63,7 @@ macro histogram_params(keyword, description, hist_fun)
         end)
     end
     return esc(ret)
-end 
+end
 
 
 # 1. Based on diagonal lines
@@ -127,7 +127,7 @@ end
 
 # Number of l-length sequences, based on diagonals
 # countsequences(x::ARM; kwargs...) = countsequences(diagonalhistogram(x; kwargs...))
-# 
+#
 # function countsequences(diag_hist::Vector; lmin=2, kwargs...)
 #     overlap = (1:length(diag_hist))' .- (lmin+1)
 #     overlap[overlap .< 0] = 0
@@ -187,7 +187,7 @@ meanrecurrencetime(x::ARM; kwargs...) = rt_average(x; kwargs...)
 
 """
     nmprt(x; lmin=2, theiler=0)
-    
+
 Calculate the number of the most probable recurrence time (NMPRT), ruling out the
 points within the Theiler window of size `theiler` and diagonals shorter
 than `lmin`.
@@ -217,14 +217,14 @@ The returned value is a dictionary with the following keys:
 
 * "RR": recurrence rate (see `recurrencerate`)
 * "DET": determinsm (see `determinism`)
-* "L": average length of diagonal structures (see `avgdiag`)
-* "Lmax": maximum length of diagonal structures (see `maxdiag`)
+* "L": average length of diagonal structures (see `dl_average`)
+* "Lmax": maximum length of diagonal structures (see `dl_max`)
 * "DIV": divergence (see `divergence`)
-* "ENTR": entropy of diagonal structures (see `rqaentropy`)
+* "ENTR": entropy of diagonal structures (see `dl_entropy`)
 * "TREND": trend of recurrences (see `trend`)
 * "LAM": laminarity (see `laminarity`)
 * "TT": trapping time (see `trappingtime`)
-* "Vmax": maximum length of vertical structures (`see `maxvert`)
+* "Vmax": maximum length of vertical structures (`see `vl_max`)
 
 The keyword argument `onlydiagonal` (`false` by default) can be set to `true`
 in order to restrict the analysis to the recurrence rate and the parameters related
@@ -264,4 +264,3 @@ function rqa(x; onlydiagonal=false, kwargs...)
         )
     end
 end
-
