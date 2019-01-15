@@ -27,25 +27,82 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
 ###
 
 @testset "Recurrence structures" begin
-    @test recurrencerate(rmat) == 33/110
-    histograms = recurrencestructures(rmat)
-    @test histograms["diagonal"] == [11,7,1,0,1]
-    @test histograms["vertical"] == [15,6,2]
-    @test histograms["recurrencetimes"] == [3,1,4,4]
-    # with theiler window
-    @test recurrencerate(rmat, theiler=2) == 22/110
-    histograms = recurrencestructures(rmat, theiler=2)
-    @test histograms["diagonal"] == [9,4,0,0,1]
-    @test histograms["vertical"] == [10,3,2]
-    @test histograms["recurrencetimes"] == [1,0,3,0,0,0,2]
-    # lmin = 2
-    histograms = recurrencestructures(rmat, lmin=2)
-    @test histograms["diagonal"] == [0,7,1,0,1]
-    @test histograms["vertical"] == [0,6,2]
-    @test histograms["recurrencetimes"] == [0,0,0,2,0,0,1]
-    # with theiler window
-    histograms = recurrencestructures(rmat, theiler=2, lmin=2)
-    @test histograms["diagonal"] == [0,4,0,0,1]
-    @test histograms["vertical"] == [0,3,2]
-    @test histograms["recurrencetimes"] == [0,0,0,0,0,0,1]   
+    @testset "Default parameters" begin
+        histograms = recurrencestructures(rmat)
+        true_histograms = Dict("diagonal" => [11,7,1,0,1],
+                               "vertical" => [15,6,2],
+                               "recurrencetimes" => [3,1,4,4])
+        for k in keys(histograms)
+            @test histograms[k] == true_histograms[k]
+        end
+        rqa_params = rqa(rmat, theiler=0, lmin=1)
+        @test rqa_params["RR"] == 33/110
+        @test rqa_params["DET"] == 1.0
+        @test rqa_params["L"] == 33/20
+        @test rqa_params["Lmax"] == 5
+        @test rqa_params["DIV"] == 0.2
+        @test rqa_params["ENTR"] ≈ 0.996 atol=0.001
+        @test rqa_params["LAM"] == 1.0
+        @test rqa_params["TT"] == 33/23
+        @test rqa_params["Vmax"] == 3
+    end
+    @testset "With Theiler window" begin
+        histograms = recurrencestructures(rmat, theiler=2)
+        true_histograms = Dict("diagonal" => [9,4,0,0,1],
+                               "vertical" => [10,3,2],
+                               "recurrencetimes" => [1,0,3,0,0,0,2])
+        for k in keys(histograms)
+            @test histograms[k] == true_histograms[k]
+        end
+        rqa_params = rqa(rmat, theiler=2, lmin=1)
+        @test rqa_params["RR"] == 22/110
+        @test rqa_params["DET"] == 1.0
+        @test rqa_params["L"] == 22/14
+        @test rqa_params["Lmax"] == 5
+        @test rqa_params["DIV"] == 0.2
+        @test rqa_params["ENTR"] ≈ 0.830 atol=0.001
+        @test rqa_params["LAM"] == 1.0
+        @test rqa_params["TT"] == 22/15
+        @test rqa_params["Vmax"] == 3
+    end
+    @testset "With minimum line" begin
+        histograms = recurrencestructures(rmat, lmin=2)
+        true_histograms = Dict("diagonal" => [0,7,1,0,1],
+                               "vertical" => [0,6,2],
+                               "recurrencetimes" => [0,0,0,2,0,0,1])
+        for k in keys(histograms)
+            @test histograms[k] == true_histograms[k]
+        end
+        rqa_params = rqa(rmat, theiler=0, lmin=2)
+        @test rqa_params["RR"] == 33/110
+        @test rqa_params["DET"] == 22/33
+        @test rqa_params["L"] == 22/9
+        @test rqa_params["Lmax"] == 5
+        @test rqa_params["DIV"] == 0.2
+        @test rqa_params["ENTR"] ≈ 0.684 atol=0.001
+        @test rqa_params["LAM"] == 18/33
+        @test rqa_params["TT"] == 18/8
+        @test rqa_params["Vmax"] == 3
+    end
+    @testset "Theiler and minimum line" begin
+        histograms = recurrencestructures(rmat, theiler=2, lmin=2)
+        true_histograms = Dict("diagonal" => [0,4,0,0,1],
+                               "vertical" => [0,3,2],
+                               "recurrencetimes" => [0,0,0,0,0,0,1])
+        for k in keys(histograms)
+            @test histograms[k] == true_histograms[k]
+        end
+        rqa_params = rqa(rmat, theiler=2, lmin=2)
+        @test rqa_params["RR"] == 22/110
+        @test rqa_params["DET"] == 13/22
+        @test rqa_params["L"] == 13/5
+        @test rqa_params["Lmax"] == 5
+        @test rqa_params["DIV"] == 0.2
+        @test rqa_params["ENTR"] ≈ 0.500 atol=0.001
+        @test rqa_params["LAM"] == 12/22
+        @test rqa_params["TT"] == 12/5
+        @test rqa_params["Vmax"] == 3
+    end
 end
+
+
