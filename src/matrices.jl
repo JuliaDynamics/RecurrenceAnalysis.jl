@@ -282,7 +282,12 @@ See also: [`CrossRecurrenceMatrix`](@ref).
 """
 function JointRecurrenceMatrix(x, y, ε; kwargs...)
     n = min(size(x,1), size(y,1))
-    rm1 = RecurrenceMatrix( (x[1:n,:]), ε, kwargs...)
-    rm2 = RecurrenceMatrix( (y[1:n,:]), ε, kwargs...)
+    if n == size(x,1) && n == size(y,1)
+        rm1 = RecurrenceMatrix(x, ε, kwargs...)
+        rm2 = RecurrenceMatrix(y, ε, kwargs...)
+    else
+        rm1 = RecurrenceMatrix(x[1:n,:], ε, kwargs...)
+        rm2 = RecurrenceMatrix(y[1:n,:], ε, kwargs...)
+    end
     return JointRecurrenceMatrix(rm1.data .* rm2.data)
 end
