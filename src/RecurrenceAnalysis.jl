@@ -13,6 +13,10 @@ export embed,
        jointrecurrencematrix,
        recurrenceplot,
        recurrencerate,
+       recurrencestructures,
+       dl_average, dl_max, dl_entropy,
+       vl_average, vl_max, vl_entropy,
+       rt_average, rt_max, rt_entropy,
        determinism,
        avgdiag,
        maxdiag,
@@ -28,6 +32,7 @@ export embed,
 
 include("matrices.jl")
 include("plot.jl")
+include("histograms.jl")
 include("rqa.jl")
 include("radius.jl")
 include("windowed.jl")

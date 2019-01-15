@@ -1,5 +1,12 @@
 # RecurrenceAnalysis.jl News
 
+## v0.7.0
+* All `recurrencematrix` have been deprecate to `RecurrenceMatrix` which
+  create a dedicated struct for each kind of matrix.
+
+## v0.6.0
+* Rework how `recurrencematrix` is computed: now a conversion to `Dataset` is done for small dimensions. In addition, the default metric is now `Euclidean`.
+
 ## v0.5.0
 * With this update core functionality of delay embedding and estimating embedding dimension is moved (and used from) the Julia package `DelayEmbeddings`.
 * `RecurrenceAnalysis` is also joining JuliaDynamics and **DynamicalSystems.jl** from 0.5.0 onwards.
