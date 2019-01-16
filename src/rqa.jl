@@ -257,8 +257,6 @@ function rqa(x; onlydiagonal=false, kwargs...)
         haskey(kw_v, :theilervert) && (kw_v[:theiler] = kw_v[:theilervert])
         haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
         vhist, rthist = verticalhistograms(x; kw_v...)
-        (vhist==[0]) && @warn "no vertical lines found in the matrix"
-        (rthist==[0]) && @warn "no recurrence times found in the matrix"
         rr_v = recurrencerate(x; kw_v...)
         return Dict("RR"  => recurrencerate(x; kwargs...),
             "DET"  => _determinism(dhist, rr_d*length(x)),

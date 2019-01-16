@@ -138,7 +138,6 @@ function diagonalhistogram(x::ARM; lmin::Integer=2, theiler::Integer=0, kwargs..
             dh[1:nbins_loi] .+= loi_hist
         end
     end
-    (dh==[0]) && @warn "no diagonal lines found in the matrix"
     return dh
 end
 
@@ -153,16 +152,8 @@ function verticalhistograms(x::ARM;
     return _linehistograms(rv,cv,lmin,theiler,distances)
 end
 
-function vl_histogram(x; kwargs...) 
-    h = verticalhistograms(x; kwargs...)[1]
-    (h==[0]) && @warn "no vertical lines found in the matrix"
-    return h
-end
-function rt_histogram(x; kwargs...)
-    h = verticalhistograms(x; kwargs...)[2]
-    (h==[0]) && @warn "no recurrence times found in the matrix"
-    return h
-end
+vl_histogram(x; kwargs...) = verticalhistograms(x; kwargs...)[1]
+rt_histogram(x; kwargs...) = verticalhistograms(x; kwargs...)[2]
 
 """
     recurrencestructures(x::AbstractRecurrenceMatrix;
@@ -212,14 +203,8 @@ function recurrencestructures(x::ARM;
         haskey(kw_v, :theilervert) && (kw_v[:theiler] = kw_v[:theilervert])
         haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
         vhist = verticalhistograms(x; lmin=lmin, theiler=theiler, kw_v...)
-        if vertical
-            (vhist[1]==[0]) && @warn "no vertical lines found in the matrix"
-            (histograms["vertical"] = vhist[1])
-        end
-        if recurrencetimes
-            (vhist[2]==[0]) && @warn "no recurrence times found in the matrix"
-            (histograms["recurrencetimes"] = vhist[2])
-        end
+        vertical && (histograms["vertical"] = vhist[1])
+        recurrencetimes && (histograms["recurrencetimes"] = vhist[2])
     end
     return histograms
 end
