@@ -30,11 +30,16 @@ macro histogram_params(keyword, description, hist_fun)
                                  :entropy => "entropy of the $(description)s")
     function_bodies = Dict(
         :average => quote
+                (hist==[0]) && return 0.0
                 points = (1:length(hist)) .* hist
                 return sum(points)/sum(hist)
             end,
-        :max => quote length(hist) end,
+        :max => quote
+                (hist==[0]) && return 0
+                return length(hist)
+            end,
         :entropy => quote
+                (hist==[0]) && return 0.0
                 prob_bins = hist ./ sum(hist)
                 prob_bins = prob_bins[findall(!iszero, prob_bins)]
                 return -sum(prob_bins .* log.(prob_bins))
@@ -87,6 +92,7 @@ function determinism(x::ARM; kwargs...)
 end
 
 function _determinism(diag_hist::Vector{<:Integer}, npoints)::Float64
+    (diag_hist==[0]) && return 0.0
     diag_points = (1:length(diag_hist)) .* diag_hist
     return sum(diag_points)/npoints
 end
