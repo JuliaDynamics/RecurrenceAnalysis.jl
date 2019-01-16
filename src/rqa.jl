@@ -200,8 +200,7 @@ nmprt(x::ARM; kwargs) = maximum(verticalhistograms(x; kwargs...)[2])
     rqa(x; kwargs...)
 
 Calculate all RQA parameters of a recurrence matrix. See the functions
-`recurrencerate`, `determinism`, `dl_average`, `dl_max`, `divergence`, `dl_entropy`,
-`trend`, `laminarity`, `trappingtime` and `vl_max` for the definition of
+referred to below for the definition of
 the different parameters and the default values of the arguments.
 Using this function is much more efficient than calling all individual functions
 one by one.
@@ -214,16 +213,19 @@ structures.
 
 The returned value is a dictionary with the following keys:
 
-* "RR": recurrence rate (see `recurrencerate`)
-* "DET": determinsm (see `determinism`)
-* "L": average length of diagonal structures (see `dl_average`)
-* "Lmax": maximum length of diagonal structures (see `dl_max`)
-* "DIV": divergence (see `divergence`)
-* "ENTR": entropy of diagonal structures (see `dl_entropy`)
-* "TREND": trend of recurrences (see `trend`)
-* "LAM": laminarity (see `laminarity`)
-* "TT": trapping time (see `trappingtime`)
-* "Vmax": maximum length of vertical structures (`see `vl_max`)
+* "RR": recurrence rate (see [`recurrencerate`](@ref))
+* "DET": determinsm (see [`determinism`](@ref))
+* "L": average length of diagonal structures (see [`dl_average`](@ref))
+* "Lmax": maximum length of diagonal structures (see [`dl_max`](@ref))
+* "DIV": divergence (see [`divergence`](@ref))
+* "ENTR": entropy of diagonal structures (see [`dl_entropy`](@ref))
+* "TREND": trend of recurrences (see [`trend`](@ref))
+* "LAM": laminarity (see [`laminarity`](@ref))
+* "TT": trapping time (see [`trappingtime`](@ref))
+* "Vmax": maximum length of vertical structures (see [`vl_max`](@ref))
+* "MRT": mean recurrence time (see [`meanrecurrencetime`](@ref))
+* "RTE" recurrence time entropy (see [`rt_entropy`](@ref))
+* "NMPRT": number of the most probable recurrence time (see [`nmprt`](@ref))
 
 The keyword argument `onlydiagonal` (`false` by default) can be set to `true`
 in order to restrict the analysis to the recurrence rate and the parameters related
@@ -248,7 +250,7 @@ function rqa(x; onlydiagonal=false, kwargs...)
         kw_v = Dict(kwargs)
         haskey(kw_v, :theilervert) && (kw_v[:theiler] = kw_v[:theilervert])
         haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
-        vhist = verticalhistograms(x; kw_v...)[1]
+        vhist, rthist = verticalhistograms(x; kw_v...)
         rr_v = recurrencerate(x; kw_v...)
         return Dict("RR"  => recurrencerate(x; kwargs...),
             "DET"  => _determinism(dhist, rr_d*length(x)),
@@ -256,10 +258,13 @@ function rqa(x; onlydiagonal=false, kwargs...)
             "Lmax" => _dl_max(dhist),
             "DIV"  => 1.0/_dl_max(dhist),
             "ENTR"  => _dl_entropy(dhist),
-            "TREND"  => trend(x; kw_d...),
+            "TREND" => trend(x; kw_d...),
             "LAM"  => _laminarity(vhist, rr_v*length(x)),
             "TT"   => _vl_average(vhist),
-            "Vmax" => _vl_max(vhist)
+            "Vmax" => _vl_max(vhist),
+            "MRT"  => _rt_average(rthist),
+            "RTE" => _rt_entropy(rthist),
+            "NMPRT" => maximum(rthist)
         )
     end
 end

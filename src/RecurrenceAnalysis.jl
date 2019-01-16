@@ -26,6 +26,8 @@ export embed,
        laminarity,
        trappingtime,
        maxvert,
+       meanrecurrencetime,
+       nmprt,
        rqa,
        sorteddistances,
        @windowed

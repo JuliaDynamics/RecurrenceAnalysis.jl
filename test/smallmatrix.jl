@@ -45,6 +45,9 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
         @test rqa_params["LAM"] == 1.0
         @test rqa_params["TT"] == 33/23
         @test rqa_params["Vmax"] == 3
+        @test rqa_params["MRT"] == 33/12
+        @test rqa_params["RTE"] ≈ 1.286 atol=0.001
+        @test rqa_params["NMPRT"] == 4
     end
     @testset "With Theiler window" begin
         histograms = recurrencestructures(rmat, theiler=2)
@@ -64,6 +67,9 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
         @test rqa_params["LAM"] == 1.0
         @test rqa_params["TT"] == 22/15
         @test rqa_params["Vmax"] == 3
+        @test rqa_params["MRT"] == 24/6
+        @test rqa_params["RTE"] ≈ 1.011 atol=0.001
+        @test rqa_params["NMPRT"] == 3
     end
     @testset "With minimum line" begin
         histograms = recurrencestructures(rmat, lmin=2)
@@ -83,6 +89,9 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
         @test rqa_params["LAM"] == 18/33
         @test rqa_params["TT"] == 18/8
         @test rqa_params["Vmax"] == 3
+        @test rqa_params["MRT"] == 15/3
+        @test rqa_params["RTE"] ≈ 0.637 atol=0.001
+        @test rqa_params["NMPRT"] == 2
     end
     @testset "Theiler and minimum line" begin
         histograms = recurrencestructures(rmat, theiler=2, lmin=2)
@@ -102,6 +111,9 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
         @test rqa_params["LAM"] == 12/22
         @test rqa_params["TT"] == 12/5
         @test rqa_params["Vmax"] == 3
+        @test rqa_params["MRT"] == 7.0
+        @test rqa_params["RTE"] ≈ 0.0 atol=0.001
+        @test rqa_params["NMPRT"] == 1
     end
 end
 

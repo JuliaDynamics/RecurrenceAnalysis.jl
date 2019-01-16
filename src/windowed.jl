@@ -1,14 +1,21 @@
 const rqa_funs = [
     :recurrencerate,
     :determinism,
-    :avgdiag,
-    :maxdiag,
+    :dl_average,
+    :dl_max,
     :divergence,
-    :rqaentropy,
+    :dl_entropy,
     :trend,
     :laminarity,
+    :vl_average,
+    :vl_max,
+    :vl_entropy,
     :trappingtime,
-    :maxvert
+    :rt_average,
+    :rt_max,
+    :rt_entropy,
+    :meanrecurrencetime,
+    :nmprt
     ]
 
 const rqa_types = Dict(
@@ -155,7 +162,10 @@ macro windowed(ex, options...)
                     "TREND"  => zeros(Float64,ni),
                     "LAM"  => zeros(Float64,ni),
                     "TT"   => zeros(Float64,ni),
-                    "Vmax" => zeros(Int,ni)
+                    "Vmax" => zeros(Int,ni),
+                    "MRT"  => zeros(Float64,ni),
+                    "RTE"  => zeros(Float64,ni),
+                    "NMPRT" => zeros(Int,ni)
                 )
                 for i=1:ni
                     local rqa_i = $ex
