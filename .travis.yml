@@ -4,7 +4,7 @@ os:
   - linux
 julia:
   - 1.0
-  - nightly
+  # - nightly
 branches:
   - only:
     - master
