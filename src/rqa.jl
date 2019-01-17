@@ -80,7 +80,7 @@ end
 @deprecate rqaentropy dl_entropy
 
 """
-    determinism(x::AbstractRecurrenceMatrix; lmin=2, theiler=0)
+    determinism(x; lmin=2, theiler=0)
 
 Calculate the determinism of the recurrence matrix `x`, ruling out
 the points within the Theiler window of size `theiler` and diagonals shorter
@@ -151,7 +151,7 @@ end
     laminarity(x; lmin=2, theiler=0)
 
 Calculate the laminarity of the recurrence matrix `x`, ruling out the
-points within the Theiler window of size `theiler` and diagonals shorter
+points within the Theiler window of size `theiler` and lines shorter
 than `lmin`.
 """
 function laminarity(x::ARM; kwargs...)
@@ -165,7 +165,7 @@ _laminarity(vert_hist::Vector{<:Integer}, npoints) = _determinism(vert_hist, npo
     trappingtime(x; lmin=2, theiler=0)
 
 Calculate the trapping time of the recurrence matrix `x`, ruling out the
-points within the Theiler window of size `theiler` and diagonals shorter
+points within the Theiler window of size `theiler` and lines shorter
 than `lmin`.
 
 The trapping time is the average of the vertical line structures and thus equal
@@ -182,7 +182,7 @@ trappingtime(x::ARM; kwargs...) = vl_average(x; kwargs...)
     meanrecurrencetime(x; lmin=2, theiler=0)
 
 Calculate the mean recurrence time of the recurrence matrix `x`, ruling out the
-points within the Theiler window of size `theiler` and diagonals shorter
+points within the Theiler window of size `theiler` and lines shorter
 than `lmin`.
 
 Equivalent to [`rt_average`](@ref).
@@ -194,7 +194,7 @@ meanrecurrencetime(x::ARM; kwargs...) = rt_average(x; kwargs...)
     nmprt(x; lmin=2, theiler=0)
 
 Calculate the number of the most probable recurrence time (NMPRT), ruling out the
-points within the Theiler window of size `theiler` and diagonals shorter
+points within the Theiler window of size `theiler` and lines shorter
 than `lmin`.
 """
 nmprt(x::ARM; kwargs) = maximum(verticalhistograms(x; kwargs...)[2])
@@ -229,9 +229,16 @@ The returned value is a dictionary with the following keys:
 * "LAM": laminarity (see [`laminarity`](@ref))
 * "TT": trapping time (see [`trappingtime`](@ref))
 * "Vmax": maximum length of vertical structures (see [`vl_max`](@ref))
+* "VENTR": entropy of vertical structures (see [`vl_entropy`](@ref))
 * "MRT": mean recurrence time (see [`meanrecurrencetime`](@ref))
 * "RTE" recurrence time entropy (see [`rt_entropy`](@ref))
 * "NMPRT": number of the most probable recurrence time (see [`nmprt`](@ref))
+
+Notice that in the case of empty histograms (e.g. no existing vertical lines
+less than the keyword `lminvert`) the average and maximum values
+("L", "Lmax", "TT", "Vmax", "MRT")
+are returned as `0.0` but their respective entropies ("ENTR", "VENTR", "RTE")
+are returned as `NaN`.
 
 The keyword argument `onlydiagonal` (`false` by default) can be set to `true`
 in order to restrict the analysis to the recurrence rate and the parameters related
@@ -268,6 +275,7 @@ function rqa(x; onlydiagonal=false, kwargs...)
             "LAM"  => _laminarity(vhist, rr_v*length(x)),
             "TT"   => _vl_average(vhist),
             "Vmax" => _vl_max(vhist),
+            "VENTR" => _vl_entropy(vhist),
             "MRT"  => _rt_average(rthist),
             "RTE" => _rt_entropy(rthist),
             "NMPRT" => maximum(rthist)

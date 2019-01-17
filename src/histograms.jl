@@ -15,9 +15,9 @@ end
 # from the indices of rows and columns/diagonals of the matrix
 # `theiler` is used for histograms of vertical structures
 # `distances` is used to simplify calculations of the distances are not wanted
-function _linehistograms(rows::T, cols::T, lmin::Integer=1, theiler::Integer=0, 
+function _linehistograms(rows::T, cols::T, lmin::Integer=1, theiler::Integer=0,
      distances::Bool=true) where {T<:AbstractVector{Int}}
-    
+
     # check bounds
     n = length(rows)
     if length(cols) != n
@@ -61,7 +61,7 @@ function _linehistograms(rows::T, cols::T, lmin::Integer=1, theiler::Integer=0,
                             halfline = div(current_vert, 2)
                                 if dist != 0
                                     nbins_d = extendhistogram!(bins_d, nbins_d, dist+halfline)
-                                end                        
+                                end
                             # update the distance
                             dist = r-rprev+halfline-1
                         else
@@ -161,10 +161,11 @@ rt_histogram(x; kwargs...) = verticalhistograms(x; kwargs...)[2]
                              vertical=true,
                              recurrencetimes=true,
                              kwargs...)
-    
-Histograms of the recurrence structures contained in the recurrence matrix `x`.
 
-## Description:
+Return a dictionary with the
+histograms of the recurrence structures contained in the recurrence matrix `x`.
+
+## Description
 
 Returns a dictionary with the keys `"diagonal"`, `"vertical"` or
 `"recurrencetimes"`, depending on what keyword arguments are given as `true`.
@@ -181,7 +182,9 @@ All the points of the matrix are counted by default. Extra keyword arguments can
 be passed to rule out the lines shorter than a minimum length or around the main
 diagonal. See the arguments of the function [`rqa`](@ref) for further details.
 
-## References:
+"Empty" histograms are represented always as `[0]`.
+
+## References
 
 N. Marwan & C.L. Webber, "Mathematical and computational foundations of
 recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
@@ -189,7 +192,7 @@ Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
 function recurrencestructures(x::ARM;
     diagonal=true, vertical=true, recurrencetimes=true, lmin=1, theiler=0, kwargs...)
-    
+
     # Parse arguments for diagonal and vertical structures
     histograms = Dict{String,Vector{Int}}()
     if diagonal
@@ -208,4 +211,3 @@ function recurrencestructures(x::ARM;
     end
     return histograms
 end
-
