@@ -231,6 +231,24 @@ end
 # distance matrix; otherwise return the value of `scale` itself
 _computescale(scale::Function, x, y, metric) = scale(distancematrix(x, y, metric))
 _computescale(scale::Real, args...) = scale
+# specific methods to avoid `distancematrix`
+function _computescale(scale::typeof(maximum), x::T, y::T, metric::Metric) where {T}
+    maxvalue = zero(eltype(x))
+    @inbounds for xi in x, yj in y
+        newvalue = evaluate(metric, xi, yj)
+        (newvalue > maxvalue) && (maxvalue = newvalue)
+    end
+    return maxvalue
+end
+function _computescale(scale::typeof(mean), x::T, y::T, metric::Metric) where {T}
+    meanvalue = zero(eltype(x))
+    w = 1/(length(x)*length(y))
+    @inbounds for xi in x, yj in y
+        meanvalue += evaluate(metric, xi, yj)*w
+    end
+    return meanvalue
+end
+
 
 # Internal methods to calculate the matrix:
 # If the metric is supplied as a string, get the corresponding Metric from Distances
