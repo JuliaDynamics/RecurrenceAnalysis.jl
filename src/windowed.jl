@@ -26,11 +26,11 @@ const rqa_types = Dict(
 
 """
     ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
-    
+
 Return the indices of the rows and columns of the nonzero values of a
 block-diagonal cross-recurrence matrix.
 
-If `m` is the cross-recurrence matrix of `x` and `y` (created with the 
+If `m` is the cross-recurrence matrix of `x` and `y` (created with the
 positional and keyword arguments `vargs` and `kwargs`), the indices returned by
 this function are limited to the "block-diagonal" indicated by
 `dindex ∈ {-1,0,1}`, as in the following graphical representation
@@ -163,6 +163,7 @@ macro windowed(ex, options...)
                     "LAM"  => zeros(Float64,ni),
                     "TT"   => zeros(Float64,ni),
                     "Vmax" => zeros(Int,ni),
+                    "VENTR" => zeros(Float64,ni),
                     "MRT"  => zeros(Float64,ni),
                     "RTE"  => zeros(Float64,ni),
                     "NMPRT" => zeros(Int,ni)
