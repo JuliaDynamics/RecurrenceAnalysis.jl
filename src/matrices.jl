@@ -240,13 +240,12 @@ function _computescale(scale::typeof(maximum), x::T, y::T, metric::Metric) where
     end
     return maxvalue
 end
-function _computescale(scale::typeof(mean), x::T, y::T, metric::Metric) where {T}
-    meanvalue = zero(eltype(x))
-    w = 1/(length(x)*length(y))
+function _computescale(scale::typeof(mean), x, y, metric::Metric)
+    meanvalue = 0.0
     @inbounds for xi in x, yj in y
-        meanvalue += evaluate(metric, xi, yj)*w
+        meanvalue += evaluate(metric, xi, yj)
     end
-    return meanvalue
+    return meanvalue/(length(x)*length(y))
 end
 
 
