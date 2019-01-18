@@ -112,8 +112,10 @@ divergence(x::ARM; kwargs...) = ( 1.0/dl_max(x; kwargs...) )
     trend(x; theiler=0, border=10)
 
 Calculate the trend of recurrences in the recurrence matrix `x`
-towards its edges, ruling out the points within the Theiler window of size `theiler`
-and in the outermost diagonals (at `border` from the corners of the matrix).
+towards its edges, ruling out the points within the Theiler window of size `theiler`.
+
+Keyword `border` can also exclude outermost diagonals
+(i.e. counting from the corners of the matrix).
 """
 trend(x::ARM; kwargs...) = _trend(tau_recurrence(x); kwargs...)
 
@@ -211,17 +213,7 @@ the different parameters and the default values of the arguments.
 Using this function is much more efficient than calling all individual functions
 one by one.
 
-Notice that for the Theiler window, `theiler=0` means that means that the whole matrix is
-scanned for lines. `theiler=1` means that the central diagonal (LOI) is exluded.
-In general, `theiler=n` means that the `n` central diagonals are excluded
-(at both sides of the LOI, i.e. actually `2n-1` diagonals are excluded).
-
-The keyword arguments `theilerdiag`, `lmindiag` may be used to declare specific values
-that override the values of `theiler` and `lmin` in the calculation of
-parameters related to diagonal structures. Likewise, `theilervert` and
-`lminvert` can be used for the calculation of parameters related to vertical
-structures.
-
+## Return
 The returned value is a dictionary with the following keys:
 
 * "RR": recurrence rate (see [`recurrencerate`](@ref))
@@ -239,11 +231,25 @@ The returned value is a dictionary with the following keys:
 * "RTE" recurrence time entropy (see [`rt_entropy`](@ref))
 * "NMPRT": number of the most probable recurrence time (see [`nmprt`](@ref))
 
-Notice that in the case of empty histograms (e.g. no existing vertical lines
+In the case of empty histograms (e.g. no existing vertical lines
 less than the keyword `lminvert`) the average and maximum values
 ("L", "Lmax", "TT", "Vmax", "MRT")
 are returned as `0.0` but their respective entropies ("ENTR", "VENTR", "RTE")
 are returned as `NaN`.
+
+## Keyword Arguments
+
+Standard keyword arguments are the ones accepted by the functios listed below,
+i.e. `theiler, lmin, border`. In addition `theilerdiag`, `lmindiag` may be used to
+declare specific values that override the values of `theiler` and `lmin` in the
+calculation of parameters related to diagonal structures. Likewise, `theilervert` and
+`lminvert` can be used for the calculation of parameters related to vertical
+structures.
+
+Notice that for the Theiler window, `theiler=0` means that means that the whole matrix is
+scanned for lines. `theiler=1` means that the central diagonal (LOI) is exluded.
+In general, `theiler=n` means that the `n` central diagonals are excluded
+(at both sides of the LOI, i.e. actually `2n-1` diagonals are excluded).
 
 The keyword argument `onlydiagonal` (`false` by default) can be set to `true`
 in order to restrict the analysis to the recurrence rate and the parameters related
