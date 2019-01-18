@@ -169,8 +169,9 @@ by the following keyword arguments:
 * `scale=1` : a function of the distance matrix (see [`distancematrix`](@ref)),
   or a fixed number, used to scale the value of `ε`. Typical choices are
   `maximum` or `mean`, such that the threshold `ε` is defined as a ratio of the
-  maximum or the mean distance between data points, respectively.
-  Use `1` to keep the distances unscaled (default).
+  maximum or the mean distance between data points, respectively (using
+  `mean` or `maximum` calls specialized versions that are faster than the naive
+  approach).  Use `1` to keep the distances unscaled (default).
 * `fixedrate::Bool=false` : a flag that indicates if `ε` should be
   taken as a target fixed recurrence rate (see [`recurrencerate`](@ref)).
   If `fixedrate` is set to `true`, `ε` must be a value between 0 and 1,
