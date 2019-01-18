@@ -211,6 +211,11 @@ the different parameters and the default values of the arguments.
 Using this function is much more efficient than calling all individual functions
 one by one.
 
+Notice that for the Theiler window, `theiler=0` means that means that the whole matrix is
+scanned for lines. `theiler=1` means that the central diagonal (LOI) is exluded.
+In general, `theiler=n` means that the `n` central diagonals are excluded
+(at both sides of the LOI, i.e. actually `2n-1` diagonals are excluded).
+
 The keyword arguments `theilerdiag`, `lmindiag` may be used to declare specific values
 that override the values of `theiler` and `lmin` in the calculation of
 parameters related to diagonal structures. Likewise, `theilervert` and
