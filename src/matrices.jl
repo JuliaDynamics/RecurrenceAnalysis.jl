@@ -320,7 +320,7 @@ Base.show(io::IO, R::AbstractRecurrenceMatrix) = println(io, summary(R))
     scatterdata(R::ARM) -> xs, ys
 Transform the data of a recurrence matrix to scatter data `xs, ys`.
 """
-function scatterdata(R::ARM) # TODO: scan every 10 or 100 elements depending on size.
+function scatterdata(R::ARM) # TODO: scan every ÷100 elements depending on size?
    rows = rowvals(R)
    is = zeros(Int, nnz(R))
    js = zeros(Int, nnz(R))
@@ -342,22 +342,23 @@ export unicode_arm
 unicode_arm(R::ARM; kwargs...) = unicode_arm(stdout, R::ARM; kwargs...)
 
 """
-    unicode_arm([io,] R; minh = 20, maxh = 0.5, ascii = false, kwargs...) -> u
+    unicode_arm([io,] R; minh = 25, maxh = 0.5, ascii, kwargs...) -> u
 
-Obtain a unicode plot representation of a recurrence matrix `R` to be displayed in
+Obtain a text-scatterplot representation of a recurrence matrix `R` to be displayed in
 `io` (by default `stdout`). The matrix spans at minimum `minh` rows and at maximum
-`maxh*displaysize(io)[1]` (i.e. by default half the display),
-unless the width of the plot is even less,
-in which case the minimum height is dictated by the width.
+`maxh*displaysize(io)[1]` (i.e. by default half the display).
+As we always try to plot in equal aspect ratio, if the width of the plot is even less,
+the minimum height is dictated by the width.
 
-The keyword `ascii` can ensure that all elements of the plot are ASCII characters,
-(useful when e.g. wanting to print to a file). The rest of the `kwargs` are
-propagated into `UnicodePlots.scatterplot`.
+The keyword `ascii::Bool` can ensure that all elements of the plot are ASCII characters
+(`true`, useful when e.g. wanting to print to a file) or Unicode (`false`).
+
+The rest of the `kwargs` are propagated into `UnicodePlots.scatterplot`.
 
 Internally this function calls `RecurrenceAnalysis.scatterdata` to transform
 a recurence matrix to scatter data.
 """
-function unicode_arm(io::IO, R::ARM; minh = 20, maxh = 0.5, ascii = false, kwargs...)
+function unicode_arm(io::IO, R::ARM; minh = 25, maxh = 0.5, ascii = nothing, kwargs...)
     @assert maxh ≤ 1
     h, w = displaysize(io)
     h = max(minh, round(Int, maxh * h)) # make matrix as long as half the screen (but not too short)
@@ -371,17 +372,25 @@ function unicode_arm(io::IO, R::ARM; minh = 20, maxh = 0.5, ascii = false, kwarg
     is, js = scatterdata(R)
     n, m = size(R)
 
-    # TODO: Change limits to tuples instead of arrays
-    if ascii
-        UnicodePlots.scatterplot(
-        is, js, xlim = [1, n], ylim = [1, m], title = summary(R), labels = false,
-        color = :white, width = w, height = h, border = :ascii, canvas = DotCanvas,
-        kwargs...)
-    else
-        UnicodePlots.scatterplot(
-        is, js, xlim = [1, n], ylim = [1, m], title = summary(R), labels = false,
-        color = :white, width = w, height = h, kwargs...)
+    if ascii == true
+        asciidef = (border = :ascii, canvas = DotCanvas)
+    elseif ascii == false
+        asciidef = (border = :solid, canvas = BrailleCanvas)
+        #default:
+    elseif ascii == nothing
+        # TODO: always use ascii on Jupyter
+        if (isdefined(Main, :Juno) && Main.Juno.isactive()) || !Sys.iswindows()
+            asciidef = (border = :solid, canvas = BrailleCanvas)
+        else
+            asciidef = (border = :ascii, canvas = DotCanvas)
+        end
     end
+
+    # TODO: Change limits to tuples instead of arrays
+    UnicodePlots.scatterplot(
+        is, js; xlim = [1, n], ylim = [1, m], title = summary(R), labels = false,
+        color = :cyan, width = w, height = h, asciidef..., kwargs...
+    )
 end
 
 function Base.show(io::IO, ::MIME"text/plain", R::ARM)
