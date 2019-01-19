@@ -1,3 +1,92 @@
+#########################################
+# Text-based plotting
+#########################################
+"""
+    scatterdata(R::ARM) -> xs, ys
+Transform the data of a recurrence matrix to scatter data `xs, ys`.
+"""
+function scatterdata(R::ARM) # TODO: scan every ÷100 elements depending on size?
+   rows = rowvals(R)
+   is = zeros(Int, nnz(R))
+   js = zeros(Int, nnz(R))
+   k = 1;
+   m, n = size(R)
+   for j = 1:n
+     for i in nzrange(R, j)
+        is[k] = j
+        js[k] = rows[i]
+        k += 1
+     end
+   end
+   return is, js
+end
+
+using UnicodePlots
+export textrecurrenceplot
+
+textrecurrenceplot(R::ARM; kwargs...) = textrecurrenceplot(stdout, R::ARM; kwargs...)
+
+"""
+    textrecurrenceplot([io,] R; minh = 25, maxh = 0.5, ascii, kwargs...) -> u
+
+Obtain a text-scatterplot representation of a recurrence matrix `R` to be displayed in
+`io` (by default `stdout`). The matrix spans at minimum `minh` rows and at maximum
+`maxh*displaysize(io)[1]` (i.e. by default half the display).
+As we always try to plot in equal aspect ratio, if the width of the plot is even less,
+the minimum height is dictated by the width.
+
+The keyword `ascii::Bool` can ensure that all elements of the plot are ASCII characters
+(`true`) or Unicode (`false`).
+
+The rest of the `kwargs` are propagated into `UnicodePlots.scatterplot`.
+
+Internally this function calls `RecurrenceAnalysis.scatterdata` to transform
+a recurence matrix into scatter data.
+"""
+function textrecurrenceplot(io::IO, R::ARM; minh = 25, maxh = 0.5, ascii = nothing, kwargs...)
+    @assert maxh ≤ 1
+    h, w = displaysize(io)
+    h = max(minh, round(Int, maxh * h)) # make matrix as long as half the screen (but not too short)
+    s = 2.4 # scale that visually brings width and height to equal aspect ratio
+    if w < round(Int, h*s) # ensure equal aspect ratio
+        h = round(Int, w/s)
+    else
+        w = round(Int, h*s)
+    end
+
+    is, js = scatterdata(R)
+    n, m = size(R)
+
+    if ascii == true
+        asciidef = (border = :ascii, canvas = DotCanvas)
+    elseif ascii == false
+        asciidef = (border = :solid, canvas = BrailleCanvas)
+        #default:
+    elseif ascii == nothing
+        # TODO: always use ascii on Jupyter
+        if (isdefined(Main, :Juno) && Main.Juno.isactive()) || !Sys.iswindows()
+            asciidef = (border = :solid, canvas = BrailleCanvas)
+        else
+            asciidef = (border = :ascii, canvas = DotCanvas)
+        end
+    end
+
+    # TODO: Change limits to tuples instead of arrays
+    UnicodePlots.scatterplot(
+        is, js; xlim = [1, n], ylim = [1, m], title = summary(R), labels = false,
+        color = :cyan, width = w, height = h, asciidef..., kwargs...
+    )
+end
+
+function Base.show(io::IO, ::MIME"text/plain", R::ARM)
+    a = textrecurrenceplot(io, R)
+    show(io, a)
+end
+
+#########################################
+# Transform to full plotting
+#########################################
+
 # Check the assigned width and height of the plot to ensure that they are
 # approximately proportional to the matrix size
 function checkgridsize(width::T, height::T, dims::Tuple{T,T}) where T<:Integer
@@ -41,6 +130,9 @@ Transform the recurrence matrix `x` into a full matrix suitable for plotting as 
 grayscale image. By default it returns a matrix with the same size as `x`,
 but switched axes, containing "black" values in the cells that represent recurrent points,
 and "white" values in the empty cells.
+
+**This function does not do any plotting!** You have to use the return value with
+the plotting library of your choice.
 
 The numeric codes for black and white are given in a 2-element tuple as a second
 optional argument. Its default value is `(0.0, 1.0)`, i.e. black is coded as `0.0`
