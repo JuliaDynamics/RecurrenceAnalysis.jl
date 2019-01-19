@@ -103,7 +103,7 @@ function _linehistograms(rows::T, cols::T, lmin::Integer=1, theiler::Integer=0,
     return (bins, bins_d)
 end
 
-function diagonalhistogram(x::ARM; lmin::Integer=2, theiler::Integer=0, kwargs...)
+function diagonalhistogram(x::ARM; lmin::Integer=2, theiler::Integer=1, kwargs...)
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
     (lmin < 1) && throw(ErrorException("lmin must be 1 or greater"))
@@ -140,9 +140,11 @@ function diagonalhistogram(x::ARM; lmin::Integer=2, theiler::Integer=0, kwargs..
     end
     return dh
 end
-
+diagonalhistogram(x::CrossRecurrenceMatrix; kwargs...) = 
+    diagonalhistogram(_RM(x); theiler=0, kwargs...)
+    
 function verticalhistograms(x::ARM;
-    lmin::Integer=2, theiler::Integer=0, distances=true, kwargs...)
+    lmin::Integer=2, theiler::Integer=1, distances=true, kwargs...)
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
     (lmin < 1) && throw(ErrorException("lmin must be 1 or greater"))
@@ -151,6 +153,8 @@ function verticalhistograms(x::ARM;
     cv = colvals(x)
     return _linehistograms(rv,cv,lmin,theiler,distances)
 end
+verticalhistograms(x::CrossRecurrenceMatrix; kwargs...) = 
+    verticalhistograms(_RM(x); theiler=0, kwargs...)
 
 vl_histogram(x; kwargs...) = verticalhistograms(x; kwargs...)[1]
 rt_histogram(x; kwargs...) = verticalhistograms(x; kwargs...)[2]
@@ -191,7 +195,7 @@ recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
 function recurrencestructures(x::ARM;
-    diagonal=true, vertical=true, recurrencetimes=true, lmin=1, theiler=0, kwargs...)
+    diagonal=true, vertical=true, recurrencetimes=true, lmin=1, theiler=1, kwargs...)
 
     # Parse arguments for diagonal and vertical structures
     histograms = Dict{String,Vector{Int}}()
@@ -211,3 +215,5 @@ function recurrencestructures(x::ARM;
     end
     return histograms
 end
+recurrencestructures(x::CrossRecurrenceMatrix; kwargs...) = 
+    recurrencestructures(_RM(x); theiler=0, kwargs...)
