@@ -101,11 +101,6 @@ end
 struct JointRecurrenceMatrix <: AbstractRecurrenceMatrix
     data::SparseMatrixCSC{Bool,Int}
 end
-# Special type (not exported) to manage conditional parameters in methods
-struct _RM <: AbstractRecurrenceMatrix
-    data::SparseMatrixCSC{Bool,Int}
-end
-_RM(R::ARM) = _RM(R.data)
 
 function Base.summary(R::AbstractRecurrenceMatrix)
     N = nnz(R.data)
