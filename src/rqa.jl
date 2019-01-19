@@ -3,12 +3,16 @@
 # Recurrence rate
 
 """
-    recurrencerate(x; theiler=0)
+    recurrencerate(x[; theiler::Integer])
 
-Calculate the recurrence rate of the recurrence matrix `x`, ruling out
-the points within the Theiler window of size `theiler`.
+Calculate the recurrence rate of the recurrence matrix `x`.
+
+The line of identity (main diagonal) is excluded by default for matrices of type
+`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
+`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
+diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
 """
-function recurrencerate(x::ARM; theiler::Integer=0, kwargs...)::Float64
+function recurrencerate(x::ARM; theiler::Integer=deftheiler(x), kwargs...)::Float64
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
     if theiler == 0
@@ -52,11 +56,15 @@ macro histogram_params(keyword, description, hist_fun)
         _fname = Symbol("_$(keyword)_$(name)")
         fbody = function_bodies[name]
         doc = """
-                $fname(x; lmin=2, theiler=0)
+                $fname(x[; lmin=2, theiler])
 
             Calculate the $(param) contained in the recurrence matrix `x`,
-            ruling out the points within the Theiler window of size `theiler`
-            and diagonals shorter than `lmin`.
+            ruling out the lines shorter than `lmin`.
+            
+            The line of identity (main diagonal) is excluded by default for matrices of type
+            `RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
+            `CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
+            diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
             """
         push!(ret.args, quote
             @doc $doc ->
@@ -80,11 +88,15 @@ end
 @deprecate rqaentropy dl_entropy
 
 """
-    determinism(x; lmin=2, theiler=0)
+    determinism(x[; lmin=2, theiler])
 
 Calculate the determinism of the recurrence matrix `x`, ruling out
-the points within the Theiler window of size `theiler` and diagonals shorter
-than `lmin`.
+the diagonal lines shorter than `lmin`.
+
+The line of identity (main diagonal) is excluded by default for matrices of type
+`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
+`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
+diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
 """
 function determinism(x::ARM; kwargs...)
     npoints = recurrencerate(x; kwargs...)*length(x)
@@ -99,32 +111,37 @@ end
 
 
 """
-    divergence(x; theiler=0)
+    divergence(x[; theiler])
 
 Calculate the divergence of the recurrence matrix `x`
-(actually the inverse of [`dl_max`](@ref)), ruling out
-the points within the Theiler window of size `theiler`.
+(actually the inverse of [`dl_max`](@ref)).
 """
 divergence(x::ARM; kwargs...) = ( 1.0/dl_max(x; kwargs...) )
 
 
 """
-    trend(x; theiler=0, border=10)
+    trend(x[; border=10, theiler])
 
-Calculate the trend of recurrences in the recurrence matrix `x`
-towards its edges, ruling out the points within the Theiler window of size `theiler`.
+Calculate the trend of recurrences in the recurrence matrix `x`.
 
-Keyword `border` can also exclude outermost diagonals
-(i.e. counting from the corners of the matrix).
+The 10 outermost diagonals (counting from the corners of the matrix)
+are excluded by default to avoid "border effects". Use the keyword argument
+`border` to define a different number of excluded lines.
+
+The line of identity (main diagonal) is excluded by default for matrices of type
+`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
+`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
+diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
 """
-trend(x::ARM; kwargs...) = _trend(tau_recurrence(x); kwargs...)
+trend(x::ARM; theiler=deftheiler(x), kwargs...) =
+    _trend(tau_recurrence(x); theiler=theiler, kwargs...)
 
 function tau_recurrence(x::ARM)
     n = minimum(size(x))
     [count(!iszero, diag(x,d))/(n-d) for d in (0:n-1)]
 end
 
-function _trend(npoints::Vector; theiler=0, border=10, kwargs...)::Float64
+function _trend(npoints::Vector; theiler=1, border=10, kwargs...)::Float64
     nmax = length(npoints)
     rrk = npoints./collect(nmax:-1:1)
     a = 1+theiler
@@ -150,11 +167,15 @@ end
 @deprecate maxvert vl_max
 
 """
-    laminarity(x; lmin=2, theiler=0)
+    laminarity(x[; lmin=2, theiler])
 
 Calculate the laminarity of the recurrence matrix `x`, ruling out the
-points within the Theiler window of size `theiler` and lines shorter
-than `lmin`.
+lines shorter than `lmin`.
+
+The line of identity (main diagonal) is excluded by default for matrices of type
+`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
+`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
+diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
 """
 function laminarity(x::ARM; kwargs...)
     npoints = recurrencerate(x)*length(x)
@@ -167,8 +188,12 @@ _laminarity(vert_hist::Vector{<:Integer}, npoints) = _determinism(vert_hist, npo
     trappingtime(x; lmin=2, theiler=0)
 
 Calculate the trapping time of the recurrence matrix `x`, ruling out the
-points within the Theiler window of size `theiler` and lines shorter
-than `lmin`.
+lines shorter than `lmin`.
+
+The line of identity (main diagonal) is excluded by default for matrices of type
+`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
+`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
+diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
 
 The trapping time is the average of the vertical line structures and thus equal
 to [`vl_average`](@ref).
@@ -184,8 +209,12 @@ trappingtime(x::ARM; kwargs...) = vl_average(x; kwargs...)
     meanrecurrencetime(x; lmin=2, theiler=0)
 
 Calculate the mean recurrence time of the recurrence matrix `x`, ruling out the
-points within the Theiler window of size `theiler` and lines shorter
-than `lmin`.
+lines shorter than `lmin`.
+
+The line of identity (main diagonal) is excluded by default for matrices of type
+`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
+`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
+diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
 
 Equivalent to [`rt_average`](@ref).
 """
@@ -196,8 +225,12 @@ meanrecurrencetime(x::ARM; kwargs...) = rt_average(x; kwargs...)
     nmprt(x; lmin=2, theiler=0)
 
 Calculate the number of the most probable recurrence time (NMPRT), ruling out the
-points within the Theiler window of size `theiler` and lines shorter
-than `lmin`.
+lines shorter than `lmin`.
+
+The line of identity (main diagonal) is excluded by default for matrices of type
+`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
+`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
+diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
 """
 nmprt(x::ARM; kwargs) = maximum(verticalhistograms(x; kwargs...)[2])
 
