@@ -1,5 +1,15 @@
 # RecurrenceAnalysis.jl News
 
+## v0.9.0
+- Recurrence matrices are printed as a plot using `UnicodePlots`. See `textrecurrenceplot`.
+
+## v0.8.0 - v0.8.7
+- Big documentation improvements
+- Changes to return values for various rqa functions
+- Functions that return recurrence structure histograms
+- Updated and more tests
+- Performance improvements
+
 ## v0.7.0
 * All `recurrencematrix` have been deprecate to `RecurrenceMatrix` which
   create a dedicated struct for each kind of matrix.

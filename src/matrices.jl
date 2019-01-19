@@ -104,15 +104,7 @@ end
 
 function Base.summary(R::AbstractRecurrenceMatrix)
     N = nnz(R.data)
-    return "$(nameof(typeof(R))) of size $(size(R.data)) with $N entries:"
-end
-function Base.show(io::IO, R::AbstractRecurrenceMatrix)
-    s = sprint(io -> show(IOContext(io, :limit=>true), MIME"text/plain"(), R.data))
-    s = split(s, '\n')[2:end]
-    s = [replace(line, "=  true"=>"", count=1) for line in s]
-    s = join(s, '\n')
-    tos = summary(R)*"\n"*s
-    println(io, tos)
+    return "$(nameof(typeof(R))) of size $(size(R.data)) with $N entries"
 end
 
 # Propagate used functions:
@@ -120,7 +112,7 @@ begin
     extentions = [
         (:Base, (:getindex, :size, :length, :view, :iterate)),
         (:LinearAlgebra, (:diag, :triu, :tril, :issymmetric)),
-        (:SparseArrays, (:nnz, :rowvals, :nzrange))
+        (:SparseArrays, (:nnz, :rowvals, :nzrange, :nonzeros))
     ]
     for (M, fs) in extentions
         for f in fs
@@ -309,3 +301,17 @@ function JointRecurrenceMatrix(x, y, ε; kwargs...)
     end
     return JointRecurrenceMatrix(rm1.data .* rm2.data)
 end
+
+#######################
+# Pretty printing
+#######################
+function oldshow(io::IO, R::AbstractRecurrenceMatrix)
+    s = sprint(io -> show(IOContext(io, :limit=>true), MIME"text/plain"(), R.data))
+    s = split(s, '\n')[2:end]
+    s = [replace(line, "=  true"=>"", count=1) for line in s]
+    s = join(s, '\n')
+    tos = summary(R)*"\n"*s
+    println(io, tos)
+end
+
+Base.show(io::IO, R::AbstractRecurrenceMatrix) = println(io, summary(R))
