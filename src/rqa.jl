@@ -12,7 +12,7 @@ The line of identity (main diagonal) is excluded by default for matrices of type
 `CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
 diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
 """
-function recurrencerate(x::ARM; theiler::Integer=0, kwargs...)::Float64
+function recurrencerate(x::ARM; theiler::Integer=1, kwargs...)::Float64
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
     if theiler == 0
@@ -25,6 +25,8 @@ function recurrencerate(x::ARM; theiler::Integer=0, kwargs...)::Float64
     end
     return (nnz(x) - theiler_nz)/length(x)
 end
+recurrencerate(x::CrossRecurrenceMatrix, kwargs...) = 
+    recurrencerate(_RM(x); theiler=0, kwargs...)
 
 # Generic parameters of histograms: mean, average and entropy
 
