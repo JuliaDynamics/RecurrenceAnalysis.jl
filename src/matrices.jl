@@ -104,15 +104,7 @@ end
 
 function Base.summary(R::AbstractRecurrenceMatrix)
     N = nnz(R.data)
-    return "$(nameof(typeof(R))) of size $(size(R.data)) with $N entries:"
-end
-function Base.show(io::IO, R::AbstractRecurrenceMatrix)
-    s = sprint(io -> show(IOContext(io, :limit=>true), MIME"text/plain"(), R.data))
-    s = split(s, '\n')[2:end]
-    s = [replace(line, "=  true"=>"", count=1) for line in s]
-    s = join(s, '\n')
-    tos = summary(R)*"\n"*s
-    println(io, tos)
+    return "$(nameof(typeof(R))) of size $(size(R.data)) with $N entries"
 end
 
 # Propagate used functions:
@@ -308,4 +300,91 @@ function JointRecurrenceMatrix(x, y, ε; kwargs...)
         rm2 = RecurrenceMatrix(y[1:n,:], ε, kwargs...)
     end
     return JointRecurrenceMatrix(rm1.data .* rm2.data)
+end
+
+#######################
+# Pretty printing
+#######################
+function oldshow(io::IO, R::AbstractRecurrenceMatrix)
+    s = sprint(io -> show(IOContext(io, :limit=>true), MIME"text/plain"(), R.data))
+    s = split(s, '\n')[2:end]
+    s = [replace(line, "=  true"=>"", count=1) for line in s]
+    s = join(s, '\n')
+    tos = summary(R)*"\n"*s
+    println(io, tos)
+end
+
+Base.show(io::IO, R::AbstractRecurrenceMatrix) = println(io, summary(R))
+
+"""
+    scatterdata(R::ARM) -> xs, ys
+Transform the data of a recurrence matrix to scatter data `xs, ys`.
+"""
+function scatterdata(R::ARM) # TODO: scan every 10 or 100 elements depending on size.
+   rows = rowvals(R)
+   is = zeros(Int, nnz(R))
+   js = zeros(Int, nnz(R))
+   k = 1;
+   m, n = size(R)
+   for j = 1:n
+     for i in nzrange(R, j)
+        is[k] = j
+        js[k] = rows[i]
+        k += 1
+     end
+   end
+   return is, js
+end
+
+using UnicodePlots
+export unicode_arm
+
+unicode_arm(R::ARM; kwargs...) = unicode_arm(stdout, R::ARM; kwargs...)
+
+"""
+    unicode_arm([io,] R; minh = 20, maxh = 0.5, ascii = false, kwargs...) -> u
+
+Obtain a unicode plot representation of a recurrence matrix `R` to be displayed in
+`io` (by default `stdout`). The matrix spans at minimum `minh` rows and at maximum
+`maxh*displaysize(io)[1]` (i.e. by default half the display),
+unless the width of the plot is even less,
+in which case the minimum height is dictated by the width.
+
+The keyword `ascii` can ensure that all elements of the plot are ASCII characters,
+(useful when e.g. wanting to print to a file). The rest of the `kwargs` are
+propagated into `UnicodePlots.scatterplot`.
+
+Internally this function calls `RecurrenceAnalysis.scatterdata` to transform
+a recurence matrix to scatter data.
+"""
+function unicode_arm(io::IO, R::ARM; minh = 20, maxh = 0.5, ascii = false, kwargs...)
+    @assert maxh ≤ 1
+    h, w = displaysize(io)
+    h = max(minh, round(Int, maxh * h)) # make matrix as long as half the screen (but not too short)
+    s = 2.4 # scale that visually brings width and height to equal aspect ratio
+    if w < round(Int, h*s) # ensure equal aspect ratio
+        h = round(Int, w/s)
+    else
+        w = round(Int, h*s)
+    end
+
+    is, js = scatterdata(R)
+    n, m = size(R)
+
+    # TODO: Change limits to tuples instead of arrays
+    if ascii
+        UnicodePlots.scatterplot(
+        is, js, xlim = [1, n], ylim = [1, m], title = summary(R), labels = false,
+        color = :white, width = w, height = h, border = :ascii, canvas = DotCanvas,
+        kwargs...)
+    else
+        UnicodePlots.scatterplot(
+        is, js, xlim = [1, n], ylim = [1, m], title = summary(R), labels = false,
+        color = :white, width = w, height = h, kwargs...)
+    end
+end
+
+function Base.show(io::IO, ::MIME"text/plain", R::ARM)
+    a = unicode_arm(io, R)
+    show(io, a)
 end
