@@ -7,10 +7,16 @@
 
 Calculate the recurrence rate of the recurrence matrix `x`.
 
-The line of identity (main diagonal) is excluded by default for matrices of type
-`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
-`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
-diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
+In matrices of type `RecurrenceMatrix` or `JointRecurrenceMatrix`, the line
+of identity (LOI, i.e. the main diagonal) is excluded by default,
+and the keyword argument `theiler` can be used to exclude a greater number of
+diagonals within a "Theiler window" (or to include the LOI, with `theiler=0).
+The recurrence rate is calculated as the ratio between the number of recurrent
+point and the size of the matrix outside the Theiler window.
+
+In matrices of type `CrossRecurrenceMatrix`, no point is excluded by default,
+and the recurrence rate is calculated taking into account the size of the
+full matrix.
 """
 function recurrencerate(x::ARM; theiler::Integer=deftheiler(x), kwargs...)::Float64
     (theiler < 0) && throw(ErrorException(
@@ -23,7 +29,18 @@ function recurrencerate(x::ARM; theiler::Integer=deftheiler(x), kwargs...)::Floa
     for d in diags_remove
         theiler_nz += nnz(diag(x,d))
     end
-    return (nnz(x) - theiler_nz)/length(x)
+    return (nnz(x) - theiler_nz)/_rrdenominator(x; theiler=theiler, kwargs...)
+end
+
+# Calculate the denominator for the recurrence rate
+_rrdenominator(x::ARM; theiler=0, kwargs...) = length(x)
+
+function _rrdenominator(x::M; theiler=0, kwargs...) where
+    M<:Union{RecurrenceMatrix,JointRecurrenceMatrix}
+    
+    (theiler == 0) && (return length(x))
+    k = size(x,1) - theiler
+    return k*(k+1)
 end
 
 # Generic parameters of histograms: mean, average and entropy
@@ -99,7 +116,7 @@ The line of identity (main diagonal) is excluded by default for matrices of type
 diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
 """
 function determinism(x::ARM; kwargs...)
-    npoints = recurrencerate(x; kwargs...)*length(x)
+    npoints = recurrencerate(x; kwargs...)*_rrdenominator(x; kwargs...)
     return _determinism(diagonalhistogram(x; kwargs...), npoints)
 end
 
@@ -178,7 +195,7 @@ The line of identity (main diagonal) is excluded by default for matrices of type
 diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
 """
 function laminarity(x::ARM; kwargs...)
-    npoints = recurrencerate(x)*length(x)
+    npoints = recurrencerate(x)*_rrdenominator(x; kwargs...)
     return _laminarity(verticalhistograms(x; kwargs...)[1], npoints)
 end
 
@@ -297,7 +314,7 @@ function rqa(x; onlydiagonal=false, kwargs...)
     rr_d = recurrencerate(x; kw_d...)
     if onlydiagonal
         return Dict("RR"  => recurrencerate(x; kwargs...),
-        "DET"  => _determinism(dhist, rr_d*length(x)),
+        "DET"  => _determinism(dhist, rr_d*_rrdenominator(x; kw_d...)),
         "L"    => _dl_average(dhist),
         "Lmax" => _dl_max(dhist),
         "DIV"  => 1.0/_dl_max(dhist),
@@ -310,13 +327,13 @@ function rqa(x; onlydiagonal=false, kwargs...)
         vhist, rthist = verticalhistograms(x; kw_v...)
         rr_v = recurrencerate(x; kw_v...)
         return Dict("RR"  => recurrencerate(x; kwargs...),
-            "DET"  => _determinism(dhist, rr_d*length(x)),
+            "DET"  => _determinism(dhist, rr_d*_rrdenominator(x; kw_v...)),
             "L"    => _dl_average(dhist),
             "Lmax" => _dl_max(dhist),
             "DIV"  => 1.0/_dl_max(dhist),
             "ENTR"  => _dl_entropy(dhist),
             "TREND" => trend(x; kw_d...),
-            "LAM"  => _laminarity(vhist, rr_v*length(x)),
+            "LAM"  => _laminarity(vhist, rr_v*_rrdenominator(x; kw_v...)),
             "TT"   => _vl_average(vhist),
             "Vmax" => _vl_max(vhist),
             "VENTR" => _vl_entropy(vhist),
