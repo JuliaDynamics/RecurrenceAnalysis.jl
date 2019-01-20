@@ -16,7 +16,7 @@ end
 # Function that will be measured
 function fun_rqa(x,metric)
     xe = embed(x,3,6)
-    rmat = recurrencematrix(xe,1.2,metric=metric)
+    rmat = RecurrenceMatrix(xe,1.2,metric=metric)
     rqa(rmat,theiler=1)
 end
 
@@ -31,7 +31,7 @@ function benchmark(metric)
         # Write table of results
         open("benchmark_rqa_julia_$metric.txt","a") do f
             write(f,"$r\t$t\t")
-            for k in ["RR","DET","L","Lmax","ENT","LAM","TT"]
+            for k in ["RR","DET","L","Lmax","ENTR","LAM","TT"]
                 write(f, "$(res[k])\t")
             end
             write(f,"\n")
