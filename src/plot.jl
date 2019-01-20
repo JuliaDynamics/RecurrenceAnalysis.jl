@@ -65,11 +65,15 @@ function textrecurrenceplot(io::IO, R::ARM; minh = 25, maxh = 0.5, ascii = nothi
         if isdefined(Main, :IJulia) && Main.IJulia.inited
             # Always use ASCII in IJulia until this issue is fixed:
             # https://github.com/jupyter/notebook/issues/4354
-            asciidef = (border = :ascii, canvas = DotCanvas)
+            asciidef = (border = :solid, canvas = DotCanvas)
         elseif isdefined(Main, :Juno) && Main.Juno.isactive()
             asciidef = (border = :solid, canvas = BrailleCanvas)
-        else
-            asciidef = (border = :ascii, canvas = DotCanvas)
+        else # If not Juno or Jupyter, it is REPL
+            if Sys.iswindows()
+                asciidef = (border = :solid, canvas = DotCanvas)
+            else
+                asciidef = (border = :solid, canvas = BrailleCanvas)
+            end
         end
     end
 
