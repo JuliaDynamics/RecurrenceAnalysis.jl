@@ -1,5 +1,8 @@
 # RecurrenceAnalysis.jl News
 
+## v0.10.0
+- Theiler window now has default values that depend on the type: `CrossRecurrenceMatrix` has default 0, otherwise 1.
+
 ## v0.9.0
 - Recurrence matrices are printed as a plot using `UnicodePlots`. See `textrecurrenceplot`.
 
