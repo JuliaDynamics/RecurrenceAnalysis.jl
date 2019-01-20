@@ -31,7 +31,7 @@ function _linehistograms(rows::T, cols::T, lmin::Integer, theiler::Integer,
     nbins_d = 1
     # find the first point outside the Theiler window
     firstindex = 1
-    while (firstindex<=n) && (abs(rows[firstindex]-cols[firstindex])<theiler)
+    while (firstindex ≤ n) && (abs(rows[firstindex]-cols[firstindex]) < theiler)
         firstindex += 1
     end
     if firstindex > n
@@ -45,13 +45,13 @@ function _linehistograms(rows::T, cols::T, lmin::Integer, theiler::Integer,
     @inbounds for i=firstindex:n
         r = rows[i]
         c = cols[i]
-        if abs(r-c)>=theiler
+        if abs(r-c) ≥ theiler
             # Search the second and later segments in the column
             if c == cprev
-                if r-rprev !=1 # (a): there is a separation between rprev and r
+                if r-rprev != 1 # (a): there is a separation between rprev and r
                     # update histogram of segments
                     current_vert = rprev-r1+1
-                    if current_vert >= lmin
+                    if current_vert ≥ lmin
                         nbins = extendhistogram!(bins, nbins, current_vert)
                     end
                     # update histogram of distances if it there were at least
@@ -70,7 +70,7 @@ function _linehistograms(rows::T, cols::T, lmin::Integer, theiler::Integer,
             else # hit in the first point of a new column
                 # process the last fragment of the previous column
                 current_vert = rprev-r1+1
-                if current_vert >= lmin
+                if current_vert ≥ lmin
                     nbins = extendhistogram!(bins, nbins, current_vert)
                 end
                 if  distances
@@ -89,7 +89,7 @@ function _linehistograms(rows::T, cols::T, lmin::Integer, theiler::Integer,
     end
     # Process the latest fragment
     current_vert = rprev-r1+1
-    if current_vert >= lmin
+    if current_vert ≥ lmin
         nbins = extendhistogram!(bins, nbins, current_vert)
     end
     if  distances && dist != 0
@@ -106,7 +106,7 @@ function diagonalhistogram(x::ARM; lmin::Integer=2, theiler::Integer=deftheiler(
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
     (lmin < 1) && throw(ErrorException("lmin must be 1 or greater"))
-    m,n=size(x)
+    m,n = size(x)
     rv = rowvals(x)[:]
     dv = colvals(x) .- rowvals(x)
     loi_hist = Int[]
@@ -174,18 +174,31 @@ element of the vector is the number of lines of length `i` contained in `x`.
 * `"diagonal"` counts the diagonal lines, i.e. the recurrent trajectories.
 * `"vertical"` counts the vertical lines, i.e. the laminar states.
 * `"recurrencetimes"` counts the vertical distances between recurrent states,
-    i.e. the recurrence times. These are calculated as the distance between
-    the middle points of consecutive vertical lines.
+    i.e. the recurrence times.
 
 All the points of the matrix are counted by default. The keyword argument
 `theiler` can be passed to rule out the lines around the main
 diagonal. See the arguments of the function [`rqa`](@ref) for further details.
 
-"Empty" histograms are represented always as `[0]`.
+## Notes:
+
+* There is not a unique operational definition of "recurrence times". In the
+analysis of recurrence plots, usually the  "second type" of recurrence times as
+defined by Gao and Cai [1] are considered, i.e. the distance between
+consecutive (but separated) recurrent structures in the vertical direction of
+the matrix. But that distance is not uniquely defined when the vertical recurrent
+structures are longer than one point. The recurrence times calculated here are
+the distance between the midpoints of consecutive lines, which is a balanced
+estimator of the Poincaré recurrence times [2].
+
+* "Empty" histograms are represented always as `[0]`.
 
 ## References
 
-N. Marwan & C.L. Webber, "Mathematical and computational foundations of
+[1] J. Gao & H. Cai. "On the structures and quantification of recurrence plots".
+*Physics Letters A*, 270(1-2), 75–87 (2000). DOI:10.1016/s0375-9601(00)00304-2
+
+[2] N. Marwan & C.L. Webber, "Mathematical and computational foundations of
 recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
