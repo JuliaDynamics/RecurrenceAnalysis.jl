@@ -225,7 +225,7 @@ end
 _computescale(scale::Function, x, y, metric) = scale(distancematrix(x, y, metric))
 _computescale(scale::Real, args...) = scale
 # specific methods to avoid `distancematrix`
-function _computescale(scale::typeof(maximum), x::T, y::T, metric::Metric) where {T}
+function _computescale(scale::typeof(maximum), x, y, metric::Metric)
     maxvalue = zero(eltype(x))
     @inbounds for xi in x, yj in y
         newvalue = evaluate(metric, xi, yj)
@@ -238,7 +238,8 @@ function _computescale(scale::typeof(mean), x, y, metric::Metric)
     @inbounds for xi in x, yj in y
         meanvalue += evaluate(metric, xi, yj)
     end
-    return meanvalue/(length(x)*length(y))
+    denominator = (x==y) ? length(x)*(length(y)-1) : length(x)*length(y)
+    return meanvalue/denominator
 end
 
 
