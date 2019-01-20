@@ -155,8 +155,8 @@ trend(x::ARM; theiler=deftheiler(x), kwargs...) =
 
 function tau_recurrence(x::ARM)
     n = minimum(size(x))
-    rr_τ1 = [count(!iszero, diag(x,d))/(n-d) for d in (0:n-1)]
-    rr_τ2 = [count(!iszero, diag(x,-d))/(n-d) for d in (0:n-1)]
+    rr_τ1 = [count(!iszero, diag(x,d))/length(diag(x,d)) for d in (0:n-1)]
+    rr_τ2 = [count(!iszero, diag(x,-d))/length(diag(x,-d)) for d in (0:n-1)]
     return (rr_τ1 + rr_τ2)
 end
 
