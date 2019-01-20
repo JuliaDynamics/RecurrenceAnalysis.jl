@@ -155,16 +155,17 @@ trend(x::ARM; theiler=deftheiler(x), kwargs...) =
 
 function tau_recurrence(x::ARM)
     n = minimum(size(x))
-    [count(!iszero, diag(x,d))/(n-d) for d in (0:n-1)]
+    rr_τ1 = [count(!iszero, diag(x,d))/(n-d) for d in (0:n-1)]
+    rr_τ2 = [count(!iszero, diag(x,-d))/(n-d) for d in (0:n-1)]
+    return (rr_τ1 + rr_τ2)
 end
 
-function _trend(npoints::Vector; theiler=1, border=10, kwargs...)::Float64
-    nmax = length(npoints)
-    rrk = npoints./collect(nmax:-1:1)
+function _trend(rr_τ::Vector; theiler=1, border=10, kwargs...)::Float64
+    nmax = length(rr_τ)
     a = 1+theiler
     b = nmax-border
     w = collect(a:b) .- b/2
-    (w'*(rrk[a:b] .- mean(rrk[a:b])) ./ (w'*w))[1]
+    (w'*(rr_τ[a:b] .- mean(rr_τ[a:b])) ./ (w'*w))[1]
 end
 
 # Number of l-length sequences, based on diagonals
