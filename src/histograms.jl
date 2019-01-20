@@ -15,7 +15,7 @@ end
 # from the indices of rows and columns/diagonals of the matrix
 # `theiler` is used for histograms of vertical structures
 # `distances` is used to simplify calculations of the distances are not wanted
-function _linehistograms(rows::T, cols::T, lmin::Integer=1, theiler::Integer=0,
+function _linehistograms(rows::T, cols::T, lmin::Integer, theiler::Integer,
      distances::Bool=true) where {T<:AbstractVector{Int}}
 
     # check bounds
@@ -57,16 +57,12 @@ function _linehistograms(rows::T, cols::T, lmin::Integer=1, theiler::Integer=0,
                     # update histogram of distances if it there were at least
                     # two previous segments in the column
                     if distances
-                        if current_vert >= lmin
-                            halfline = div(current_vert, 2)
-                                if dist != 0
-                                    nbins_d = extendhistogram!(bins_d, nbins_d, dist+halfline)
-                                end
-                            # update the distance
-                            dist = r-rprev+halfline-1
-                        else
-                            dist += r - r1
+                        halfline = div(current_vert, 2)
+                        if dist != 0
+                            nbins_d = extendhistogram!(bins_d, nbins_d, dist+halfline)
                         end
+                        # update the distance
+                        dist = r-rprev+halfline-1
                     end
                     r1 = r # update the start of the next segment
                 end
@@ -78,7 +74,7 @@ function _linehistograms(rows::T, cols::T, lmin::Integer=1, theiler::Integer=0,
                     nbins = extendhistogram!(bins, nbins, current_vert)
                 end
                 if  distances
-                    if dist!= 0 && current_vert >= lmin
+                    if dist!= 0
                         halfline = div(current_vert, 2)
                         nbins_d = extendhistogram!(bins_d, nbins_d, dist+halfline)
                     end
@@ -95,15 +91,15 @@ function _linehistograms(rows::T, cols::T, lmin::Integer=1, theiler::Integer=0,
     current_vert = rprev-r1+1
     if current_vert >= lmin
         nbins = extendhistogram!(bins, nbins, current_vert)
-        if  distances && dist != 0
-            halfline = div(current_vert, 2)
-            nbins_d = extendhistogram!(bins_d, nbins_d, dist+halfline)
-        end
+    end
+    if  distances && dist != 0
+        halfline = div(current_vert, 2)
+        nbins_d = extendhistogram!(bins_d, nbins_d, dist+halfline)
     end
     return (bins, bins_d)
 end
 
-deftheiler(x::ARM) = 1
+deftheiler(x::Union{RecurrenceMatrix,JointRecurrenceMatrix}) = 1
 deftheiler(x::CrossRecurrenceMatrix) = 0
 
 function diagonalhistogram(x::ARM; lmin::Integer=2, theiler::Integer=deftheiler(x), kwargs...)
@@ -181,8 +177,8 @@ element of the vector is the number of lines of length `i` contained in `x`.
     i.e. the recurrence times. These are calculated as the distance between
     the middle points of consecutive vertical lines.
 
-All the points of the matrix are counted by default. Extra keyword arguments can
-be passed to rule out the lines shorter than a minimum length or around the main
+All the points of the matrix are counted by default. The keyword argument
+`theiler` can be passed to rule out the lines around the main
 diagonal. See the arguments of the function [`rqa`](@ref) for further details.
 
 "Empty" histograms are represented always as `[0]`.
@@ -195,21 +191,19 @@ Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
 function recurrencestructures(x::ARM;
     diagonal=true, vertical=true, recurrencetimes=true,
-    lmin=1, theiler=deftheiler(x), kwargs...)
+    theiler=deftheiler(x), kwargs...)
 
     # Parse arguments for diagonal and vertical structures
     histograms = Dict{String,Vector{Int}}()
     if diagonal
         kw_d = Dict(kwargs)
         haskey(kw_d, :theilerdiag) && (kw_d[:theiler] = kw_d[:theilerdiag])
-        haskey(kw_d, :lmindiag) && (kw_d[:lmin] = kw_d[:lmindiag])
-        histograms["diagonal"] = diagonalhistogram(x; lmin=lmin, theiler=theiler, kw_d...)
+        histograms["diagonal"] = diagonalhistogram(x; theiler=theiler, kw_d..., lmin=1)
     end
     if vertical || recurrencetimes
         kw_v = Dict(kwargs)
         haskey(kw_v, :theilervert) && (kw_v[:theiler] = kw_v[:theilervert])
-        haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
-        vhist = verticalhistograms(x; lmin=lmin, theiler=theiler, kw_v...)
+        vhist = verticalhistograms(x; theiler=theiler, kw_v..., lmin=1)
         vertical && (histograms["vertical"] = vhist[1])
         recurrencetimes && (histograms["recurrencetimes"] = vhist[2])
     end

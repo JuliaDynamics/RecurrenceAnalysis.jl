@@ -73,9 +73,9 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
     end
     @testset "With minimum line" begin
         histograms = recurrencestructures(rmat, lmin=2)
-        true_histograms = Dict("diagonal" => [0,7,1,0,1],
-                               "vertical" => [0,6,2],
-                               "recurrencetimes" => [0,0,0,2,0,0,1])
+        true_histograms = Dict("diagonal" => [11,7,1,0,1],
+                               "vertical" => [15,6,2],
+                               "recurrencetimes" => [3,1,4,4])
         for k in keys(histograms)
             @test histograms[k] == true_histograms[k]
         end
@@ -89,15 +89,15 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
         @test rqa_params["LAM"] == 18/33
         @test rqa_params["TT"] == 18/8
         @test rqa_params["Vmax"] == 3
-        @test rqa_params["MRT"] == 15/3
-        @test rqa_params["RTE"] ≈ 0.637 atol=0.001
-        @test rqa_params["NMPRT"] == 2
+        @test rqa_params["MRT"] == 33/12
+        @test rqa_params["RTE"] ≈ 1.286 atol=0.001
+        @test rqa_params["NMPRT"] == 4
     end
     @testset "Theiler and minimum line" begin
         histograms = recurrencestructures(rmat, theiler=2, lmin=2)
-        true_histograms = Dict("diagonal" => [0,4,0,0,1],
-                               "vertical" => [0,3,2],
-                               "recurrencetimes" => [0,0,0,0,0,0,1])
+        true_histograms = Dict("diagonal" => [9,4,0,0,1],
+                               "vertical" => [10,3,2],
+                               "recurrencetimes" => [1,0,3,0,0,0,2])
         for k in keys(histograms)
             @test histograms[k] == true_histograms[k]
         end
@@ -111,9 +111,9 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
         @test rqa_params["LAM"] == 12/22
         @test rqa_params["TT"] == 12/5
         @test rqa_params["Vmax"] == 3
-        @test rqa_params["MRT"] == 7.0
-        @test rqa_params["RTE"] ≈ 0.0 atol=0.001
-        @test rqa_params["NMPRT"] == 1
+        @test rqa_params["MRT"] == 24/6
+        @test rqa_params["RTE"] ≈ 1.011 atol=0.001
+        @test rqa_params["NMPRT"] == 3
     end
 end
 
