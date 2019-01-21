@@ -42,7 +42,7 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
         @test rqa_params["Lmax"] == 5
         @test rqa_params["DIV"] == 0.2
         @test rqa_params["ENTR"] ≈ 0.996 atol=0.001
-        @test rqa_params["TREND"] ≈ -5.450e-2 atol=0.001
+        @test rqa_params["TREND"] ≈ -0.0249 atol=0.0001
         @test rqa_params["LAM"] == 1.0
         @test rqa_params["TT"] == 33/23
         @test rqa_params["Vmax"] == 3
@@ -65,7 +65,7 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
         @test rqa_params["Lmax"] == 5
         @test rqa_params["DIV"] == 0.2
         @test rqa_params["ENTR"] ≈ 0.830 atol=0.001
-        @test rqa_params["TREND"] ≈ -8.98e-3 atol=1e-6
+        @test rqa_params["TREND"] ≈ -2.327e-3 atol=1e-6
         @test rqa_params["LAM"] == 1.0
         @test rqa_params["TT"] == 22/15
         @test rqa_params["Vmax"] == 3
@@ -88,7 +88,7 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
         @test rqa_params["Lmax"] == 5
         @test rqa_params["DIV"] == 0.2
         @test rqa_params["ENTR"] ≈ 0.684 atol=0.001
-        @test rqa_params["TREND"] ≈ -5.450e-2 atol=0.001
+        @test rqa_params["TREND"] ≈ -0.0249 atol=0.0001
         @test rqa_params["LAM"] == 18/33
         @test rqa_params["TT"] == 18/8
         @test rqa_params["Vmax"] == 3
@@ -111,7 +111,7 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
         @test rqa_params["Lmax"] == 5
         @test rqa_params["DIV"] == 0.2
         @test rqa_params["ENTR"] ≈ 0.500 atol=0.001
-        @test rqa_params["TREND"] ≈ -8.98e-3 atol=1e-6
+        @test rqa_params["TREND"] ≈ -2.327e-3 atol=1e-6
         @test rqa_params["LAM"] == 12/22
         @test rqa_params["TT"] == 12/5
         @test rqa_params["Vmax"] == 3

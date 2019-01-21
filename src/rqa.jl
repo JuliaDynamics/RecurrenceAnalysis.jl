@@ -203,9 +203,10 @@ trend(x::ARM; theiler=deftheiler(x), kwargs...) =
 
 function tau_recurrence(x::ARM)
     n = minimum(size(x))
-    rr_τ1 = [count(!iszero, diag(x,d))/length(diag(x,d)) for d in (0:n-1)]
-    rr_τ2 = [count(!iszero, diag(x,-d))/length(diag(x,-d)) for d in (0:n-1)]
-    return (rr_τ1 + rr_τ2)
+    rr_τ = [let d1=diag(x,d), d2=diag(x,-d)
+                (count(!iszero, d1) + count(!iszero, d2))./(length(d1) + length(d2))
+            end for d in (0:n-1)]
+    return rr_τ
 end
 
 function _trend(rr_τ::Vector; theiler=1, border=10, kwargs...)::Float64
