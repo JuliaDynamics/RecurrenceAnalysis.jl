@@ -129,10 +129,6 @@ end
 
 @histogram_params dl "diagonal line" diagonalhistogram
 
-@deprecate avgdiag dl_average
-@deprecate maxdiag dl_max
-@deprecate rqaentropy dl_entropy
-
 """
     determinism(x[; lmin=2, theiler])
 
@@ -205,7 +201,6 @@ end
 
 @histogram_params vl "vertical line" vl_histogram
 
-@deprecate maxvert vl_max
 
 """
     laminarity(x[; lmin=2, theiler])

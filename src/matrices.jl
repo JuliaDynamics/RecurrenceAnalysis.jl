@@ -136,10 +136,6 @@ function colvals(x::SparseMatrixCSC)
 end
 colvals(x::ARM) = colvals(x.data)
 
-@deprecate recurrencematrix RecurrenceMatrix
-@deprecate crossrecurrencematrix CrossRecurrenceMatrix
-@deprecate jointrecurrencematrix JointRecurrenceMatrix
-
 
 """
     RecurrenceMatrix(x, ε; kwargs...)
