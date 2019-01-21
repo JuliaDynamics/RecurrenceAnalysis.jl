@@ -33,7 +33,7 @@ size of the matrix, regardless of the Theiler window that might be defined
 **Hint**: to reproduce the calculations done following the formulas that use
 the full size of the matrix in the denominator, use
 `CrossRecurrenceMatrix(s,s,ε)` to define the recurrence matrix, instead of
-`RecurrenceMatrix(s,ε), setting `theiler=1` (or `theiler=n` in general) to
+`RecurrenceMatrix(s,ε)`, setting `theiler=1` (or `theiler=n` in general) to
 explicitly exclude the LOI or other diagonals around it.
 
 ## References
