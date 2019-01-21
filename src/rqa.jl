@@ -28,9 +28,9 @@ adjusted to the size of the matrix outside the Theiler window
 see [`rqa`](@ref) for details). For matrices of type `CrossRecurrenceMatrix`,
 where normally all points are analyzed, the denominator is always the full
 size of the matrix, regardless of the Theiler window that might be defined
-(none by default). 
+(none by default).
 
-**Hint**: to reproduce the calculations done following the formulas that use
+*Hint*: to reproduce the calculations done following the formulas that use
 the full size of the matrix in the denominator, use
 `CrossRecurrenceMatrix(s,s,ε)` to define the recurrence matrix, instead of
 `RecurrenceMatrix(s,ε)`, setting `theiler=1` (or `theiler=n` in general) to
@@ -69,7 +69,7 @@ _rrdenominator(x::ARM; theiler=0, kwargs...) = length(x)
 
 function _rrdenominator(x::M; theiler=0, kwargs...) where
     M<:Union{RecurrenceMatrix,JointRecurrenceMatrix}
-    
+
     (theiler == 0) && (return length(x))
     k = size(x,1) - theiler
     return k*(k+1)
@@ -142,8 +142,8 @@ The determinism is calculated as:
 DET = \\frac{\\sum_{l=lmin}{l P(l)}}{\\sum_{l=1}{l P(l)}}
 ```
 
-where `l` stands for the lengths of diagonal lines in the matrix, and `P(l)`
-is the number of lines of length equal to `l`.
+where ``l`` stands for the lengths of diagonal lines in the matrix, and ``P(l)``
+is the number of lines of length equal to ``l``.
 
 `lmin` is set to 2 by default, and this calculation rules out all the
 points inside the Theiler window (see [`rqa`](@ref) for the
@@ -187,12 +187,12 @@ It is calculated as:
 
 ```math
 TREND = \\frac{\\sum_{d=\\tau}^{\\tilde{N}}\\delta[d]\\left(RR[d]-\\langle RR[d]\\rangle\\right)}{\\sum_{d=\\tau}^{\\tilde{N}}\\delta[d]^2}
-``` 
+```
 
-where `RR[d]` is the local recurrence rate of the diagonal `d`,
- `δ[d]` is a balanced measure of the distance between that diagonal and the LOI,
-`τ` is the Theiler window (number of central diagonals that are excluded), and
-`Ñ` is the number of the outmost diagonal that is included.
+where ``RR[d]`` is the local recurrence rate of the diagonal ``d``,
+``\\delta[d]`` is a balanced measure of the distance between that diagonal and the LOI,
+``\\tau`` is the Theiler window (number of central diagonals that are excluded), and
+``\\tilde{N}`` is the number of the outmost diagonal that is included.
 
 The 10 outermost diagonals (counting from the corners of the matrix)
 are excluded by default to avoid "border effects". Use the keyword argument
@@ -268,16 +268,10 @@ The laminarity is calculated as:
 LAM = \\frac{\\sum_{v=lmin}{v P(l)}}{\\sum_{v=1}{v P(v)}}
 ```
 
-where `v` stands for the lengths of vertical lines in the matrix, and `P(v)`
-is the number of lines of length equal to `v`.
+where ``v`` stands for the lengths of vertical lines in the matrix, and ``P(v)``
+is the number of lines of length equal to ``v``.
 
 `lmin` is set to 2 by default, and this calculation rules out all the
-points inside the Theiler window (see [`rqa`](@ref) for the
-default values and usage of the keyword argument `theiler`).
-
-
- ruling out the
-lines shorter than `lmin` (2 by default) and all the
 points inside the Theiler window (see [`rqa`](@ref) for the
 default values and usage of the keyword argument `theiler`).
 """
@@ -389,11 +383,11 @@ i.e. `theiler`, `lmin`, and `border`:
   whole matrix is scanned for lines. `theiler=1` means that the LOI is excluded.
   In general, `theiler=n` means that the `n` central diagonals are excluded
   (at both sides of the LOI, i.e. actually `2n-1` diagonals are excluded).
-  
+
 * `lmin` is used to define the minimum line length in the parameters that
   describe the distributions of diagonal or vertical lines (it is set as 2 by
   default).
-  
+
 * `border` is used to avoid border effects in the calculation of "TREND"
   (cf. [`trend`](@ref)).
 
