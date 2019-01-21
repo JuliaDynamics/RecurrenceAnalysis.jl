@@ -80,7 +80,7 @@ end
 macro histogram_params(keyword, description, hist_fun)
     combined_descriptions = Dict(:average => "average of the $(description)s",
                                  :max     => "longest $(description)",
-                                 :entropy => "entropy of the $(description)s")
+                                 :entropy => "Shannon entropy of the $(description)s")
     function_bodies = Dict(
         :average => quote
                 (hist==[0]) && return 0.0
@@ -132,8 +132,20 @@ end
 """
     determinism(x[; lmin=2, theiler])
 
-Calculate the determinism of the recurrence matrix `x`, ruling out
-the diagonal lines shorter than `lmin` (2 by default) and all the
+Calculate the determinism of the recurrence matrix `x`:
+
+## Description
+
+The determinism is calculated as:
+
+```math
+DET = \\frac{\\sum_{l=lmin}{l P(l)}}{\\sum_{l=1}{l P(l)}}
+```
+
+where `l` stands for the lengths of diagonal lines in the matrix, and `P(l)`
+is the number of lines of length equal to `l`.
+
+`lmin` is set to 2 by default, and this calculation rules out all the
 points inside the Theiler window (see [`rqa`](@ref) for the
 default values and usage of the keyword argument `theiler`).
 """
@@ -163,11 +175,28 @@ divergence(x::ARM; kwargs...) = ( 1.0/dl_max(x; kwargs...) )
 
 Calculate the trend of recurrences in the recurrence matrix `x`.
 
+## Description
+
+The trend is the slope of the linear regression that relates the density of
+recurrent points in the diagonals parallel to the LOI and the distance between
+those diagonals and the LOI. It quantifies the degree of system stationarity,
+such that in recurrence plots where points "fade away" from the central diagonal,
+the trend will have a negative value.
+
+It is calculated as:
+
+```math
+TREND = \\frac{\\sum_{d=\\tau}^{\\tilde{N}}\\delta\\left(RR_d-\\langle RR_d \\rangle\\right)}{\\sum_{d=\\tau}^{\\tilde{N}}\\delta^2}
+``` 
+
+where `δ` is a balanced measure of the distance between the diagonal and the LOI,
+`τ` is the Theiler window (number of central diagonals that are excluded), and
+`Ñ` is the number of the outmost diagonal that is included.
+
 The 10 outermost diagonals (counting from the corners of the matrix)
 are excluded by default to avoid "border effects". Use the keyword argument
 `border` to define a different number of excluded lines, and `theiler`
-to exclude the central points inside the Theiler window
-(see [`rqa`](@ref) for details).
+to define the size of the Theiler window (see [`rqa`](@ref) for details).
 """
 trend(x::ARM; theiler=deftheiler(x), kwargs...) =
     _trend(tau_recurrence(x); theiler=theiler, kwargs...)
@@ -205,7 +234,25 @@ end
 """
     laminarity(x[; lmin=2, theiler])
 
-Calculate the laminarity of the recurrence matrix `x`, ruling out the
+Calculate the laminarity of the recurrence matrix `x`.
+
+## Description
+
+The laminarity is calculated as:
+
+```math
+LAM = \\frac{\\sum_{v=lmin}{v P(l)}}{\\sum_{v=1}{v P(v)}}
+```
+
+where `v` stands for the lengths of vertical lines in the matrix, and `P(v)`
+is the number of lines of length equal to `v`.
+
+`lmin` is set to 2 by default, and this calculation rules out all the
+points inside the Theiler window (see [`rqa`](@ref) for the
+default values and usage of the keyword argument `theiler`).
+
+
+ ruling out the
 lines shorter than `lmin` (2 by default) and all the
 points inside the Theiler window (see [`rqa`](@ref) for the
 default values and usage of the keyword argument `theiler`).
@@ -255,6 +302,16 @@ Calculate the number of the most probable recurrence time (NMPRT), ruling out th
 lines shorter than `lmin` (2 by default) and all the
 points inside the Theiler window (see [`rqa`](@ref) for the
 default values and usage of the keyword argument `theiler`).
+
+This number indicates how many times the system has recurred using the recurrence
+time that appears most frequently, i.e it is the maximum value of the histogram
+of recurrence times [1].
+
+## References
+
+[1] : E.J. Ngamga *et al.* "Recurrence analysis of strange nonchaotic dynamics",
+*Physical Review E*, 75(3), 036222(1-8), 2007, DOI:10.1103/physreve.75.036222
+
 """
 nmprt(x::ARM; kwargs) = maximum(verticalhistograms(x; kwargs...)[2])
 
