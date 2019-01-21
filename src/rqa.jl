@@ -198,6 +198,11 @@ The 10 outermost diagonals (counting from the corners of the matrix)
 are excluded by default to avoid "border effects". Use the keyword argument
 `border` to define a different number of excluded lines, and `theiler`
 to define the size of the Theiler window (see [`rqa`](@ref) for details).
+
+*Note*: In rectangular cross-recurrence plots (i.e. when the time series that
+originate them are not of the same length), the limits of the formula for TREND
+are not clearly defined. For the sake of consistency, this function limits the
+calculations to the biggest square matrix that contains the LOI.
 """
 trend(x::ARM; theiler=deftheiler(x), kwargs...) =
     _trend(tau_recurrence(x); theiler=theiler, kwargs...)
@@ -206,7 +211,7 @@ function tau_recurrence(x::ARM)
     n = minimum(size(x))
     rv = rowvals(x)
     rr_τ = zeros(n)
-    for col=1:n
+    @inbounds for col=1:n
         for i in nzrange(x, col)
             if (r=rv[i]) ≤ n
                 d = abs(r-col)
@@ -225,8 +230,14 @@ function _trend(rr_τ::Vector; theiler=1, border=10, kwargs...)::Float64
     nmax = length(rr_τ)
     a = 1+theiler
     b = nmax-border
-    w = collect(a:b) .- b/2
-    (w'*(rr_τ[a:b] .- mean(rr_τ[a:b])) ./ (w'*w))[1]
+    numerator = denominator = 0.0
+    mean_rr = mean(@view rr_τ[a:b])
+    for d = a:b
+        δ = d - b/2
+        numerator += δ*(rr_τ[d] - mean_rr)
+        denominator += δ*δ
+    end
+    return numerator/denominator
 end
 
 # Number of l-length sequences, based on diagonals
