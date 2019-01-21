@@ -186,10 +186,11 @@ the trend will have a negative value.
 It is calculated as:
 
 ```math
-TREND = \\frac{\\sum_{d=\\tau}^{\\tilde{N}}\\delta\\left(RR_d-\\langle RR_d \\rangle\\right)}{\\sum_{d=\\tau}^{\\tilde{N}}\\delta^2}
+TREND = \\frac{\\sum_{d=\\tau}^{\\tilde{N}}\\delta[d]\\left(RR[d]-\\langle RR[d]\\rangle\\right)}{\\sum_{d=\\tau}^{\\tilde{N}}\\delta[d]^2}
 ``` 
 
-where `δ` is a balanced measure of the distance between the diagonal and the LOI,
+where `RR[d]` is the local recurrence rate of the diagonal `d`,
+ `δ[d]` is a balanced measure of the distance between that diagonal and the LOI,
 `τ` is the Theiler window (number of central diagonals that are excluded), and
 `Ñ` is the number of the outmost diagonal that is included.
 
@@ -203,9 +204,20 @@ trend(x::ARM; theiler=deftheiler(x), kwargs...) =
 
 function tau_recurrence(x::ARM)
     n = minimum(size(x))
-    rr_τ = [let d1=diag(x,d), d2=diag(x,-d)
-                (count(!iszero, d1) + count(!iszero, d2))./(length(d1) + length(d2))
-            end for d in (0:n-1)]
+    rv = rowvals(x)
+    rr_τ = zeros(n)
+    for col=1:n
+        for i in nzrange(x, col)
+            if (r=rv[i]) ≤ n
+                d = abs(r-col)
+                if d==0
+                    rr_τ[1] += 1.0/(n-d)
+                else
+                    rr_τ[d+1] += 0.5/(n-d)
+                end
+            end
+        end
+    end
     return rr_τ
 end
 
