@@ -3,20 +3,52 @@
 # Recurrence rate
 
 """
-    recurrencerate(x[; theiler::Integer])
+    recurrencerate(x[; theiler])
 
 Calculate the recurrence rate of the recurrence matrix `x`.
 
-In matrices of type `RecurrenceMatrix` or `JointRecurrenceMatrix`, the line
-of identity (LOI, i.e. the main diagonal) is excluded by default,
-and the keyword argument `theiler` can be used to exclude a greater number of
-diagonals within a "Theiler window" (or to include the LOI, with `theiler=0).
-The recurrence rate is calculated as the ratio between the number of recurrent
-point and the size of the matrix outside the Theiler window.
+## Description
 
-In matrices of type `CrossRecurrenceMatrix`, no point is excluded by default,
-and the recurrence rate is calculated taking into account the size of the
-full matrix.
+The recurrence rate is calculated as:
+
+```math
+RR = \\frac{1}{S} \\sum_{i,j} x[i,j]
+```
+
+where *S* is the size of `x` or the region of `x` with potential recurrent points.
+There is not a unique definition of that denominator, which is defined as the
+full size of the matrix in many sources (e.g. [1]), whereas
+in others it is adjusted to remove the points of the LOI when they are
+excluded from the count [2,3].
+
+For matrices of type `RecurrenceMatrix` or `JointRecurrenceMatrix`, where the
+points around the central diagonal are usually excluded, the denominator is
+adjusted to the size of the matrix outside the Theiler window
+(by default equal to the LOI, and adjustable with the keyword argument `theiler`;
+see [`rqa`](@ref) for details). For matrices of type `CrossRecurrenceMatrix`,
+where normally all points are analyzed, the denominator is always the full
+size of the matrix, regardless of the Theiler window that might be defined
+(none by default).
+
+*Hint*: to reproduce the calculations done following the formulas that use
+the full size of the matrix in the denominator, use
+`CrossRecurrenceMatrix(s,s,ε)` to define the recurrence matrix, instead of
+`RecurrenceMatrix(s,ε)`, setting `theiler=1` (or `theiler=n` in general) to
+explicitly exclude the LOI or other diagonals around it.
+
+## References
+
+[1] : N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
+*Phys. Reports 438*(5-6), 237-329 (2007).
+
+[2] : C.L. Webber & J.P. Zbilut, "Recurrence Quantification Analysis of Nonlinear
+Dynamical Systems", in: Riley MA & Van Orden GC, Tutorials in Contemporary
+Nonlinear Methods for the Behavioral Sciences, 26-94 (2005).
+URL: https://www.nsf.gov/pubs/2005/nsf05057/nmbs/nmbs.pdf
+
+[3] : N. Marwan & C.L. Webber, "Mathematical and computational foundations of
+recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
+Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
 function recurrencerate(x::ARM; theiler::Integer=deftheiler(x), kwargs...)::Float64
     (theiler < 0) && throw(ErrorException(
@@ -37,7 +69,7 @@ _rrdenominator(x::ARM; theiler=0, kwargs...) = length(x)
 
 function _rrdenominator(x::M; theiler=0, kwargs...) where
     M<:Union{RecurrenceMatrix,JointRecurrenceMatrix}
-    
+
     (theiler == 0) && (return length(x))
     k = size(x,1) - theiler
     return k*(k+1)
@@ -48,7 +80,7 @@ end
 macro histogram_params(keyword, description, hist_fun)
     combined_descriptions = Dict(:average => "average of the $(description)s",
                                  :max     => "longest $(description)",
-                                 :entropy => "entropy of the $(description)s")
+                                 :entropy => "Shannon entropy of the $(description)s")
     function_bodies = Dict(
         :average => quote
                 (hist==[0]) && return 0.0
@@ -76,12 +108,9 @@ macro histogram_params(keyword, description, hist_fun)
                 $fname(x[; lmin=2, theiler])
 
             Calculate the $(param) contained in the recurrence matrix `x`,
-            ruling out the lines shorter than `lmin`.
-            
-            The line of identity (main diagonal) is excluded by default for matrices of type
-            `RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
-            `CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
-            diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
+            ruling out the lines shorter than `lmin` (2 by default) and all the
+            points inside the Theiler window (see [`rqa`](@ref) for the
+            default values and usage of the keyword argument `theiler`).
             """
         push!(ret.args, quote
             @doc $doc ->
@@ -100,20 +129,25 @@ end
 
 @histogram_params dl "diagonal line" diagonalhistogram
 
-@deprecate avgdiag dl_average
-@deprecate maxdiag dl_max
-@deprecate rqaentropy dl_entropy
-
 """
     determinism(x[; lmin=2, theiler])
 
-Calculate the determinism of the recurrence matrix `x`, ruling out
-the diagonal lines shorter than `lmin`.
+Calculate the determinism of the recurrence matrix `x`:
 
-The line of identity (main diagonal) is excluded by default for matrices of type
-`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
-`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
-diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
+## Description
+
+The determinism is calculated as:
+
+```math
+DET = \\frac{\\sum_{l=lmin}{l P(l)}}{\\sum_{l=1}{l P(l)}}
+```
+
+where ``l`` stands for the lengths of diagonal lines in the matrix, and ``P(l)``
+is the number of lines of length equal to ``l``.
+
+`lmin` is set to 2 by default, and this calculation rules out all the
+points inside the Theiler window (see [`rqa`](@ref) for the
+default values and usage of the keyword argument `theiler`).
 """
 function determinism(x::ARM; kwargs...)
     npoints = recurrencerate(x; kwargs...)*_rrdenominator(x; kwargs...)
@@ -141,31 +175,69 @@ divergence(x::ARM; kwargs...) = ( 1.0/dl_max(x; kwargs...) )
 
 Calculate the trend of recurrences in the recurrence matrix `x`.
 
+## Description
+
+The trend is the slope of the linear regression that relates the density of
+recurrent points in the diagonals parallel to the LOI and the distance between
+those diagonals and the LOI. It quantifies the degree of system stationarity,
+such that in recurrence plots where points "fade away" from the central diagonal,
+the trend will have a negative value.
+
+It is calculated as:
+
+```math
+TREND = \\frac{\\sum_{d=\\tau}^{\\tilde{N}}\\delta[d]\\left(RR[d]-\\langle RR[d]\\rangle\\right)}{\\sum_{d=\\tau}^{\\tilde{N}}\\delta[d]^2}
+```
+
+where ``RR[d]`` is the local recurrence rate of the diagonal ``d``,
+``\\delta[d]`` is a balanced measure of the distance between that diagonal and the LOI,
+``\\tau`` is the Theiler window (number of central diagonals that are excluded), and
+``\\tilde{N}`` is the number of the outmost diagonal that is included.
+
 The 10 outermost diagonals (counting from the corners of the matrix)
 are excluded by default to avoid "border effects". Use the keyword argument
-`border` to define a different number of excluded lines.
+`border` to define a different number of excluded lines, and `theiler`
+to define the size of the Theiler window (see [`rqa`](@ref) for details).
 
-The line of identity (main diagonal) is excluded by default for matrices of type
-`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
-`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
-diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
+*Note*: In rectangular cross-recurrence plots (i.e. when the time series that
+originate them are not of the same length), the limits of the formula for TREND
+are not clearly defined. For the sake of consistency, this function limits the
+calculations to the biggest square matrix that contains the LOI.
 """
 trend(x::ARM; theiler=deftheiler(x), kwargs...) =
     _trend(tau_recurrence(x); theiler=theiler, kwargs...)
 
 function tau_recurrence(x::ARM)
     n = minimum(size(x))
-    rr_τ1 = [count(!iszero, diag(x,d))/length(diag(x,d)) for d in (0:n-1)]
-    rr_τ2 = [count(!iszero, diag(x,-d))/length(diag(x,-d)) for d in (0:n-1)]
-    return (rr_τ1 + rr_τ2)
+    rv = rowvals(x)
+    rr_τ = zeros(n)
+    @inbounds for col=1:n
+        for i in nzrange(x, col)
+            if (r=rv[i]) ≤ n
+                d = abs(r-col)
+                if d==0
+                    rr_τ[1] += 1.0/(n-d)
+                else
+                    rr_τ[d+1] += 0.5/(n-d)
+                end
+            end
+        end
+    end
+    return rr_τ
 end
 
 function _trend(rr_τ::Vector; theiler=1, border=10, kwargs...)::Float64
     nmax = length(rr_τ)
     a = 1+theiler
     b = nmax-border
-    w = collect(a:b) .- b/2
-    (w'*(rr_τ[a:b] .- mean(rr_τ[a:b])) ./ (w'*w))[1]
+    numerator = denominator = 0.0
+    mean_rr = mean(@view rr_τ[a:b])
+    for d = a:b
+        δ = d - b/2
+        numerator += δ*(rr_τ[d] - mean_rr)
+        denominator += δ*δ
+    end
+    return numerator/denominator
 end
 
 # Number of l-length sequences, based on diagonals
@@ -182,18 +254,26 @@ end
 
 @histogram_params vl "vertical line" vl_histogram
 
-@deprecate maxvert vl_max
 
 """
     laminarity(x[; lmin=2, theiler])
 
-Calculate the laminarity of the recurrence matrix `x`, ruling out the
-lines shorter than `lmin`.
+Calculate the laminarity of the recurrence matrix `x`.
 
-The line of identity (main diagonal) is excluded by default for matrices of type
-`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
-`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
-diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
+## Description
+
+The laminarity is calculated as:
+
+```math
+LAM = \\frac{\\sum_{v=lmin}{v P(l)}}{\\sum_{v=1}{v P(v)}}
+```
+
+where ``v`` stands for the lengths of vertical lines in the matrix, and ``P(v)``
+is the number of lines of length equal to ``v``.
+
+`lmin` is set to 2 by default, and this calculation rules out all the
+points inside the Theiler window (see [`rqa`](@ref) for the
+default values and usage of the keyword argument `theiler`).
 """
 function laminarity(x::ARM; kwargs...)
     npoints = recurrencerate(x)*_rrdenominator(x; kwargs...)
@@ -203,15 +283,12 @@ end
 _laminarity(vert_hist::Vector{<:Integer}, npoints) = _determinism(vert_hist, npoints)
 
 """
-    trappingtime(x; lmin=2, theiler=0)
+    trappingtime(x[; lmin=2, theiler])
 
 Calculate the trapping time of the recurrence matrix `x`, ruling out the
-lines shorter than `lmin`.
-
-The line of identity (main diagonal) is excluded by default for matrices of type
-`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
-`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
-diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
+lines shorter than `lmin` (2 by default) and all the
+points inside the Theiler window (see [`rqa`](@ref) for the
+default values and usage of the keyword argument `theiler`).
 
 The trapping time is the average of the vertical line structures and thus equal
 to [`vl_average`](@ref).
@@ -224,15 +301,12 @@ trappingtime(x::ARM; kwargs...) = vl_average(x; kwargs...)
 @histogram_params rt "recurrence time" rt_histogram
 
 """
-    meanrecurrencetime(x; lmin=2, theiler=0)
+    meanrecurrencetime(x[; lmin=2, theiler])
 
 Calculate the mean recurrence time of the recurrence matrix `x`, ruling out the
-lines shorter than `lmin`.
-
-The line of identity (main diagonal) is excluded by default for matrices of type
-`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
-`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
-diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
+lines shorter than `lmin` (2 by default) and all the
+points inside the Theiler window (see [`rqa`](@ref) for the
+default values and usage of the keyword argument `theiler`).
 
 Equivalent to [`rt_average`](@ref).
 """
@@ -240,15 +314,22 @@ meanrecurrencetime(x::ARM; kwargs...) = rt_average(x; kwargs...)
 
 
 """
-    nmprt(x; lmin=2, theiler=0)
+    nmprt(x[; lmin=2, theiler])
 
 Calculate the number of the most probable recurrence time (NMPRT), ruling out the
-lines shorter than `lmin`.
+lines shorter than `lmin` (2 by default) and all the
+points inside the Theiler window (see [`rqa`](@ref) for the
+default values and usage of the keyword argument `theiler`).
 
-The line of identity (main diagonal) is excluded by default for matrices of type
-`RecurrenceMatrix` or `JointRecurrenceMatrix`, but included for matrices of type
-`CrossRecurrenceMatrix`. Use the keyword argument `theiler` to exclude the
-diagonals within a custom Theiler window (`theiler=0` to include all diagonals).
+This number indicates how many times the system has recurred using the recurrence
+time that appears most frequently, i.e it is the maximum value of the histogram
+of recurrence times [1].
+
+## References
+
+[1] : E.J. Ngamga *et al.* "Recurrence analysis of strange nonchaotic dynamics",
+*Physical Review E*, 75(3), 036222(1-8), 2007, DOI:10.1103/physreve.75.036222
+
 """
 nmprt(x::ARM; kwargs) = maximum(verticalhistograms(x; kwargs...)[2])
 
@@ -290,21 +371,36 @@ are returned as `NaN`.
 
 ## Keyword Arguments
 
-Standard keyword arguments are the ones accepted by the functios listed below,
-i.e. `theiler, lmin, border`. In addition `theilerdiag`, `lmindiag` may be used to
+Standard keyword arguments are the ones accepted by the functions listed below,
+i.e. `theiler`, `lmin`, and `border`:
+
+* `theiler` is used to define a "Theiler window" around the central diagonal or
+  "line of identity" (LOI): a region of points that are excluded in the calculation
+  of RQA parameters, in order to rule out self-recurrences and apparent recurrences
+  for smooth or high resolution data. The LOI is excluded by default for matrices
+  of the types `RecurrenceMatrix` or `JointRecurrenceMatrix`, but it is included
+  for matrices of the type `CrossRecurrenceMatrix`. `theiler=0` means that the
+  whole matrix is scanned for lines. `theiler=1` means that the LOI is excluded.
+  In general, `theiler=n` means that the `n` central diagonals are excluded
+  (at both sides of the LOI, i.e. actually `2n-1` diagonals are excluded).
+
+* `lmin` is used to define the minimum line length in the parameters that
+  describe the distributions of diagonal or vertical lines (it is set as 2 by
+  default).
+
+* `border` is used to avoid border effects in the calculation of "TREND"
+  (cf. [`trend`](@ref)).
+
+In addition `theilerdiag`, `lmindiag` may be used to
 declare specific values that override the values of `theiler` and `lmin` in the
 calculation of parameters related to diagonal structures. Likewise, `theilervert` and
 `lminvert` can be used for the calculation of parameters related to vertical
 structures.
 
-Notice that for the Theiler window, `theiler=0` means that means that the whole matrix is
-scanned for lines. `theiler=1` means that the central diagonal (LOI) is exluded.
-In general, `theiler=n` means that the `n` central diagonals are excluded
-(at both sides of the LOI, i.e. actually `2n-1` diagonals are excluded).
-
 The keyword argument `onlydiagonal` (`false` by default) can be set to `true`
 in order to restrict the analysis to the recurrence rate and the parameters related
-to diagonal structures ("RR", "DET", "L", "Lmax", "DIV" and "ENTR").
+to diagonal structures ("RR", "DET", "L", "Lmax", "DIV" and "ENTR"), which makes
+this function slightly faster.
 """
 function rqa(x; onlydiagonal=false, kwargs...)
     # Parse arguments for diagonal and vertical structures
