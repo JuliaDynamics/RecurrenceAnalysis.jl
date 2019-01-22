@@ -1,11 +1,14 @@
+using UnicodePlots
+export recurrencetext, recurrencescatter, recurrenceplot
 #########################################
 # Text-based plotting
 #########################################
 """
-    scatterdata(R::ARM) -> xs, ys
-Transform the data of a recurrence matrix to scatter data `xs, ys`.
+    recurrencescatter(R) -> xs, ys
+Transform the data of a recurrence matrix to scatter data `xs, ys`
+(which are the indices of the recurrence points).
 """
-function scatterdata(R::ARM) # TODO: scan every ÷100 elements depending on size?
+function recurrencescatter(R::ARM) # TODO: scan every ÷100 elements depending on size?
    rows = rowvals(R)
    is = zeros(Int, nnz(R))
    js = zeros(Int, nnz(R))
@@ -21,13 +24,10 @@ function scatterdata(R::ARM) # TODO: scan every ÷100 elements depending on size
    return is, js
 end
 
-using UnicodePlots
-export textrecurrenceplot
-
-textrecurrenceplot(R::ARM; kwargs...) = textrecurrenceplot(stdout, R::ARM; kwargs...)
+recurrencetext(R::ARM; kwargs...) = recurrencetext(stdout, R::ARM; kwargs...)
 
 """
-    textrecurrenceplot([io,] R; minh = 25, maxh = 0.5, ascii, kwargs...) -> u
+    recurrencetext([io,] R; minh = 25, maxh = 0.5, ascii, kwargs...) -> u
 
 Obtain a text-scatterplot representation of a recurrence matrix `R` to be displayed in
 `io` (by default `stdout`). The matrix spans at minimum `minh` rows and at maximum
@@ -40,10 +40,10 @@ The keyword `ascii::Bool` can ensure that all elements of the plot are ASCII cha
 
 The rest of the `kwargs` are propagated into `UnicodePlots.scatterplot`.
 
-Internally this function calls `RecurrenceAnalysis.scatterdata` to transform
+Internally this function calls `RecurrenceAnalysis.recurrencescatter` to transform
 a recurrence matrix into scatter data.
 """
-function textrecurrenceplot(io::IO, R::ARM; minh = 25, maxh = 0.5, ascii = nothing, kwargs...)
+function recurrencetext(io::IO, R::ARM; minh = 25, maxh = 0.5, ascii = nothing, kwargs...)
     @assert maxh ≤ 1
     h, w = displaysize(io)
     h = max(minh, round(Int, maxh * h)) # make matrix as long as half the screen (but not too short)
@@ -54,7 +54,7 @@ function textrecurrenceplot(io::IO, R::ARM; minh = 25, maxh = 0.5, ascii = nothi
         w = round(Int, h*s)
     end
 
-    is, js = scatterdata(R)
+    is, js = recurrencescatter(R)
     n, m = size(R)
 
     if ascii == true
@@ -85,7 +85,7 @@ function textrecurrenceplot(io::IO, R::ARM; minh = 25, maxh = 0.5, ascii = nothi
 end
 
 function Base.show(io::IO, ::MIME"text/plain", R::ARM)
-    a = textrecurrenceplot(io, R)
+    a = recurrencetext(io, R)
     show(io, a)
 end
 
