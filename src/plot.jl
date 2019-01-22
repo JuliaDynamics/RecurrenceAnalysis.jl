@@ -41,7 +41,7 @@ The keyword `ascii::Bool` can ensure that all elements of the plot are ASCII cha
 The rest of the `kwargs` are propagated into `UnicodePlots.scatterplot`.
 
 Internally this function calls `RecurrenceAnalysis.scatterdata` to transform
-a recurence matrix into scatter data.
+a recurrence matrix into scatter data.
 """
 function textrecurrenceplot(io::IO, R::ARM; minh = 25, maxh = 0.5, ascii = nothing, kwargs...)
     @assert maxh ≤ 1
