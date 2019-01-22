@@ -410,12 +410,12 @@ function rqa(x; onlydiagonal=false, kwargs...)
     dhist = diagonalhistogram(x; kw_d...)
     rr_d = recurrencerate(x; kw_d...)
     if onlydiagonal
-        return Dict("RR"  => recurrencerate(x; kwargs...),
-        "DET"  => _determinism(dhist, rr_d*_rrdenominator(x; kw_d...)),
-        "L"    => _dl_average(dhist),
-        "Lmax" => _dl_max(dhist),
-        "DIV"  => 1.0/_dl_max(dhist),
-        "ENTR"  => _dl_entropy(dhist)
+        return (RR  = recurrencerate(x; kwargs...),
+        DET   = _determinism(dhist, rr_d*_rrdenominator(x; kw_d...)),
+        L     = _dl_average(dhist),
+        Lmax  = _dl_max(dhist),
+        DIV   = 1.0/_dl_max(dhist),
+        ENTR  = _dl_entropy(dhist)
         )
    else
         kw_v = Dict(kwargs)
@@ -423,20 +423,20 @@ function rqa(x; onlydiagonal=false, kwargs...)
         haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
         vhist, rthist = verticalhistograms(x; kw_v...)
         rr_v = recurrencerate(x; kw_v...)
-        return Dict("RR"  => recurrencerate(x; kwargs...),
-            "DET"  => _determinism(dhist, rr_d*_rrdenominator(x; kw_v...)),
-            "L"    => _dl_average(dhist),
-            "Lmax" => _dl_max(dhist),
-            "DIV"  => 1.0/_dl_max(dhist),
-            "ENTR"  => _dl_entropy(dhist),
-            "TREND" => trend(x; kw_d...),
-            "LAM"  => _laminarity(vhist, rr_v*_rrdenominator(x; kw_v...)),
-            "TT"   => _vl_average(vhist),
-            "Vmax" => _vl_max(vhist),
-            "VENTR" => _vl_entropy(vhist),
-            "MRT"  => _rt_average(rthist),
-            "RTE" => _rt_entropy(rthist),
-            "NMPRT" => maximum(rthist)
+        return (RR  = recurrencerate(x; kwargs...),
+            DET  = _determinism(dhist, rr_d*_rrdenominator(x; kw_v...)),
+            L    = _dl_average(dhist),
+            Lmax = _dl_max(dhist),
+            DIV  = 1.0/_dl_max(dhist),
+            ENTR  = _dl_entropy(dhist),
+            TREND = trend(x; kw_d...),
+            LAM  = _laminarity(vhist, rr_v*_rrdenominator(x; kw_v...)),
+            TT   = _vl_average(vhist),
+            Vmax = _vl_max(vhist),
+            VENTR = _vl_entropy(vhist),
+            MRT  = _rt_average(rthist),
+            RTE = _rt_entropy(rthist),
+            NMPRT = maximum(rthist)
         )
     end
 end
