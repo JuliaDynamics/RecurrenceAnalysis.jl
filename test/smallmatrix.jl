@@ -22,7 +22,7 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
 #  7 · x x · · o · · x · x
 #  8 · x · · · · o · · · ·
 #  9 · · · · x · · · o o ·
-#  A · · x · x x · · · o · 
+#  A · · x · x x · · · o ·
 #
 ###
 
@@ -36,19 +36,19 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
             @test histograms[k] == true_histograms[k]
         end
         rqa_params = rqa(rmat, theiler=0, lmin=1, border=1)
-        @test rqa_params["RR"] == 33/110
-        @test rqa_params["DET"] == 1.0
-        @test rqa_params["L"] == 33/20
-        @test rqa_params["Lmax"] == 5
-        @test rqa_params["DIV"] == 0.2
-        @test rqa_params["ENTR"] ≈ 0.996 atol=0.001
-        @test rqa_params["TREND"] ≈ -0.0338 atol=0.0001
-        @test rqa_params["LAM"] == 1.0
-        @test rqa_params["TT"] == 33/23
-        @test rqa_params["Vmax"] == 3
-        @test rqa_params["MRT"] == 33/12
-        @test rqa_params["RTE"] ≈ 1.286 atol=0.001
-        @test rqa_params["NMPRT"] == 4
+        @test rqa_params[:RR] == 33/110
+        @test rqa_params[:DET] == 1.0
+        @test rqa_params[:L] == 33/20
+        @test rqa_params[:Lmax] == 5
+        @test rqa_params[:DIV] == 0.2
+        @test rqa_params[:ENTR] ≈ 0.996 atol=0.001
+        @test rqa_params[:TREND] ≈ -0.0338 atol=0.0001
+        @test rqa_params[:LAM] == 1.0
+        @test rqa_params[:TT] == 33/23
+        @test rqa_params[:Vmax] == 3
+        @test rqa_params[:MRT] == 33/12
+        @test rqa_params[:RTE] ≈ 1.286 atol=0.001
+        @test rqa_params[:NMPRT] == 4
     end
     @testset "With Theiler window" begin
         histograms = recurrencestructures(rmat, theiler=2)
@@ -59,19 +59,19 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
             @test histograms[k] == true_histograms[k]
         end
         rqa_params = rqa(rmat, theiler=2, lmin=1, border=1)
-        @test rqa_params["RR"] == 22/110
-        @test rqa_params["DET"] == 1.0
-        @test rqa_params["L"] == 22/14
-        @test rqa_params["Lmax"] == 5
-        @test rqa_params["DIV"] == 0.2
-        @test rqa_params["ENTR"] ≈ 0.830 atol=0.001
-        @test rqa_params["TREND"] ≈ -0.0122 atol=0.0001
-        @test rqa_params["LAM"] == 1.0
-        @test rqa_params["TT"] == 22/15
-        @test rqa_params["Vmax"] == 3
-        @test rqa_params["MRT"] == 24/6
-        @test rqa_params["RTE"] ≈ 1.011 atol=0.001
-        @test rqa_params["NMPRT"] == 3
+        @test rqa_params[:RR] == 22/110
+        @test rqa_params[:DET] == 1.0
+        @test rqa_params[:L] == 22/14
+        @test rqa_params[:Lmax] == 5
+        @test rqa_params[:DIV] == 0.2
+        @test rqa_params[:ENTR] ≈ 0.830 atol=0.001
+        @test rqa_params[:TREND] ≈ -0.0122 atol=0.0001
+        @test rqa_params[:LAM] == 1.0
+        @test rqa_params[:TT] == 22/15
+        @test rqa_params[:Vmax] == 3
+        @test rqa_params[:MRT] == 24/6
+        @test rqa_params[:RTE] ≈ 1.011 atol=0.001
+        @test rqa_params[:NMPRT] == 3
     end
     @testset "With minimum line" begin
         histograms = recurrencestructures(rmat, lmin=2)
@@ -82,19 +82,19 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
             @test histograms[k] == true_histograms[k]
         end
         rqa_params = rqa(rmat, theiler=0, lmin=2, border=1)
-        @test rqa_params["RR"] == 33/110
-        @test rqa_params["DET"] == 22/33
-        @test rqa_params["L"] == 22/9
-        @test rqa_params["Lmax"] == 5
-        @test rqa_params["DIV"] == 0.2
-        @test rqa_params["ENTR"] ≈ 0.684 atol=0.001
-        @test rqa_params["TREND"] ≈ -0.0338 atol=0.0001
-        @test rqa_params["LAM"] == 18/33
-        @test rqa_params["TT"] == 18/8
-        @test rqa_params["Vmax"] == 3
-        @test rqa_params["MRT"] == 33/12
-        @test rqa_params["RTE"] ≈ 1.286 atol=0.001
-        @test rqa_params["NMPRT"] == 4
+        @test rqa_params[:RR] == 33/110
+        @test rqa_params[:DET] == 22/33
+        @test rqa_params[:L] == 22/9
+        @test rqa_params[:Lmax] == 5
+        @test rqa_params[:DIV] == 0.2
+        @test rqa_params[:ENTR] ≈ 0.684 atol=0.001
+        @test rqa_params[:TREND] ≈ -0.0338 atol=0.0001
+        @test rqa_params[:LAM] == 18/33
+        @test rqa_params[:TT] == 18/8
+        @test rqa_params[:Vmax] == 3
+        @test rqa_params[:MRT] == 33/12
+        @test rqa_params[:RTE] ≈ 1.286 atol=0.001
+        @test rqa_params[:NMPRT] == 4
     end
     @testset "Theiler and minimum line" begin
         histograms = recurrencestructures(rmat, theiler=2, lmin=2)
@@ -105,20 +105,18 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
             @test histograms[k] == true_histograms[k]
         end
         rqa_params = rqa(rmat, theiler=2, lmin=2, border=1)
-        @test rqa_params["RR"] == 22/110
-        @test rqa_params["DET"] == 13/22
-        @test rqa_params["L"] == 13/5
-        @test rqa_params["Lmax"] == 5
-        @test rqa_params["DIV"] == 0.2
-        @test rqa_params["ENTR"] ≈ 0.500 atol=0.001
-        @test rqa_params["TREND"] ≈ -0.0122 atol=0.0001
-        @test rqa_params["LAM"] == 12/22
-        @test rqa_params["TT"] == 12/5
-        @test rqa_params["Vmax"] == 3
-        @test rqa_params["MRT"] == 24/6
-        @test rqa_params["RTE"] ≈ 1.011 atol=0.001
-        @test rqa_params["NMPRT"] == 3
+        @test rqa_params[:RR] == 22/110
+        @test rqa_params[:DET] == 13/22
+        @test rqa_params[:L] == 13/5
+        @test rqa_params[:Lmax] == 5
+        @test rqa_params[:DIV] == 0.2
+        @test rqa_params[:ENTR] ≈ 0.500 atol=0.001
+        @test rqa_params[:TREND] ≈ -0.0122 atol=0.0001
+        @test rqa_params[:LAM] == 12/22
+        @test rqa_params[:TT] == 12/5
+        @test rqa_params[:Vmax] == 3
+        @test rqa_params[:MRT] == 24/6
+        @test rqa_params[:RTE] ≈ 1.011 atol=0.001
+        @test rqa_params[:NMPRT] == 3
     end
 end
-
-
