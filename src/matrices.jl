@@ -141,6 +141,7 @@ colvals(x::ARM) = colvals(x.data)
     RecurrenceMatrix(x, ε; kwargs...)
 
 Create a recurrence matrix from trajectory `x`.
+Objects of type `<:AbstractRecurrenceMatrix` are displayed as a [`recurrenceplot`](@ref).
 
 ## Description
 
