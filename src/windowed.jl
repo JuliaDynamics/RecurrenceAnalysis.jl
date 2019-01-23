@@ -152,29 +152,30 @@ macro windowed(ex, options...)
                 local nw = size($x,1) - $(dict_op[:width])
                 local ni = div(nw, s)+1 # number of items
                 local mtype = typeof($x)
-                local rqa_dict = Dict(
-                    "RR"   => zeros(Float64,ni),
-                    "DET"  => zeros(Float64,ni),
-                    "L"    => zeros(Float64,ni),
-                    "Lmax" => zeros(Int,ni),
-                    "DIV"  => zeros(Float64,ni),
-                    "ENTR"  => zeros(Float64,ni),
-                    "TREND"  => zeros(Float64,ni),
-                    "LAM"  => zeros(Float64,ni),
-                    "TT"   => zeros(Float64,ni),
-                    "Vmax" => zeros(Int,ni),
-                    "VENTR" => zeros(Float64,ni),
-                    "MRT"  => zeros(Float64,ni),
-                    "RTE"  => zeros(Float64,ni),
-                    "NMPRT" => zeros(Int,ni)
+                local rqa_tuple = (
+                    RR   = zeros(Float64,ni),
+                    DET  = zeros(Float64,ni),
+                    L    = zeros(Float64,ni),
+                    Lmax = zeros(Int,ni),
+                    DIV  = zeros(Float64,ni),
+                    ENTR  = zeros(Float64,ni),
+                    TREND  = zeros(Float64,ni),
+                    LAM  = zeros(Float64,ni),
+                    TT   = zeros(Float64,ni),
+                    Vmax = zeros(Int,ni),
+                    VENTR = zeros(Float64,ni),
+                    MRT  = zeros(Float64,ni),
+                    RTE  = zeros(Float64,ni),
+                    NMPRT = zeros(Int,ni)
                 )
                 for i=1:ni
                     local rqa_i = $ex
-                    for (k,v) in rqa_i
-                        rqa_dict[k][i] = v
+                    #@show rqa_i
+                    for k in keys(rqa_i)
+                        rqa_tuple[k][i] = rqa_i[k]
                     end
                 end
-                rqa_dict
+                rqa_tuple
             end
             return esc(ret_ex)
         end
