@@ -346,27 +346,27 @@ Using this function is much more efficient than calling all individual functions
 one by one.
 
 ## Return
-The returned value is a dictionary with the following keys:
+The returned value is a NamedTuple with the following entries:
 
-* "RR": recurrence rate (see [`recurrencerate`](@ref))
-* "DET": determinsm (see [`determinism`](@ref))
-* "L": average length of diagonal structures (see [`dl_average`](@ref))
-* "Lmax": maximum length of diagonal structures (see [`dl_max`](@ref))
-* "DIV": divergence (see [`divergence`](@ref))
-* "ENTR": entropy of diagonal structures (see [`dl_entropy`](@ref))
-* "TREND": trend of recurrences (see [`trend`](@ref))
-* "LAM": laminarity (see [`laminarity`](@ref))
-* "TT": trapping time (see [`trappingtime`](@ref))
-* "Vmax": maximum length of vertical structures (see [`vl_max`](@ref))
-* "VENTR": entropy of vertical structures (see [`vl_entropy`](@ref))
-* "MRT": mean recurrence time (see [`meanrecurrencetime`](@ref))
-* "RTE" recurrence time entropy (see [`rt_entropy`](@ref))
-* "NMPRT": number of the most probable recurrence time (see [`nmprt`](@ref))
+* ´RR´: recurrence rate (see [`recurrencerate`](@ref))
+* ´DET´: determinsm (see [`determinism`](@ref))
+* ´L´: average length of diagonal structures (see [`dl_average`](@ref))
+* ´Lmax´: maximum length of diagonal structures (see [`dl_max`](@ref))
+* ´DIV´: divergence (see [`divergence`](@ref))
+* ´ENTR´: entropy of diagonal structures (see [`dl_entropy`](@ref))
+* ´TREND´: trend of recurrences (see [`trend`](@ref))
+* ´LAM´: laminarity (see [`laminarity`](@ref))
+* ´TT´: trapping time (see [`trappingtime`](@ref))
+* ´Vmax´: maximum length of vertical structures (see [`vl_max`](@ref))
+* ´VENTR´: entropy of vertical structures (see [`vl_entropy`](@ref))
+* ´MRT´: mean recurrence time (see [`meanrecurrencetime`](@ref))
+* ´RTE´ recurrence time entropy (see [`rt_entropy`](@ref))
+* ´NMPRT´: number of the most probable recurrence time (see [`nmprt`](@ref))
 
 In the case of empty histograms (e.g. no existing vertical lines
 less than the keyword `lminvert`) the average and maximum values
-("L", "Lmax", "TT", "Vmax", "MRT")
-are returned as `0.0` but their respective entropies ("ENTR", "VENTR", "RTE")
+(´L´, ´Lmax´, ´TT´, ´Vmax´, ´MRT´)
+are returned as `0.0` but their respective entropies (´ENTR´, ´VENTR´, ´RTE´)
 are returned as `NaN`.
 
 ## Keyword Arguments
@@ -388,7 +388,7 @@ i.e. `theiler`, `lmin`, and `border`:
   describe the distributions of diagonal or vertical lines (it is set as 2 by
   default).
 
-* `border` is used to avoid border effects in the calculation of "TREND"
+* `border` is used to avoid border effects in the calculation of ´TREND´
   (cf. [`trend`](@ref)).
 
 In addition `theilerdiag`, `lmindiag` may be used to
@@ -399,7 +399,7 @@ structures.
 
 The keyword argument `onlydiagonal` (`false` by default) can be set to `true`
 in order to restrict the analysis to the recurrence rate and the parameters related
-to diagonal structures ("RR", "DET", "L", "Lmax", "DIV" and "ENTR"), which makes
+to diagonal structures (´RR´, ´DET´, ´L´, ´Lmax´, ´DIV´ and ´ENTR´), which makes
 this function slightly faster.
 """
 function rqa(x; onlydiagonal=false, kwargs...)
@@ -410,12 +410,12 @@ function rqa(x; onlydiagonal=false, kwargs...)
     dhist = diagonalhistogram(x; kw_d...)
     rr_d = recurrencerate(x; kw_d...)
     if onlydiagonal
-        return Dict("RR"  => recurrencerate(x; kwargs...),
-        "DET"  => _determinism(dhist, rr_d*_rrdenominator(x; kw_d...)),
-        "L"    => _dl_average(dhist),
-        "Lmax" => _dl_max(dhist),
-        "DIV"  => 1.0/_dl_max(dhist),
-        "ENTR"  => _dl_entropy(dhist)
+        return (RR  = recurrencerate(x; kwargs...),
+        DET   = _determinism(dhist, rr_d*_rrdenominator(x; kw_d...)),
+        L     = _dl_average(dhist),
+        Lmax  = _dl_max(dhist),
+        DIV   = 1.0/_dl_max(dhist),
+        ENTR  = _dl_entropy(dhist)
         )
    else
         kw_v = Dict(kwargs)
@@ -423,20 +423,20 @@ function rqa(x; onlydiagonal=false, kwargs...)
         haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
         vhist, rthist = verticalhistograms(x; kw_v...)
         rr_v = recurrencerate(x; kw_v...)
-        return Dict("RR"  => recurrencerate(x; kwargs...),
-            "DET"  => _determinism(dhist, rr_d*_rrdenominator(x; kw_v...)),
-            "L"    => _dl_average(dhist),
-            "Lmax" => _dl_max(dhist),
-            "DIV"  => 1.0/_dl_max(dhist),
-            "ENTR"  => _dl_entropy(dhist),
-            "TREND" => trend(x; kw_d...),
-            "LAM"  => _laminarity(vhist, rr_v*_rrdenominator(x; kw_v...)),
-            "TT"   => _vl_average(vhist),
-            "Vmax" => _vl_max(vhist),
-            "VENTR" => _vl_entropy(vhist),
-            "MRT"  => _rt_average(rthist),
-            "RTE" => _rt_entropy(rthist),
-            "NMPRT" => maximum(rthist)
+        return (RR  = recurrencerate(x; kwargs...),
+            DET  = _determinism(dhist, rr_d*_rrdenominator(x; kw_v...)),
+            L    = _dl_average(dhist),
+            Lmax = _dl_max(dhist),
+            DIV  = 1.0/_dl_max(dhist),
+            ENTR  = _dl_entropy(dhist),
+            TREND = trend(x; kw_d...),
+            LAM  = _laminarity(vhist, rr_v*_rrdenominator(x; kw_v...)),
+            TT   = _vl_average(vhist),
+            Vmax = _vl_max(vhist),
+            VENTR = _vl_entropy(vhist),
+            MRT  = _rt_average(rthist),
+            RTE = _rt_entropy(rthist),
+            NMPRT = maximum(rthist)
         )
     end
 end
