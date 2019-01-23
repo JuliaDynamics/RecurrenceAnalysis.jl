@@ -339,7 +339,7 @@ nmprt(x::ARM; kwargs) = maximum(verticalhistograms(x; kwargs...)[2])
 """
     rqa(x; kwargs...)
 
-Calculate all RQA parameters of a recurrence matrix. See the functions
+Calculate all RQA parameters of a recurrence matrix `x`. See the functions
 referred to below for the definition of
 the different parameters and the default values of the arguments.
 Using this function is much more efficient than calling all individual functions
