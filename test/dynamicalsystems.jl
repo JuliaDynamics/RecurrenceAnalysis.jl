@@ -61,7 +61,7 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
     @test .04 < recurrencerate(crmat_fixed) < .06
 
     # Recurrence plot
-    crp = recurrenceplot(crmat, width=125)
+    crp = grayscale(crmat, width=125)
     szplot = size(crp)
     szmat  = size(crmat)
     @test szplot[1] ≈ szplot[2]*szmat[2]/szmat[1] atol = 1

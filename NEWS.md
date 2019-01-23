@@ -1,5 +1,11 @@
 # RecurrenceAnalysis.jl News
 
+## v0.12.0
+- Doc improvements
+- Return type changes in `rqa`
+- Breaking changes in implementations of `trend` and denominator of "RR"
+- name changes in plotting
+
 ## v0.10.0
 - Theiler window now has default values that depend on the type: `CrossRecurrenceMatrix` has default 0, otherwise 1.
 
