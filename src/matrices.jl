@@ -219,23 +219,54 @@ end
 
 # If `scale` is a function, compute the numeric value of the scale based on the
 # distance matrix; otherwise return the value of `scale` itself
-_computescale(scale::Function, x, y, metric) = scale(distancematrix(x, y, metric))
 _computescale(scale::Real, args...) = scale
+function _computescale(scale::Function, x, y, metric)
+    if x===y
+        distances = zeros(Int(length(x)*(length(x)-1)/2))
+        c = 0
+        @inbounds for (i,xi) in enumerate(x), (j,yj) in enumerate(y)
+            if j > i
+                distances[c+=1] = evaluate(metric, xi, yj)
+            end
+        end
+    else
+        distances = distancematrix(x, y, metric)
+    end
+    return scale(distances)
+end
 # specific methods to avoid `distancematrix`
 function _computescale(scale::typeof(maximum), x, y, metric::Metric)
     maxvalue = zero(eltype(x))
-    @inbounds for xi in x, yj in y
-        newvalue = evaluate(metric, xi, yj)
-        (newvalue > maxvalue) && (maxvalue = newvalue)
+    if x===y
+        @inbounds for (i,xi) in enumerate(x), (j,yj) in enumerate(y)
+            if j > i
+                newvalue = evaluate(metric, xi, yj)
+                (newvalue > maxvalue) && (maxvalue = newvalue)
+            end
+        end
+    else
+        @inbounds for xi in x, yj in y
+            newvalue = evaluate(metric, xi, yj)
+            (newvalue > maxvalue) && (maxvalue = newvalue)
+        end
     end
     return maxvalue
 end
 function _computescale(scale::typeof(mean), x, y, metric::Metric)
     meanvalue = 0.0
-    @inbounds for xi in x, yj in y
-        meanvalue += evaluate(metric, xi, yj)
+    if x===y
+        @inbounds for (i,xi) in enumerate(x), (j,yj) in enumerate(y)
+            if j > i
+                meanvalue += evaluate(metric, xi, yj)
+            end
+        end
+        denominator = length(x)*(length(x)-1)/2
+    else
+        @inbounds for xi in x, yj in y
+            meanvalue += evaluate(metric, xi, yj)
+        end
+        denominator = Float64(length(x)*length(y))
     end
-    denominator = (x==y) ? length(x)*(length(y)-1) : length(x)*length(y)
     return meanvalue/denominator
 end
 
