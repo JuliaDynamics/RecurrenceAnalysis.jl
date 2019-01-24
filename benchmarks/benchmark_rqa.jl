@@ -31,7 +31,7 @@ function benchmark(metric)
         # Write table of results
         open("benchmark_rqa_julia_$metric.txt","a") do f
             write(f,"$r\t$t\t")
-            for k in ["RR","DET","L","Lmax","ENTR","LAM","TT"]
+            for k in [:RR, :DET, :L, :Lmax, :ENTR, :LAM, :TT]
                 write(f, "$(res[k])\t")
             end
             write(f,"\n")
