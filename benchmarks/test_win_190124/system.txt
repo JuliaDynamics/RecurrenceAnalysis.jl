@@ -1,0 +1,6 @@
+Intel(R) Core(TM) i3-3240 CPU @ 3.40GHz CPU, 4GB DDR3 RAM 1333 MHz, running Windows 10 Enterprise.
+
+Julia 1.0.1
+
+Package versions
+Julia: RecurrenceAnalysis 0.12.0
