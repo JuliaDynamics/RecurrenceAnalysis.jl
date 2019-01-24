@@ -224,10 +224,8 @@ function _computescale(scale::Function, x, y, metric)
     if x===y
         distances = zeros(Int(length(x)*(length(x)-1)/2))
         c = 0
-        @inbounds for (i,xi) in enumerate(x), (j,yj) in enumerate(y)
-            if j > i
-                distances[c+=1] = evaluate(metric, xi, yj)
-            end
+        @inbounds for i in 1:length(x)-1, j=(i+1):length(x)
+            distances[c+=1] = evaluate(metric, x[i], y[j])
         end
     else
         distances = distancematrix(x, y, metric)
@@ -238,11 +236,9 @@ end
 function _computescale(scale::typeof(maximum), x, y, metric::Metric)
     maxvalue = zero(eltype(x))
     if x===y
-        @inbounds for (i,xi) in enumerate(x), (j,yj) in enumerate(y)
-            if j > i
-                newvalue = evaluate(metric, xi, yj)
-                (newvalue > maxvalue) && (maxvalue = newvalue)
-            end
+        @inbounds for i in 1:length(x)-1, j=(i+1):length(x)
+            newvalue = evaluate(metric, x[i], y[j])
+            (newvalue > maxvalue) && (maxvalue = newvalue)
         end
     else
         @inbounds for xi in x, yj in y
@@ -255,10 +251,8 @@ end
 function _computescale(scale::typeof(mean), x, y, metric::Metric)
     meanvalue = 0.0
     if x===y
-        @inbounds for (i,xi) in enumerate(x), (j,yj) in enumerate(y)
-            if j > i
-                meanvalue += evaluate(metric, xi, yj)
-            end
+        @inbounds for i in 1:length(x)-1, j=(i+1):length(x)
+            meanvalue += evaluate(metric, x[i], y[j])
         end
         denominator = length(x)*(length(x)-1)/2
     else
