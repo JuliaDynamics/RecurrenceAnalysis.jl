@@ -186,13 +186,16 @@ the trend will have a negative value.
 It is calculated as:
 
 ```math
-TREND = \\frac{\\sum_{d=\\tau}^{\\tilde{N}}\\delta[d]\\left(RR[d]-\\langle RR[d]\\rangle\\right)}{\\sum_{d=\\tau}^{\\tilde{N}}\\delta[d]^2}
+TREND = 10^3\\frac{\\sum_{d=\\tau}^{\\tilde{N}}\\delta[d]\\left(RR[d]-\\langle RR[d]\\rangle\\right)}{\\sum_{d=\\tau}^{\\tilde{N}}\\delta[d]^2}
 ```
 
 where ``RR[d]`` is the local recurrence rate of the diagonal ``d``,
 ``\\delta[d]`` is a balanced measure of the distance between that diagonal and the LOI,
 ``\\tau`` is the Theiler window (number of central diagonals that are excluded), and
 ``\\tilde{N}`` is the number of the outmost diagonal that is included.
+
+This parameter is expressed in units of variation recurrence rate every
+1000 data points, hence the factor ``10^3`` in the formula [1]. 
 
 The 10 outermost diagonals (counting from the corners of the matrix)
 are excluded by default to avoid "border effects". Use the keyword argument
@@ -203,6 +206,12 @@ to define the size of the Theiler window (see [`rqa`](@ref) for details).
 originate them are not of the same length), the limits of the formula for TREND
 are not clearly defined. For the sake of consistency, this function limits the
 calculations to the biggest square matrix that contains the LOI.
+
+## References
+[1] C.L. Webber & J.P. Zbilut, "Recurrence Quantification Analysis of Nonlinear
+Dynamical Systems", in: Riley MA & Van Orden GC, *Tutorials in Contemporary
+Nonlinear Methods for the Behavioral Sciences*, 2005, 26-94.
+https://www.nsf.gov/pubs/2005/nsf05057/nmbs/nmbs.pdf
 """
 trend(R::ARM; theiler=deftheiler(R), kwargs...) =
     _trend(tau_recurrence(R); theiler=theiler, kwargs...)
@@ -237,7 +246,7 @@ function _trend(rr_τ::Vector; theiler=1, border=10, kwargs...)::Float64
         numerator += δ*(rr_τ[d] - mean_rr)
         denominator += δ*δ
     end
-    return numerator/denominator
+    return 1000.0*numerator/denominator
 end
 
 # Number of l-length sequences, based on diagonals
