@@ -12,10 +12,10 @@ Calculate the recurrence rate of the recurrence matrix `R`.
 The recurrence rate is calculated as:
 
 ```math
-RR = \\frac{1}{S} \\sum_{i,j} R[i,j]
+RR = \\frac{1}{S} \\sum R
 ```
 
-where *S* is the size of `R` or the region of `R` with potential recurrent points.
+where ``S`` is the size of `R` or the region of `R` with potential recurrent points.
 There is not a unique definition of that denominator, which is defined as the
 full size of the matrix in many sources (e.g. [1]), whereas
 in others it is adjusted to remove the points of the LOI when they are
@@ -139,7 +139,8 @@ Calculate the determinism of the recurrence matrix `R`:
 The determinism is calculated as:
 
 ```math
-DET = \\frac{\\sum_{l=lmin}{l P(l)}}{\\sum_{l=1}{l P(l)}}
+DET = \\frac{\\sum_{l=lmin}{l P(l)}}{\\sum_{l=1}{l P(l)}} =
+\\frac{\\sum_{l=lmin}{l P(l)}}{\\sum R}
 ```
 
 where ``l`` stands for the lengths of diagonal lines in the matrix, and ``P(l)``
@@ -265,7 +266,8 @@ Calculate the laminarity of the recurrence matrix `R`.
 The laminarity is calculated as:
 
 ```math
-LAM = \\frac{\\sum_{v=lmin}{v P(l)}}{\\sum_{v=1}{v P(v)}}
+LAM = \\frac{\\sum_{v=lmin}{v P(l)}}{\\sum_{v=1}{v P(v)}} =
+\\frac{\\sum_{v=lmin}{v P(l)}}{\\sum R}
 ```
 
 where ``v`` stands for the lengths of vertical lines in the matrix, and ``P(v)``
