@@ -208,7 +208,7 @@ end
 function recurrence_matrix(x, y, ε; scale=1, fixedrate=false, metric=DEFAULT_METRIC)
     # Check fixed recurrence rate - ε must be within (0, 1)
     if fixedrate
-        sfun = (m) -> quantile(m[:], ε)
+        sfun = (m) -> quantile(vec(m), ε)
         return recurrence_matrix(x, y, 1; scale=sfun, fixedrate=false, metric=metric)
     else
         scale_value = _computescale(scale, x, y, metric)
