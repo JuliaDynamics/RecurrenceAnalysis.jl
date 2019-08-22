@@ -277,16 +277,16 @@ function _recurrence_matrix(x::AbstractVecOrMat, y::AbstractVecOrMat,
 end
 
 # Core function
-function _recurrence_matrix(x::Dataset, y::Dataset, ε, metric::Metric)
-    x = x.data
-    y = y.data
+function _recurrence_matrix(xx::Dataset, yy::Dataset, ε, metric::Metric)
+    x = xx.data
+    y = yy.data
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
     for j in 1:length(y)
         nzcol = 0
         for i in 1:length(x)
             @inbounds if evaluate(metric, x[i], y[j]) ≤ ε
-                push!(rowvals,i)
+                push!(rowvals, i)
                 nzcol += 1
             end
         end

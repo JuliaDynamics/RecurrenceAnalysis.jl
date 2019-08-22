@@ -1,7 +1,7 @@
 name = "RecurrenceAnalysis"
 uuid = "639c3291-70d9-5ea2-8c5b-839eba1ee399"
 repo = "https://github.com/JuliaDynamics/RecurrenceAnalysis.jl.git"
-version = "1.0.2"
+version = "1.0.3"
 
 [deps]
 DelayEmbeddings = "5732040d-69e3-5649-938a-b6b4f237613f"
