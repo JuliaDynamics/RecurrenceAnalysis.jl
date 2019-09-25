@@ -2,6 +2,7 @@ module RecurrenceAnalysis
 
 using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, StaticArrays
 import Base.Meta.parse
+using Base.Threads
 
 export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix,
        AbstractRecurrenceMatrix

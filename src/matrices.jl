@@ -205,14 +205,14 @@ function CrossRecurrenceMatrix(x, y, ε; kwargs...)
     return CrossRecurrenceMatrix(m)
 end
 
-function recurrence_matrix(x, y, ε; scale=1, fixedrate=false, metric=DEFAULT_METRIC)
+function recurrence_matrix(x, y, ε; scale=1, fixedrate=false, metric=DEFAULT_METRIC, parallel = true)
     # Check fixed recurrence rate - ε must be within (0, 1)
     if fixedrate
         sfun = (m) -> quantile(vec(m), ε)
         return recurrence_matrix(x, y, 1; scale=sfun, fixedrate=false, metric=metric)
     else
         scale_value = _computescale(scale, x, y, metric)
-        spm = _recurrence_matrix(x, y, ε*scale_value, metric)
+        spm = _recurrence_matrix(x, y, ε*scale_value, metric; parallel = parallel)
         return spm
     end
 end
@@ -267,17 +267,23 @@ end
 
 # Internal methods to calculate the matrix:
 # If the metric is supplied as a string, get the corresponding Metric from Distances
-_recurrence_matrix(x, y, ε, metric::String="max") =
-_recurrence_matrix(x, y, ε, getmetric(metric))
+_recurrence_matrix(x, y, ε, metric::String="max"; kwargs...) =
+_recurrence_matrix(x, y, ε, getmetric(metric); kwargs...)
 
 # Convert the inputs to Datasets (better performance in all cases)
 function _recurrence_matrix(x::AbstractVecOrMat, y::AbstractVecOrMat,
-                                ε, metric::Metric=DEFAULT_METRIC)
-    return _recurrence_matrix(Dataset(x), Dataset(y), ε, metric)
+                                ε, metric::Metric=DEFAULT_METRIC; parallel = true)
+    return _recurrence_matrix(Dataset(x), Dataset(y), ε, metric; parallel = parallel)
 end
 
-# Core function
-function _recurrence_matrix(xx::Dataset, yy::Dataset, ε, metric::Metric)
+_recurrence_matrix(xx::Dataset, yy::Dataset, ε, metric::Metric; parallel = true) = _recurrence_matrix(xx, yy, ε, metric, Val(parallel))
+
+############################################################
+#                      Core function                       #
+############################################################
+
+# Serial function (parallel is false)
+function _recurrence_matrix(xx::Dataset, yy::Dataset, ε, metric::Metric, ::Val{false})
     x = xx.data
     y = yy.data
     rowvals = Vector{Int}()
@@ -294,6 +300,35 @@ function _recurrence_matrix(xx::Dataset, yy::Dataset, ε, metric::Metric)
     end
     nzvals = fill(true, (length(rowvals),))
     return sparse(rowvals, colvals, nzvals, length(x), length(y))
+end
+
+# Parallel function (parallel is true)
+function RecurrenceAnalysis._recurrence_matrix(xx::Dataset, yy::Dataset, ε, metric::Metric, ::Val{true})
+    x = xx.data
+    y = yy.data
+    # We create an `Array` of `Array`s, for each thread to have its
+    # own array to push to.  This avoids race conditions with
+    # multiple threads pushing to the same `Array` (`Array`s are not atomic).
+    rowvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+    colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+
+    # This is the same logic as the serial function, but parallelized.
+    Threads.@threads for j in 1:length(y)
+      threadn = Threads.threadid()
+      nzcol = 0
+      for i in 1:length(x)
+          @inbounds if evaluate(metric, x[i], y[j]) ≤ ε
+              push!(rowvals[threadn], i) # push to the thread-specific row array
+              nzcol += 1
+          end
+      end
+      append!(colvals[threadn], fill(j, (nzcol,)))
+    end
+
+    finalrows = vcat(rowvals...) # merge into one array
+    finalcols = vcat(colvals...) # merge into one array
+    nzvals = fill(true, (length(finalrows),))
+    return sparse(finalrows, finalcols, nzvals, length(x), length(y))
 end
 
 
