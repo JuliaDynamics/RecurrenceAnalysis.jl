@@ -167,8 +167,10 @@ use [`recurrenceplot`](@ref) to turn the result of these functions into a plotta
 recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
-function RecurrenceMatrix(x, ε; kwargs...)
-    m = recurrence_matrix(x, ε; kwargs...)
+function RecurrenceMatrix(x, ε; metric = DEFAULT_METRIC, kwargs...)
+    m = getmetric(metric)
+    s = resolve_scale(x, m, ε; kwargs...)
+    m = recurrence_matrix(x, m, s; kwargs...)
     return RecurrenceMatrix(m)
 end
 
@@ -185,8 +187,10 @@ then the cell `(i, j)` of the matrix will have a `true` value.
 See [`RecurrenceMatrix`](@ref) for details, references and keywords.
 See also: [`JointRecurrenceMatrix`](@ref).
 """
-function CrossRecurrenceMatrix(x, y, ε; kwargs...)
-    m = recurrence_matrix(x, y, ε; kwargs...)
+function CrossRecurrenceMatrix(x, y, ε; metric = DEFAULT_METRIC, kwargs...)
+    m = getmetric(metric)
+    s = resolve_scale(x, y, m, ε; kwargs...)
+    m = recurrence_matrix(x, y, m, s)
     return CrossRecurrenceMatrix(m)
 end
 
@@ -208,11 +212,11 @@ See also: [`CrossRecurrenceMatrix`](@ref).
 function JointRecurrenceMatrix(x, y, ε; kwargs...)
     n = min(size(x,1), size(y,1))
     if n == size(x,1) && n == size(y,1)
-        rm1 = RecurrenceMatrix(x, ε, kwargs...)
-        rm2 = RecurrenceMatrix(y, ε, kwargs...)
+        rm1 = RecurrenceMatrix(x, ε; kwargs...)
+        rm2 = RecurrenceMatrix(y, ε; kwargs...)
     else
-        rm1 = RecurrenceMatrix(x[1:n,:], ε, kwargs...)
-        rm2 = RecurrenceMatrix(y[1:n,:], ε, kwargs...)
+        rm1 = RecurrenceMatrix(x[1:n,:], ε; kwargs...)
+        rm2 = RecurrenceMatrix(y[1:n,:], ε; kwargs...)
     end
     return JointRecurrenceMatrix(rm1.data .* rm2.data)
 end
@@ -221,17 +225,16 @@ end
 ################################################################################
 # Scaling / fixed rate
 ################################################################################
-function recurrence_matrix(args...; scale=1, fixedrate=false, metric=DEFAULT_METRIC)
-    m = getmetric(metric)
+# here args... is (x, y, metric, ε) or just (x, metric, ε)
+function resolve_scale(args...; scale=1, fixedrate=false)
     ε = args[end]
     # Check fixed recurrence rate - ε must be within (0, 1)
     if fixedrate
         sfun = (m) -> quantile(vec(m), ε)
-        return recurrence_matrix(Base.front(args)..., 1.0; scale=sfun, fixedrate=false, metric=metric)
+        return resolve_scale(Base.front(args)..., 1.0; scale=sfun, fixedrate=false)
     else
-        scale_value = _computescale(scale, Base.front(args)..., m)
-        spm = _recurrence_matrix(Base.front(args)..., ε*scale_value, m)
-        return spm
+        scale_value = _computescale(scale, Base.front(args)...)
+        return ε*scale_value
     end
 end
 
@@ -291,17 +294,17 @@ end
 # _recurrence_matrix - Low level interface
 ################################################################################
 # TODO: increase the efficiency here by not computing everything:
-_recurrence_matrix(x, ε::Real, metric::Metric) =
-_recurrence_matrix(x, x, ε, metric)
+_recurrence_matrix(x, metric::Metric, ε::Real) =
+_recurrence_matrix(x, x, metric, ε)
 
 # Convert Matrices to Datasets (better performance in all cases)
 function _recurrence_matrix(x::AbstractMatrix, y::AbstractMatrix,
-                            ε, metric::Metric)
-    return _recurrence_matrix(Dataset(x), Dataset(y), ε, metric)
+                            metric::Metric, ε)
+    return _recurrence_matrix(Dataset(x), Dataset(y), metric, ε)
 end
 
 # Core function
-function _recurrence_matrix(xx::Dataset, yy::Dataset, ε, metric::Metric)
+function _recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε)
     x = xx.data
     y = yy.data
     rowvals = Vector{Int}()
@@ -321,7 +324,7 @@ function _recurrence_matrix(xx::Dataset, yy::Dataset, ε, metric::Metric)
 end
 
 # Vector version can be more specialized (and metric is irrelevant)
-function _recurrence_matrix(x::AbstractVector, y::AbstractVector, ε, metric)
+function _recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
     for j in 1:length(y)
