@@ -238,7 +238,6 @@ end
 # If `scale` is a function, compute the numeric value of the scale based on the
 # distance matrix; otherwise return the value of `scale` itself
 _computescale(scale::Real, args...) = scale
-# TODO: This can be optimized since x and y are the same:
 _computescale(scale::Function, x, metric::Metric) =
 _computescale(scale, x, x, metric)
 
