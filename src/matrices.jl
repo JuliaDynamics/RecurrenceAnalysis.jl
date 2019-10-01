@@ -3,7 +3,7 @@ In this file the core computations for creating a recurrence matrix
 are defined (via multiple dispatch).
 
 The low level interface is contained in the function
-`_recurrence_matrix`, and this is where any specialization should happen.
+`recurrence_matrix`, and this is where any specialization should happen.
 =#
 
 ################################################################################
@@ -291,20 +291,20 @@ end
 
 
 ################################################################################
-# _recurrence_matrix - Low level interface
+# recurrence_matrix - Low level interface
 ################################################################################
 # TODO: increase the efficiency here by not computing everything:
-_recurrence_matrix(x, metric::Metric, ε::Real) =
-_recurrence_matrix(x, x, metric, ε)
+recurrence_matrix(x, metric::Metric, ε::Real) =
+recurrence_matrix(x, x, metric, ε)
 
 # Convert Matrices to Datasets (better performance in all cases)
-function _recurrence_matrix(x::AbstractMatrix, y::AbstractMatrix,
-                            metric::Metric, ε)
-    return _recurrence_matrix(Dataset(x), Dataset(y), metric, ε)
+function recurrence_matrix(x::AbstractMatrix, y::AbstractMatrix,
+                           metric::Metric, ε)
+    return recurrence_matrix(Dataset(x), Dataset(y), metric, ε)
 end
 
 # Core function
-function _recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε)
+function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε)
     x = xx.data
     y = yy.data
     rowvals = Vector{Int}()
@@ -324,7 +324,7 @@ function _recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε)
 end
 
 # Vector version can be more specialized (and metric is irrelevant)
-function _recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε)
+function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
     for j in 1:length(y)
