@@ -1,25 +1,14 @@
-const METRICS = Dict(
-    "euclidean"=>Euclidean(),
-    "max"=>Chebyshev(),
-    "inf"=>Chebyshev(),
-    "cityblock"=>Cityblock(),
-    "manhattan"=>Cityblock(),
-    "taxicab"=>Cityblock(),
-    "min"=>Cityblock()
-)
+#=
+In this file the core computations for creating a recurrence matrix
+are defined (via multiple dispatch).
 
-const DEFAULT_METRIC = Euclidean()
+The low level interface is contained in the function
+`recurrence_matrix`, and this is where any specialization should happen.
+=#
 
-function getmetric(normtype::AbstractString)
-    normtype = lowercase(normtype)
-    !haskey(METRICS,normtype) && error("incorrect norm type. Accepted values are \""
-        *join(keys(METRICS),"\", \"", "\" or \"") * "\".")
-    METRICS[normtype]
-end
-
-
-#### Distance matrix ####
-
+################################################################################
+# Distance matrix
+################################################################################
 """
     distancematrix(x [, y = x], metric = "euclidean")
 
@@ -85,11 +74,9 @@ function _distancematrix(x::Dataset{S,Tx}, y::Dataset{S,Ty},
     return d
 end
 
-
-
-#######################
-# Type
-#######################
+################################################################################
+# AbstractRecurrenceMatrix type definitions and documentation strings
+################################################################################
 abstract type AbstractRecurrenceMatrix end
 const ARM = AbstractRecurrenceMatrix
 struct RecurrenceMatrix <: AbstractRecurrenceMatrix
@@ -106,6 +93,7 @@ function Base.summary(R::AbstractRecurrenceMatrix)
     N = nnz(R.data)
     return "$(nameof(typeof(R))) of size $(size(R.data)) with $N entries"
 end
+Base.show(io::IO, R::AbstractRecurrenceMatrix) = println(io, summary(R))
 
 # Propagate used functions:
 begin
@@ -179,13 +167,12 @@ use [`recurrenceplot`](@ref) to turn the result of these functions into a plotta
 recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
-function RecurrenceMatrix(x, ε; kwargs...)
-    m = recurrence_matrix(x, x, ε; kwargs...)
+function RecurrenceMatrix(x, ε; metric = DEFAULT_METRIC, kwargs...)
+    m = getmetric(metric)
+    s = resolve_scale(x, m, ε; kwargs...)
+    m = recurrence_matrix(x, m, s; kwargs...)
     return RecurrenceMatrix(m)
 end
-
-
-#### Cross recurrence matrix ####
 
 """
     CrossRecurrenceMatrix(x, y, ε; kwargs...)
@@ -200,26 +187,64 @@ then the cell `(i, j)` of the matrix will have a `true` value.
 See [`RecurrenceMatrix`](@ref) for details, references and keywords.
 See also: [`JointRecurrenceMatrix`](@ref).
 """
-function CrossRecurrenceMatrix(x, y, ε; kwargs...)
-    m = recurrence_matrix(x, y, ε; kwargs...)
+function CrossRecurrenceMatrix(x, y, ε; metric = DEFAULT_METRIC, kwargs...)
+    m = getmetric(metric)
+    s = resolve_scale(x, y, m, ε; kwargs...)
+    m = recurrence_matrix(x, y, m, s)
     return CrossRecurrenceMatrix(m)
 end
 
-function recurrence_matrix(x, y, ε; scale=1, fixedrate=false, metric=DEFAULT_METRIC)
+
+"""
+    JointRecurrenceMatrix(x, y, ε; kwargs...)
+
+Create a joint recurrence matrix from `x` and `y`.
+
+The joint recurrence matrix considers the recurrences of the trajectories
+of `x` and `y` separately, and looks for points where both recur
+simultaneously. It is calculated by the element-wise multiplication
+of the recurrence matrices of `x` and `y`. If `x` and `y` are of different
+length, the recurrences are only calculated until the length of the shortest one.
+
+See [`RecurrenceMatrix`](@ref) for details, references and keywords.
+See also: [`CrossRecurrenceMatrix`](@ref).
+"""
+function JointRecurrenceMatrix(x, y, ε; kwargs...)
+    n = min(size(x,1), size(y,1))
+    if n == size(x,1) && n == size(y,1)
+        rm1 = RecurrenceMatrix(x, ε; kwargs...)
+        rm2 = RecurrenceMatrix(y, ε; kwargs...)
+    else
+        rm1 = RecurrenceMatrix(x[1:n,:], ε; kwargs...)
+        rm2 = RecurrenceMatrix(y[1:n,:], ε; kwargs...)
+    end
+    return JointRecurrenceMatrix(rm1.data .* rm2.data)
+end
+
+
+################################################################################
+# Scaling / fixed rate
+################################################################################
+# here args... is (x, y, metric, ε) or just (x, metric, ε)
+function resolve_scale(args...; scale=1, fixedrate=false)
+    ε = args[end]
     # Check fixed recurrence rate - ε must be within (0, 1)
     if fixedrate
         sfun = (m) -> quantile(vec(m), ε)
-        return recurrence_matrix(x, y, 1; scale=sfun, fixedrate=false, metric=metric)
+        return resolve_scale(Base.front(args)..., 1.0; scale=sfun, fixedrate=false)
     else
-        scale_value = _computescale(scale, x, y, metric)
-        spm = _recurrence_matrix(x, y, ε*scale_value, metric)
-        return spm
+        scale_value = _computescale(scale, Base.front(args)...)
+        return ε*scale_value
     end
 end
 
 # If `scale` is a function, compute the numeric value of the scale based on the
 # distance matrix; otherwise return the value of `scale` itself
 _computescale(scale::Real, args...) = scale
+_computescale(scale::Function, x, metric::Metric) =
+_computescale(scale, x, x, metric)
+
+# generic method that uses `distancematrix`
 function _computescale(scale::Function, x, y, metric)
     if x===y
         distances = zeros(Int(length(x)*(length(x)-1)/2))
@@ -265,19 +290,21 @@ function _computescale(scale::typeof(mean), x, y, metric::Metric)
 end
 
 
-# Internal methods to calculate the matrix:
-# If the metric is supplied as a string, get the corresponding Metric from Distances
-_recurrence_matrix(x, y, ε, metric::String="max") =
-_recurrence_matrix(x, y, ε, getmetric(metric))
+################################################################################
+# recurrence_matrix - Low level interface
+################################################################################
+# TODO: increase the efficiency here by not computing everything:
+recurrence_matrix(x, metric::Metric, ε::Real) =
+recurrence_matrix(x, x, metric, ε)
 
-# Convert the inputs to Datasets (better performance in all cases)
-function _recurrence_matrix(x::AbstractVecOrMat, y::AbstractVecOrMat,
-                                ε, metric::Metric=DEFAULT_METRIC)
-    return _recurrence_matrix(Dataset(x), Dataset(y), ε, metric)
+# Convert Matrices to Datasets (better performance in all cases)
+function recurrence_matrix(x::AbstractMatrix, y::AbstractMatrix,
+                           metric::Metric, ε)
+    return recurrence_matrix(Dataset(x), Dataset(y), metric, ε)
 end
 
 # Core function
-function _recurrence_matrix(xx::Dataset, yy::Dataset, ε, metric::Metric)
+function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε)
     x = xx.data
     y = yy.data
     rowvals = Vector{Int}()
@@ -296,45 +323,20 @@ function _recurrence_matrix(xx::Dataset, yy::Dataset, ε, metric::Metric)
     return sparse(rowvals, colvals, nzvals, length(x), length(y))
 end
 
-
-#### Joint recurrence matrix ####
-
-"""
-    JointRecurrenceMatrix(x, y, ε; kwargs...)
-
-Create a joint recurrence matrix from `x` and `y`.
-
-The joint recurrence matrix considers the recurrences of the trajectories
-of `x` and `y` separately, and looks for points where both recur
-simultaneously. It is calculated by the element-wise multiplication
-of the recurrence matrices of `x` and `y`. If `x` and `y` are of different
-length, the recurrences are only calculated until the length of the shortest one.
-
-See [`RecurrenceMatrix`](@ref) for details, references and keywords.
-See also: [`CrossRecurrenceMatrix`](@ref).
-"""
-function JointRecurrenceMatrix(x, y, ε; kwargs...)
-    n = min(size(x,1), size(y,1))
-    if n == size(x,1) && n == size(y,1)
-        rm1 = RecurrenceMatrix(x, ε, kwargs...)
-        rm2 = RecurrenceMatrix(y, ε, kwargs...)
-    else
-        rm1 = RecurrenceMatrix(x[1:n,:], ε, kwargs...)
-        rm2 = RecurrenceMatrix(y[1:n,:], ε, kwargs...)
+# Vector version can be more specialized (and metric is irrelevant)
+function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε)
+    rowvals = Vector{Int}()
+    colvals = Vector{Int}()
+    for j in 1:length(y)
+        nzcol = 0
+        for i in 1:length(x)
+            if @inbounds abs(x[i] - y[j]) ≤ ε
+                push!(rowvals, i)
+                nzcol += 1
+            end
+        end
+        append!(colvals, fill(j, (nzcol,)))
     end
-    return JointRecurrenceMatrix(rm1.data .* rm2.data)
+    nzvals = fill(true, (length(rowvals),))
+    return sparse(rowvals, colvals, nzvals, length(x), length(y))
 end
-
-#######################
-# Pretty printing
-#######################
-function oldshow(io::IO, R::AbstractRecurrenceMatrix)
-    s = sprint(io -> show(IOContext(io, :limit=>true), MIME"text/plain"(), R.data))
-    s = split(s, '\n')[2:end]
-    s = [replace(line, "=  true"=>"", count=1) for line in s]
-    s = join(s, '\n')
-    tos = summary(R)*"\n"*s
-    println(io, tos)
-end
-
-Base.show(io::IO, R::AbstractRecurrenceMatrix) = println(io, summary(R))

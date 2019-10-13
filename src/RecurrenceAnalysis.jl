@@ -3,8 +3,28 @@ module RecurrenceAnalysis
 using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, StaticArrays
 import Base.Meta.parse
 
+const METRICS = Dict(
+    "euclidean"=>Euclidean(),
+    "max"=>Chebyshev(),
+    "inf"=>Chebyshev(),
+    "cityblock"=>Cityblock(),
+    "manhattan"=>Cityblock(),
+    "taxicab"=>Cityblock(),
+    "min"=>Cityblock()
+)
+const DEFAULT_METRIC = Euclidean()
+getmetric(m::Metric) = m
+function getmetric(normtype::AbstractString)
+    normtype = lowercase(normtype)
+    !haskey(METRICS,normtype) && error("incorrect norm type. Accepted values are \""
+        *join(keys(METRICS),"\", \"", "\" or \"") * "\".")
+    METRICS[normtype]
+end
+
+
 export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix,
        AbstractRecurrenceMatrix
+
 export embed,
        reconstruct,
        Dataset,
