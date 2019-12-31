@@ -16,7 +16,7 @@ UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
 
 [compat]
 DelayEmbeddings = "≥ 0.1.0"
-Distances = "≥ 0.7.0"
+Distances = "≥ 0.8.0"
 DynamicalSystemsBase = "≥ 1.1.0"
 julia = "≥ 0.7.0"
 
