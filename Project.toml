@@ -19,7 +19,7 @@ DelayEmbeddings = "0.1,0.2,0.3,1"
 Distances = "0.8"
 StaticArrays = "0.8,0.9,0.10,0.11,0.12"
 UnicodePlots = "0.3,1"
-julia = "0.7,1"
+julia = "1"
 
 [extras]
 DynamicalSystemsBase = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
