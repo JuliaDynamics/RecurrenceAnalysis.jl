@@ -58,7 +58,7 @@ end
 
 # Core function for Matrices (wrapper of `pairwise` from the Distances package)
 _distancematrix(x::AbstractMatrix, y::AbstractMatrix, metric::Metric) =
-pairwise(metric, x', y')
+pairwise(metric, x', y', dims=2)
 # Core function for Datasets
 function _distancematrix(x::Dataset{S,Tx}, y::Dataset{S,Ty},
     metric::Metric) where {S, Tx, Ty}
