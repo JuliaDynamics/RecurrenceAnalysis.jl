@@ -170,7 +170,7 @@ Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 function RecurrenceMatrix(x, ε; metric = DEFAULT_METRIC, kwargs...)
     m = getmetric(metric)
     s = resolve_scale(x, m, ε; kwargs...)
-    m = recurrence_matrix(x, m, s; kwargs...)
+    m = recurrence_matrix(x, m, s)
     return RecurrenceMatrix(m)
 end
 
