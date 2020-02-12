@@ -171,9 +171,6 @@ Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
 function RecurrenceMatrix(x, ε; metric = DEFAULT_METRIC, kwargs...)
     m = getmetric(metric)
-<<<<<<< HEAD
-    s = resolve_scale(x, m, ε; kwargs...)
-=======
     if !haskey(kwargs, :scale)
         s = resolve_scale(x, x, m, ε; kwargs...)
     elseif kwargs[:scale] == "powerlaw"
@@ -182,7 +179,6 @@ function RecurrenceMatrix(x, ε; metric = DEFAULT_METRIC, kwargs...)
         s =_significantpeaksepsilon(x, x; kwargs...)
     end
 
->>>>>>> implement several methods for epsilon selection
     m = recurrence_matrix(x, m, s)
     return RecurrenceMatrix(m)
 end
