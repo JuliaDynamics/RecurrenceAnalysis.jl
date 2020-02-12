@@ -1,3 +1,5 @@
+using Statistics
+using ChaosTools:linear_region
 #=
 In this file the core computations for creating a recurrence matrix
 are defined (via multiple dispatch).
@@ -169,7 +171,18 @@ Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
 function RecurrenceMatrix(x, ε; metric = DEFAULT_METRIC, kwargs...)
     m = getmetric(metric)
+<<<<<<< HEAD
     s = resolve_scale(x, m, ε; kwargs...)
+=======
+    if !haskey(kwargs, :scale)
+        s = resolve_scale(x, x, m, ε; kwargs...)
+    elseif kwargs[:scale] == "powerlaw"
+        s = _powerlawepsilon(x, x; kwargs...)
+    elseif kwargs[:scale] == "peak"
+        s =_significantpeaksepsilon(x, x; kwargs...)
+    end
+
+>>>>>>> implement several methods for epsilon selection
     m = recurrence_matrix(x, m, s)
     return RecurrenceMatrix(m)
 end
@@ -189,7 +202,15 @@ See also: [`JointRecurrenceMatrix`](@ref).
 """
 function CrossRecurrenceMatrix(x, y, ε; metric = DEFAULT_METRIC, kwargs...)
     m = getmetric(metric)
-    s = resolve_scale(x, y, m, ε; kwargs...)
+
+    if !haskey(kwargs, :scale)
+        s = resolve_scale(x, y, m, ε; kwargs...)
+    elseif kwargs[:scale] == "powerlaw"
+        s = _powerlawepsilon(x, y; kwargs...)
+    elseif kwargs[:scale] == "peak"
+        s =_significantpeaksepsilon(x, y; kwargs...)
+    end
+
     m = recurrence_matrix(x, y, m, s)
     return CrossRecurrenceMatrix(m)
 end
@@ -289,6 +310,41 @@ function _computescale(scale::typeof(mean), x, y, metric::Metric)
     return meanvalue/denominator
 end
 
+function _computedistances(x, y, metric::Metric)
+    if x===y
+        distlist = Vector{Real}(undef, Int(length(x)*(length(x)-1)/2))
+        index = 1
+        @inbounds for i in 1:length(x)-1, j=(i+1):length(x)
+            distlist[index] = evaluate(metric, x[i], y[j])
+            index += 1
+        end
+    else
+        distlist = Vector{Real}(undef, length(x)*length(y))
+        index = 1
+        @inbounds for xi in x, yj in y
+            distlist[index] += evaluate(metric, xi, yj)
+            index += 1
+        end
+    end
+    return distlist
+end
+
+function _computedistancematrix(x, y; metric::Metric)
+    distmatrix = Matrix{Real}(undef, length(x), length(y))
+    @inbounds for i in 1:length(x), j in 1:length(y)
+        distmatrix[i, j] = evaluate(metric, x[i], y[j])
+    end
+    return distmatrix
+end
+
+function _computescale(scale::typeof(var), x, y, metric::Metric)
+    return Statistics.var(_computedistances(x, y, metric))
+end
+
+function _computescale(scale::typeof(median), x, y, metric::Metric)
+    return Statistics.mean(_computedistances(x, y, metric))
+end
+
 
 ################################################################################
 # recurrence_matrix - Low level interface
@@ -339,4 +395,106 @@ function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε)
     end
     nzvals = fill(true, (length(rowvals),))
     return sparse(rowvals, colvals, nzvals, length(x), length(y))
+end
+
+################################################################################
+# Power law method for selecting epsilon
+################################################################################
+
+function _powerlawepsilon(x, y; quantilelist=[1/2^n for n in 0:0.5:10], metric = DEFAULT_METRIC, kwargs...)
+    rr = _computedistancematrix(x, y; metric=metric)
+    rrvector = reshape(rr, length(rr))
+    ϵlist = quantile(rrvector, quantilelist)
+
+    logquantilelist = log.(quantilelist)
+    logϵlist = log.(ϵlist)
+
+    region, _ = linear_region(logϵlist, logquantilelist)
+
+    return middle(region)
+end
+
+
+################################################################################
+# Peak-counting method for selecting epsilon
+################################################################################
+
+function _diagonalhistogram(arr)
+    x, y = size(arr)
+    hist = Vector{typeof(arr[1])}(undef, x + y  - 1)
+    for i in 1:x
+        for j in 1:y
+            hist[x+y-1] += arr[i, j]
+        end
+    end
+    return hist
+end
+
+# From https://gist.github.com/usmcamp0811/ad3efd069755dc582df53b6cb0de3375
+# Julia implimentation of http://stackoverflow.com/a/22640362/6029703
+function _SmoothedZscoreAlgo(y, lag, threshold, influence)
+    n = length(y)
+    signals = zeros(n) # init signal results
+    filteredY = copy(y) # init filtered series
+    avgFilter = zeros(n) # init average filter
+    stdFilter = zeros(n) # init std filter
+    avgFilter[lag - 1] = mean(y[1:lag]) # init first value
+    stdFilter[lag - 1] = std(y[1:lag]) # init first value
+
+    for i in range(lag, stop=n-1)
+        if abs(y[i] - avgFilter[i-1]) > threshold*stdFilter[i-1]
+            if y[i] > avgFilter[i-1]
+                signals[i] += 1 # postive signal
+            else
+                signals[i] += -1 # negative signal
+            end
+            # Make influence lower
+            filteredY[i] = influence*y[i] + (1-influence)*filteredY[i-1]
+        else
+            signals[i] = 0
+            filteredY[i] = y[i]
+        end
+        avgFilter[i] = mean(filteredY[i-lag+1:i])
+        stdFilter[i] = std(filteredY[i-lag+1:i])
+    end
+    return signals
+end
+
+function _peakcounter(xs)
+    count = 0
+    for i in 1:length(xs)
+        if xs[i] > 0 && !(xs[i-1] > 0)
+            count += 1
+        end
+    end
+    return count
+end
+
+function _significantpeaksepsilon(x, y; quantilelist=[1/2^n for n in 0:0.5:10], metric = DEFAULT_METRIC, lag=30, threshold=2, influence=0.7, kwargs...)
+    rr = _computedistancematrix(x, y; metric=metric)
+    rrvector = reshape(rr, length(rr))
+    ϵlist = quantile(rrvector, quantilelist)
+
+    bestscore = 100
+    bestϵ = 0
+    samplesize = size(rr)[1]
+    binaryrr = zeros(size(rr))
+
+    for i in 1:length(quantilelist)
+        quantile = quantilelist[i]
+        ϵ = ϵlist[i]
+
+        map!(x -> x < ϵ ? 1.0 : 0.0, binaryrr, rr)
+        xs = (_diagonalhistogram(binaryrr))
+        peaklist = _SmoothedZscoreAlgo(binaryrr, lag, threshold, influence)
+        peakcount = _peakcounter(peaklist)
+
+        score = abs(1 - peakcount / (samplesize * quantile))
+        if score > bestscore
+            bestscore = score
+            bestϵ = ϵ
+        end
+    end
+
+    return bestϵ
 end
