@@ -369,6 +369,7 @@ function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε, paralle
 
     # This is the same logic as the serial function, but parallelized.
     Threads.@threads for j in 1:length(y)
+        threadn = Threads.threadid()
         nzcol = 0
         for i in 1:length(x)
             @inbounds if evaluate(metric, x[i], y[j]) ≤ ε
@@ -394,6 +395,7 @@ function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε, par
 
     # This is the same logic as the serial function, but parallelized.
     Threads.@threads for j in 1:length(y)
+        threadn = Threads.threadid()
         nzcol = 0
         for i in 1:length(x)
             @inbounds if abs(x[i] - y[j]) ≤ ε
