@@ -55,7 +55,7 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
     m_min = RecurrenceMatrix(xe, ε, metric="manhattan")
     @test (m_max.data .& m_euc.data) == m_euc.data
     @test (m_euc.data .& m_min.data) == m_min.data
-    @test (m_max.data .& m_euc_p.data) == m_eucs.data
+    @test (m_max.data .& m_euc_p.data) == m_euc.data
     @test (m_euc_p.data .& m_min.data) == m_min.data
     # Compare scales
     m_scalemax = CrossRecurrenceMatrix(xe, ye, 0.1, scale=maximum)
