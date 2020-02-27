@@ -42,23 +42,34 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
     dmat = distancematrix(xe, ye)
     crmat = CrossRecurrenceMatrix(xe, ye, ε)
     @test Matrix(crmat.data) == (dmat .≤ ε)
-    rmat = RecurrenceMatrix(xe, ε)
-    jrmat = JointRecurrenceMatrix(xe, ye, ε)
+    rmat = RecurrenceMatrix(xe, ε; parallel = false)
+    rmat_p = RecurrenceMatrix(xe, ε; parallel = true)
+    jrmat = JointRecurrenceMatrix(xe, ye, ε; parallel = false)
     sz = size(jrmat)
     @test (jrmat.data .& rmat.data[1:sz[1],1:sz[2]]) == jrmat.data
+    @test (jrmat.data .& rmat_p.data[1:sz[1],1:sz[2]]) == jrmat.data
     # Compare metrics
     m_euc = rmat
+    m_euc_p = rmat_p
     m_max = RecurrenceMatrix(xe, ε, metric="max")
     m_min = RecurrenceMatrix(xe, ε, metric="manhattan")
     @test (m_max.data .& m_euc.data) == m_euc.data
     @test (m_euc.data .& m_min.data) == m_min.data
+    @test (m_max.data .& m_euc_p.data) == m_eucs.data
+    @test (m_euc_p.data .& m_min.data) == m_min.data
     # Compare scales
     m_scalemax = CrossRecurrenceMatrix(xe, ye, 0.1, scale=maximum)
     m_scalemean = CrossRecurrenceMatrix(xe, ye, 0.1, scale=mean)
+    m_scalemax_p = CrossRecurrenceMatrix(xe, ye, 0.1, scale=maximum, parallel = true)
+    m_scalemean_p = CrossRecurrenceMatrix(xe, ye, 0.1, scale=mean, parallel = true)
     @test (m_scalemax.data .& m_scalemean.data) == m_scalemean.data
+    @test (m_scalemax_p.data .& m_scalemean_p.data) == m_scalemean.data
     # Fixed rate for recurrence matrix
     crmat_fixed = CrossRecurrenceMatrix(xe, ye, 0.05; fixedrate=true)
+    crmat_fixed_p = CrossRecurrenceMatrix(xe, ye, 0.05; fixedrate=true, parallel = true)
     @test .04 < recurrencerate(crmat_fixed) < .06
+    @test .04 < recurrencerate(crmat_fixed_p) < .06
+    @test recurrencerate(crmat_fixed) ≈ recurrencerate(crmat_fixed_p)
 
     # Recurrence plot
     crp = grayscale(crmat, width=125)
