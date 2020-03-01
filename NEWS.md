@@ -1,5 +1,10 @@
 # RecurrenceAnalysis.jl News
 
+## v1.2.0
+*(no notable changes until so far)*
+
+- Thread-parallelized computation of recurrence plots is now possible.
+
 ## v0.12.0
 - Doc improvements
 - Return type changes in `rqa`
