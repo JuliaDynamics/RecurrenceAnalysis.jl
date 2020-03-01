@@ -171,7 +171,8 @@ use [`recurrenceplot`](@ref) to turn the result of these functions into a plotta
 recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
-function RecurrenceMatrix(x, ε; metric = DEFAULT_METRIC, parallel::Bool = false, kwargs...)
+function RecurrenceMatrix(x, ε; metric = DEFAULT_METRIC,
+    parallel::Bool = length(x) > 500 && Threads.nthreads() > 1, kwargs...)
     m = getmetric(metric)
     s = resolve_scale(x, m, ε; kwargs...)
     m = recurrence_matrix(x, m, s, Val(parallel))
@@ -191,7 +192,8 @@ then the cell `(i, j)` of the matrix will have a `true` value.
 See [`RecurrenceMatrix`](@ref) for details, references and keywords.
 See also: [`JointRecurrenceMatrix`](@ref).
 """
-function CrossRecurrenceMatrix(x, y, ε; metric = DEFAULT_METRIC, parallel::Bool = false, kwargs...)
+function CrossRecurrenceMatrix(x, y, ε; metric = DEFAULT_METRIC,
+    parallel::Bool = length(x) > 500 && Threads.nthreads() > 1, kwargs...)
     m = getmetric(metric)
     s = resolve_scale(x, y, m, ε; kwargs...)
     m = recurrence_matrix(x, y, m, s, Val(parallel))
@@ -302,7 +304,7 @@ end
 """
     recurrence_matrix(x, y, metric::Metric, ε::Real, parallel::Val)
 
-Returns a sparse matrix which encodes recurrence points.
+Return a sparse matrix which encodes recurrence points.
 
 Note that `parallel` may be either `Val(true)` or `Val(false)`.
 """
