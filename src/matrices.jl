@@ -308,12 +308,9 @@ Return a sparse matrix which encodes recurrence points.
 
 Note that `parallel` may be either `Val(true)` or `Val(false)`.
 """
-recurrence_matrix(x, metric::Metric, ε::Real, parallel::Val) =
-recurrence_matrix(x, x, metric, ε, parallel)
-
-# Convert Matrices to Datasets (better performance in all cases)
 function recurrence_matrix(x::AbstractMatrix, y::AbstractMatrix,
                            metric::Metric, ε, parallel::Val)
+    # Convert Matrices to Datasets (better performance in all cases)
     return recurrence_matrix(Dataset(x), Dataset(y), metric, ε, parallel)
 end
 
@@ -356,6 +353,42 @@ function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε, par
     nzvals = fill(true, (length(rowvals),))
     return sparse(rowvals, colvals, nzvals, length(x), length(y))
 end
+
+function recurrence_matrix(x::AbstractVector, metric::Metric, ε::Real, parallel::Val{false})
+    rowvals = Vector{Int}()
+    colvals = Vector{Int}()
+    for j in 1:length(x)
+        nzcol = 0
+        for i in 1:j
+            if @inbounds abs(x[i] - x[j]) ≤ ε
+                push!(rowvals, i)
+                nzcol += 1
+            end
+        end
+        append!(colvals, fill(j, (nzcol,)))
+    end
+    nzvals = fill(true, (length(rowvals),))
+    return Symmetric(sparse(rowvals, colvals, nzvals, length(x), length(x)), :L)
+end
+
+function recurrence_matrix(xx::Dataset, metric::Metric, ε::Real, parallel::Val{false})
+    x = xx.data
+    rowvals = Vector{Int}()
+    colvals = Vector{Int}()
+    for j in 1:length(x)
+        nzcol = 0
+        for i in 1:j
+            @inbounds if evaluate(metric, x[i], x[j]) ≤ ε
+                push!(rowvals, i)
+                nzcol += 1
+            end
+        end
+        append!(colvals, fill(j, (nzcol,)))
+    end
+    nzvals = fill(true, (length(rowvals),))
+    return Symmetric(sparse(rowvals, colvals, nzvals, length(x), length(x)), :L)
+end
+
 
 # Now, we define the parallel versions of these functions.
 
@@ -411,4 +444,85 @@ function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε, par
     finalcols = vcat(colvals...) # merge into one array
     nzvals = fill(true, (length(finalrows),))
     return sparse(finalrows, finalcols, nzvals, length(x), length(y))
+end
+
+# The single trajectory case is a little tricky.  If you try it naively,
+# using the method we used for the serial computation above, the points are
+# partioned out unequally between threads.  This means that performance actually
+# **decreases** compared to the full parallel version.  To mitigate this, we need
+# to partition the computation equally among all threads.
+# The function I've written below does essentially this - given a length,
+# it calculates the appropriate partitioning, and returns a list of indices,
+# by utilizing the fact that the area is proportional to the square of the height.
+# It partitions the "triangle" which needs to be computed into "trapezoids",
+# which all have an equal area.
+
+function partition_indices(len)
+    indices = Vector{UnitRange{Int}}(undef, Threads.nthreads())
+    length = len
+    offset = 1
+    for n in Threads.nthreads():-1:1 # we have to iterate in reverse, to get an equal area every time
+        partition = round(Int, length / sqrt(n))
+        indices[n] = offset:(partition .+ offset .- 1)
+        length -= partition
+        offset += partition
+    end
+
+    return indices
+end
+
+function recurrence_matrix(xx::AbstractVector, metric::Metric, ε::Real, parallel::Val{true})
+    x = xx
+    # We create an `Array` of `Array`s, for each thread to have its
+    # own array to push to.  This avoids race conditions with
+    # multiple threads pushing to the same `Array` (`Array`s are not atomic).
+    rowvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+    colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+
+    # This is the same logic as the serial function, but parallelized.
+    Threads.@threads for k in partition_indices(length(x))
+        threadn = Threads.threadid()
+        for j in k
+            nzcol = 0
+            for i in 1:j
+                @inbounds if abs(x[i] - x[j]) ≤ ε
+                    push!(rowvals[threadn], i) # push to the thread-specific row array
+                    nzcol += 1
+                end
+            end
+            append!(colvals[threadn], fill(j, (nzcol,)))
+        end
+    end
+    finalrows = vcat(rowvals...) # merge into one array
+    finalcols = vcat(colvals...) # merge into one array
+    nzvals = fill(true, (length(finalrows),))
+    return sparse(finalrows, finalcols, nzvals, length(x), length(x))
+end
+
+function recurrence_matrix(xx::Dataset, metric::Metric, ε::Real, parallel::Val{true})
+    x = xx.data
+    # We create an `Array` of `Array`s, for each thread to have its
+    # own array to push to.  This avoids race conditions with
+    # multiple threads pushing to the same `Array` (`Array`s are not atomic).
+    rowvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+    colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+
+    # This is the same logic as the serial function, but parallelized.
+    Threads.@threads for k in partition_indices(length(x))
+        threadn = Threads.threadid()
+        for j in k
+            nzcol = 0
+            for i in 1:j
+                @inbounds if evaluate(metric, x[i], x[j]) ≤ ε
+                    push!(rowvals[threadn], i) # push to the thread-specific row array
+                    nzcol += 1
+                end
+            end
+            append!(colvals[threadn], fill(j, (nzcol,)))
+        end
+    end
+    finalrows = vcat(rowvals...) # merge into one array
+    finalcols = vcat(colvals...) # merge into one array
+    nzvals = fill(true, (length(finalrows),))
+    return sparse(finalrows, finalcols, nzvals, length(x), length(x))
 end
