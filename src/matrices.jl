@@ -368,7 +368,7 @@ function recurrence_matrix(x::AbstractVector, metric::Metric, ε::Real, parallel
         append!(colvals, fill(j, (nzcol,)))
     end
     nzvals = fill(true, (length(rowvals),))
-    return Symmetric(sparse(rowvals, colvals, nzvals, length(x), length(x)), :L)
+    return Symmetric(sparse(rowvals, colvals, nzvals, length(x), length(x)), :U)
 end
 
 function recurrence_matrix(xx::Dataset, metric::Metric, ε::Real, parallel::Val{false})
@@ -386,7 +386,7 @@ function recurrence_matrix(xx::Dataset, metric::Metric, ε::Real, parallel::Val{
         append!(colvals, fill(j, (nzcol,)))
     end
     nzvals = fill(true, (length(rowvals),))
-    return Symmetric(sparse(rowvals, colvals, nzvals, length(x), length(x)), :L)
+    return Symmetric(sparse(rowvals, colvals, nzvals, length(x), length(x)), :U)
 end
 
 
@@ -496,7 +496,7 @@ function recurrence_matrix(xx::AbstractVector, metric::Metric, ε::Real, paralle
     finalrows = vcat(rowvals...) # merge into one array
     finalcols = vcat(colvals...) # merge into one array
     nzvals = fill(true, (length(finalrows),))
-    return sparse(finalrows, finalcols, nzvals, length(x), length(x))
+    return Symmetric(sparse(finalrows, finalcols, nzvals, length(x), length(x)), :U)
 end
 
 function recurrence_matrix(xx::Dataset, metric::Metric, ε::Real, parallel::Val{true})
@@ -524,5 +524,5 @@ function recurrence_matrix(xx::Dataset, metric::Metric, ε::Real, parallel::Val{
     finalrows = vcat(rowvals...) # merge into one array
     finalcols = vcat(colvals...) # merge into one array
     nzvals = fill(true, (length(finalrows),))
-    return sparse(finalrows, finalcols, nzvals, length(x), length(x))
+    return Symmetric(sparse(finalrows, finalcols, nzvals, length(x), length(x)), :U)
 end
