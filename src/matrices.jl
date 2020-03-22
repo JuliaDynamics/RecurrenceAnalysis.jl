@@ -32,36 +32,39 @@ The list of strings available to define the metric are:
 * `"manhattan"`, `"cityblock"`, `"taxicab"` or `"min"` for the Manhattan or L1 norm
   (`Cityblock()` in `Distances`).
 """
-distancematrix(x, metric::Union{Metric,String}=DEFAULT_METRIC) = distancematrix(x, x, metric)
+distancematrix(x, metric::Union{Metric,String}=DEFAULT_METRIC, parallel = size(x)[1] > 500) = _distancematrix(x, getmetric(metric), Val(parallel))
 
 # For 1-dimensional arrays (vectors), the distance does not depend on the metric
-distancematrix(x::Vector, y::Vector, metric=DEFAULT_METRIC) = abs.(x .- y')
+distancematrix(x::Vector, y::Vector, metric=DEFAULT_METRIC, parallel = size(x)[1] > 500) = abs.(x .- y')
 
 # If the metric is supplied as a string, get the corresponding Metric from Distances
-distancematrix(x, y, metric::String) = distancematrix(x, y, getmetric(metric))
+distancematrix(x, y, metric::String, parallel = size(x)[1] > 500) = distancematrix(x, y, getmetric(metric), parallel)
 
 const MAXDIM = 9
-function distancematrix(x::Tx, y::Ty, metric::Metric=DEFAULT_METRIC) where
+function distancematrix(x::Tx, y::Ty, metric::Metric=DEFAULT_METRIC, parallel = size(x)[1] > 500) where
          {Tx<:Union{AbstractMatrix, Dataset}} where {Ty<:Union{AbstractMatrix, Dataset}}
     sx, sy = size(x), size(y)
-    if sx[2] != sy[2]
-        error("the dimensions of `x` and `y` data points must be the equal")
-    end
+    @assert sx[2] == sy[2] """
+        The dimensions of the data points in `x` and `y` must be equal!
+        Found dim(x)=$(sx[2]), dim(y)=$(sy[2]).
+        """
+
     if sx[2] ≥ MAXDIM && typeof(metric) == Euclidean # Blas optimization
-        return _distancematrix(Matrix(x), Matrix(y), metric)
+        return _distancematrix(Matrix(x), Matrix(y), metric, Val(parallel))
     elseif Tx <: Matrix && Ty <: Matrix && metric == Chebyshev()
-        return _distancematrix(x, y, metric)
+        return _distancematrix(x, y, metric, Val(parallel))
     else
-        return _distancematrix(Dataset(x), Dataset(y), metric)
+        return _distancematrix(Dataset(x), Dataset(y), metric, Val(parallel))
     end
 end
 
 # Core function for Matrices (wrapper of `pairwise` from the Distances package)
-_distancematrix(x::AbstractMatrix, y::AbstractMatrix, metric::Metric) =
-pairwise(metric, x', y', dims=2)
+_distancematrix(x::AbstractMatrix, y::AbstractMatrix, metric::Metric, ::Val{false}) = pairwise(metric, x', y', dims=2)
+
+# First we define the serial versions of the functions.
 # Core function for Datasets
 function _distancematrix(x::Dataset{S,Tx}, y::Dataset{S,Ty},
-    metric::Metric) where {S, Tx, Ty}
+    metric::Metric, ::Val{false}) where {S, Tx, Ty}
 
     x = x.data
     y = y.data
@@ -72,6 +75,127 @@ function _distancematrix(x::Dataset{S,Tx}, y::Dataset{S,Ty},
         end
     end
     return d
+end
+
+# Now, we define the parallel versions.
+
+function _distancematrix(x::Dataset{S,Tx}, y::Dataset{S,Ty},
+    metric::Metric, ::Val{true}) where {S, Tx, Ty}
+
+    x = x.data
+    y = y.data
+    d = zeros(promote_type(Tx,Ty), length(x), length(y))
+    Threads.@threads for j in 1:length(y)
+        for i in 1:length(x)
+            @inbounds d[i,j] = evaluate(metric, x[i], y[j])
+        end
+    end
+    return d
+end
+
+function _distancematrix(x::Matrix{Tx}, y::Matrix{Ty},
+    metric::Metric, ::Val{true}) where {Tx, Ty}
+
+    x = x.data
+    y = y.data
+    d = zeros(promote_type(Tx,Ty), length(x), length(y))
+    Threads.@threads for j in 1:length(y)
+        for i in 1:length(x)
+            @inbounds d[i,j] = evaluate(metric, x[i, :], y[j, :])
+        end
+    end
+    return d
+end
+
+
+# Now, we define methods for the single trajectory.
+# We can speed this up by only calculating the lower triangle,
+# which halves the number of computations needed.
+
+# Again, we'll define the serial version first:
+function _distancematrix(x::Vector{T}, metric::Metric, ::Val{false}) where T
+    d = zeros(T, length(x), length(x))
+
+    for j in 1:length(x)
+        for i in 1:j
+            @inbounds d[i, j] = abs(x[i] - x[j])
+        end
+    end
+
+    return Symmetric(d, :U)
+
+end
+
+function _distancematrix(x::Dataset{S, T}, metric::Metric, ::Val{false}) where T where S
+    d = zeros(T, length(x), length(x))
+
+    for j in 1:length(x)
+        for i in 1:j
+            @inbounds d[i, j] = evaluate(metric, x[i], x[j])
+        end
+    end
+
+    return Symmetric(d, :U)
+
+end
+
+# Now, we define the parallel version.  There's a twist, though.
+
+# The single trajectory case is a little tricky.  If you try it naively,
+# using the method we used for the serial computation above, the points are
+# partioned out unequally between threads.  This means that performance actually
+# **decreases** compared to the full parallel version.  To mitigate this, we need
+# to partition the computation equally among all threads.
+# The function I've written below does essentially this - given a length,
+# it calculates the appropriate partitioning, and returns a list of indices,
+# by utilizing the fact that the area is proportional to the square of the height.
+# It partitions the "triangle" which needs to be computed into "trapezoids",
+# which all have an equal area.
+function partition_indices(len)
+    indices = Vector{UnitRange{Int}}(undef, Threads.nthreads())
+    length = len
+    offset = 1
+
+    # Here, we have to iterate in reverse, to get an equal area every time
+    for n in Threads.nthreads():-1:1
+        partition = round(Int, length / sqrt(n)) # length varies as square root of area
+        indices[n] = offset:(partition .+ offset .- 1)
+        length -= partition
+        offset += partition
+    end
+
+    return indices
+end
+
+# And now for the actual implementation:
+function _distancematrix(x::Vector{T}, metric::Metric, ::Val{true}) where T
+    d = zeros(T, length(x), length(x))
+
+    Threads.@threads for k in partition_indices(length(x))
+        for j in k
+            for i in 1:j
+                @inbounds d[i, j] = abs(x[i] - x[j])
+            end
+        end
+    end
+
+    return Symmetric(d, :U)
+
+end
+
+function _distancematrix(x::Dataset{S, T}, metric::Metric, ::Val{true}) where T where S
+    d = zeros(T, length(x), length(x))
+
+    Threads.@threads for k in partition_indices(length(x))
+        for j in k
+            for i in 1:j
+                @inbounds d[i, j] = evaluate(metric, x[i], x[j])
+            end
+        end
+    end
+
+    return Symmetric(d, :U)
+
 end
 
 ################################################################################
@@ -446,30 +570,7 @@ function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε, par
     return sparse(finalrows, finalcols, nzvals, length(x), length(y))
 end
 
-# The single trajectory case is a little tricky.  If you try it naively,
-# using the method we used for the serial computation above, the points are
-# partioned out unequally between threads.  This means that performance actually
-# **decreases** compared to the full parallel version.  To mitigate this, we need
-# to partition the computation equally among all threads.
-# The function I've written below does essentially this - given a length,
-# it calculates the appropriate partitioning, and returns a list of indices,
-# by utilizing the fact that the area is proportional to the square of the height.
-# It partitions the "triangle" which needs to be computed into "trapezoids",
-# which all have an equal area.
 
-function partition_indices(len)
-    indices = Vector{UnitRange{Int}}(undef, Threads.nthreads())
-    length = len
-    offset = 1
-    for n in Threads.nthreads():-1:1 # we have to iterate in reverse, to get an equal area every time
-        partition = round(Int, length / sqrt(n))
-        indices[n] = offset:(partition .+ offset .- 1)
-        length -= partition
-        offset += partition
-    end
-
-    return indices
-end
 
 function recurrence_matrix(xx::AbstractVector, metric::Metric, ε::Real, parallel::Val{true})
     x = xx
