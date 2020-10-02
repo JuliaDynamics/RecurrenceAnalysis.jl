@@ -380,6 +380,7 @@ one by one.
 The returned value is a NamedTuple with the following entries:
 
 * `RR`: recurrence rate (see [`recurrencerate`](@ref))
+* `TRANS`: transitivity (see [`transitivity`](@ref))
 * `DET`: determinsm (see [`determinism`](@ref))
 * `L`: average length of diagonal structures (see [`dl_average`](@ref))
 * `Lmax`: maximum length of diagonal structures (see [`dl_max`](@ref))
@@ -441,12 +442,13 @@ function rqa(R; onlydiagonal=false, kwargs...)
     dhist = diagonalhistogram(R; kw_d...)
     rr_d = recurrencerate(R; kw_d...)
     if onlydiagonal
-        return (RR  = recurrencerate(R; kwargs...),
-        DET   = _determinism(dhist, rr_d*_rrdenominator(R; kw_d...)),
-        L     = _dl_average(dhist),
-        Lmax  = _dl_max(dhist),
-        DIV   = 1.0/_dl_max(dhist),
-        ENTR  = _dl_entropy(dhist)
+        return (
+            RR  = recurrencerate(R; kwargs...),
+            DET   = _determinism(dhist, rr_d*_rrdenominator(R; kw_d...)),
+            L     = _dl_average(dhist),
+            Lmax  = _dl_max(dhist),
+            DIV   = 1.0/_dl_max(dhist),
+            ENTR  = _dl_entropy(dhist)
         )
    else
         kw_v = Dict(kwargs)
@@ -454,7 +456,9 @@ function rqa(R; onlydiagonal=false, kwargs...)
         haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
         vhist, rthist = verticalhistograms(R; kw_v...)
         rr_v = recurrencerate(R; kw_v...)
-        return (RR  = recurrencerate(R; kwargs...),
+        return (
+            RR  = rr_d,
+            TRANS = transitivity(R),
             DET  = _determinism(dhist, rr_d*_rrdenominator(R; kw_v...)),
             L    = _dl_average(dhist),
             Lmax = _dl_max(dhist),
