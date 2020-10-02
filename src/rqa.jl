@@ -1,7 +1,8 @@
-# Recurrence parameters as defined by Marwan et al. (2007)
+# Recurrence quantifaction analysis measures
 
-# Recurrence rate
-
+###########################################################################################
+# 0. Recurrence rate based
+###########################################################################################
 """
     recurrencerate(R[; theiler])
 
@@ -75,8 +76,16 @@ function _rrdenominator(R::M; theiler=0, kwargs...) where
     return k*(k+1)
 end
 
-# Generic parameters of histograms: mean, average and entropy
+function transitivity(R::ARM)
+    R² = R.data * R.data
+    R³ = R² * R.data
+    trans = LinearAlgebra.tr(R³) / sum(R²)
+end
 
+
+###########################################################################################
+# 0. Histograms
+###########################################################################################
 macro histogram_params(keyword, description, hist_fun)
     combined_descriptions = Dict(:average => "average of the $(description)s",
                                  :max     => "longest $(description)",
@@ -124,9 +133,9 @@ macro histogram_params(keyword, description, hist_fun)
     return esc(ret)
 end
 
-
+###########################################################################################
 # 1. Based on diagonal lines
-
+###########################################################################################
 @histogram_params dl "diagonal line" diagonalhistogram
 
 """
@@ -196,7 +205,7 @@ where ``RR[d]`` is the local recurrence rate of the diagonal ``d``,
 ``\\tilde{N}`` is the number of the outmost diagonal that is included.
 
 This parameter is expressed in units of variation recurrence rate every
-1000 data points, hence the factor ``10^3`` in the formula [1]. 
+1000 data points, hence the factor ``10^3`` in the formula [1].
 
 The 10 outermost diagonals (counting from the corners of the matrix)
 are excluded by default to avoid "border effects". Use the keyword argument
@@ -259,8 +268,9 @@ end
 #     overlap * diag_hist
 # end
 
-
+###########################################################################################
 # 2. Based on vertical lines
+###########################################################################################
 
 @histogram_params vl "vertical line" vl_histogram
 
@@ -306,8 +316,10 @@ to [`vl_average`](@ref).
 """
 trappingtime(R::ARM; kwargs...) = vl_average(R; kwargs...)
 
-
+###########################################################################################
 # 3. Based on recurrence times
+###########################################################################################
+
 
 @histogram_params rt "recurrence time" rt_histogram
 
@@ -344,8 +356,9 @@ of recurrence times [1].
 """
 nmprt(R::ARM; kwargs) = maximum(verticalhistograms(R; kwargs...)[2])
 
-
+###########################################################################################
 # 4. All in one
+###########################################################################################
 
 """
     rqa(R; kwargs...)
