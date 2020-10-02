@@ -152,12 +152,20 @@ function JointRecurrenceMatrix(x, y, ε; kwargs...)
         rm1 = RecurrenceMatrix(x, ε; kwargs...)
         rm2 = RecurrenceMatrix(y, ε; kwargs...)
     else
-        rm1 = RecurrenceMatrix(x[1:n,:], ε; kwargs...)
-        rm2 = RecurrenceMatrix(y[1:n,:], ε; kwargs...)
+        rm1 = RecurrenceMatrix(@view(x[1:n,:]), ε; kwargs...)
+        rm2 = RecurrenceMatrix(@view(y[1:n,:]), ε; kwargs...)
     end
     return JointRecurrenceMatrix(rm1.data .* rm2.data)
 end
 
+"""
+    JointRecurrenceMatrix(R1, R2; kwargs...)
+Create a joint recurrence matrix from given recurrence matrices `R1, R2`.
+"""
+function JointRecurrenceMatrix(R1::AbstractRecurrenceMatrix, R2::AbstractRecurrenceMatrix; kwargs...)
+    R3 = R1.data .* R2.data
+    return JointRecurrenceMatrix(R3)
+end
 
 ################################################################################
 # Scaling / fixed rate
