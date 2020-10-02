@@ -1,5 +1,8 @@
 # RecurrenceAnalysis.jl News
 
+## v1.3.0
+- Increased performance of `RecurrenceMatrix`.
+
 ## v1.2.0
 *(no notable changes until so far)*
 
