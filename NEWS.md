@@ -3,6 +3,7 @@
 ## v1.3.0
 - Increased performance of `RecurrenceMatrix`.
 - Possible to make `JointRecurrenceMatrix` from input arguments.
+- New RQA measure: `transitivity`.
 
 ## v1.2.0
 *(no notable changes until so far)*

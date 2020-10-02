@@ -76,6 +76,13 @@ function _rrdenominator(R::M; theiler=0, kwargs...) where
     return k*(k+1)
 end
 
+"""
+    transitivity(R::AbstractRecurrenceMatrix)
+Return
+```math
+TRANS = \\frac{trace(R^3)}{\\sum R^2}
+```
+"""
 function transitivity(R::ARM)
     R² = R.data * R.data
     R³ = R² * R.data
