@@ -84,6 +84,10 @@ TRANS = \\frac{trace(R^3)}{\\sum R^2}
 ```
 """
 function transitivity(R::ARM)
+    if size(R, 1) ≠ size(R, 2)
+        @warn "Computing transitivity of a non-square matrix is impossible"
+        return zero(eltype(R.data))
+    end
     R² = R.data * R.data
     R³ = R² * R.data
     trans = LinearAlgebra.tr(R³) / sum(R²)
