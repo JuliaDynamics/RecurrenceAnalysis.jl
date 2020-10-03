@@ -442,13 +442,3 @@ function recurrence_matrix(xx::Dataset, metric::Metric, ε::Real, parallel::Val{
     nzvals = fill(true, (length(finalrows),))
     return Symmetric(sparse(finalrows, finalcols, nzvals, length(x), length(x)), :U)
 end
-
-
-function recurrence_matrix_fan(..., k)
-    d = distancematrix(x, y)
-    for i in 1:size(d, 1)
-        ε = some how transform percentange into ε
-        d .< ε
-        ...
-    end
-end
