@@ -1,5 +1,6 @@
 const rqa_funs = [
     :recurrencerate,
+    :transitivity,
     :determinism,
     :dl_average,
     :dl_max,
@@ -16,7 +17,7 @@ const rqa_funs = [
     :rt_entropy,
     :meanrecurrencetime,
     :nmprt
-    ]
+]
 
 const rqa_types = Dict(
     zip(rqa_funs,
@@ -154,6 +155,7 @@ macro windowed(ex, options...)
                 local mtype = typeof($x)
                 local rqa_tuple = (
                     RR   = zeros(Float64,ni),
+                    TRANS = zeros(Float64,ni),
                     DET  = zeros(Float64,ni),
                     L    = zeros(Float64,ni),
                     Lmax = zeros(Int,ni),

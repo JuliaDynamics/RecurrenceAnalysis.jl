@@ -152,8 +152,8 @@ function JointRecurrenceMatrix(x, y, ε; kwargs...)
         rm1 = RecurrenceMatrix(x, ε; kwargs...)
         rm2 = RecurrenceMatrix(y, ε; kwargs...)
     else
-        rm1 = RecurrenceMatrix(@view(x[1:n,:]), ε; kwargs...)
-        rm2 = RecurrenceMatrix(@view(y[1:n,:]), ε; kwargs...)
+        rm1 = RecurrenceMatrix(x[1:n,:], ε; kwargs...)
+        rm2 = RecurrenceMatrix(y[1:n,:], ε; kwargs...)
     end
     return JointRecurrenceMatrix(rm1.data .* rm2.data)
 end

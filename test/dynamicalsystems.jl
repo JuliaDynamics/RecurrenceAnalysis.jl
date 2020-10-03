@@ -17,25 +17,32 @@ trajectories = Dict(
     "White noise" => RA.Dataset(randn!(zeros(200,2))),
     "Hénon (chaotic)" => trajectory(Systems.henon(a=1.4, b=0.3), 199, Ttr=1000),
     "Hénon (periodic)" => trajectory(Systems.henon(a=1.054, b=0.3), 199, Ttr=1000)
-    )
+)
 embed_params = Dict(       #(m, τ)
     "Sine wave"   => (9, 7),
     "White noise" => (1, 1),
     "Hénon (chaotic)" => (3, 1),
-    "Hénon (periodic)" => (3, 1))
+    "Hénon (periodic)" => (3, 1)
+)
 rqa_threshold = Dict(
     "Sine wave"   => 0.15,
     "White noise" => 0.15,
     "Hénon (chaotic)" => 0.15,
-    "Hénon (periodic)" => 0.15)
+    "Hénon (periodic)" => 0.15
+)
 
 dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
 @testset "$k" for k in dict_keys
     data = trajectories[k]
     x = data[:,1]
     y = data[1:100,2]
-    xe = embed(x, embed_params[k]...)
-    ye = embed(y, embed_params[k]...)
+    if k ≠ "White noise"
+        xe = embed(x, embed_params[k]...)
+        ye = embed(y, embed_params[k]...)
+    else
+        xe = x
+        ye = x
+    end
 
     # Distance and recurrence matrices
     ε = rqa_threshold[k]
