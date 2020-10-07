@@ -77,15 +77,44 @@ function _rrdenominator(R::M; theiler=0, kwargs...) where
 end
 
 """
-    transitivity(R::AbstractRecurrenceMatrix)
-Return
+    transitivity(R::AbstractRecurrenceMatrix) → T
+Returns the network transitivity `T` of the ε-recurrence network `R`. Here the
+recurrence plot `R` is identified as the network adjacency matrix `A`.
+
+## Description
+
+We quote from [^Donner2011], where the authors provide a complete description:
+Transitivity is related to fundamental algebraic relationships between triples
+of discrete objects. Specifically, in graph-theoretical terms, we identify the
+set `X` with the set of vertices `V` , and the relation `R with the mutual
+adjacency of pairs of vertices. Hence, for a given vertex `i ∈ V` , transitivity
+refers to the fact that for two other vertices `j, k ∈ V` with
+`A_ij = A_ik = 1, A_jk = 1` also holds. In a general network, this is typically
+not the case for all vertices. Consequently, characterising the degree of
+transitivity (or, alternatively, the relative frequency of closed 3-loops, which
+are commonly referred to as triangles) with respect to some individual vertex or
+the whole network provides important information on the structural graph
+properties, which may be related to important general features of the underlying
+system.
+
+The network transitivity averages the local transitivity or clustering
+coefficient
 ```math
-TRANS = \\frac{trace(R^3)}{\\sum R^2}
+\\mathcal{C} = \\frac{number of triangles including vertex i}{number of triples centred on vertex i}
 ```
+over the all nodes in the network [^Boccaletti2006]:
+```math
+\\mathcal{T} = \\frac{trace(R^3)}{\\sum R^2}
+```
+
+## References
+
+[^Donner2011]: R.V. Donner *et al.*, [The geometry of chaotic dynamics — a complex network perspective, Eur. Phys. J. B 84, 653–672 (2011)](https://doi.org/10.1140/epjb/e2011-10899-1)
+[^Boccaletti2006]: S.Boccaletti *et al.*, [Complex networks: Structure and dynamics, Physics Reports Volume 424, Issues 4–5 (2006)](https://doi.org/10.1016/j.physrep.2005.10.009)
 """
 function transitivity(R::ARM)
     if size(R, 1) ≠ size(R, 2)
-        @warn "Computing transitivity of a non-square matrix is impossible"
+        @warn "Computing network transitivity of a non-square adjacency matrix is impossible"
         return zero(eltype(R.data))
     end
     R² = R.data * R.data
