@@ -1,7 +1,8 @@
-# Recurrence parameters as defined by Marwan et al. (2007)
+# Recurrence quantifaction analysis measures
 
-# Recurrence rate
-
+###########################################################################################
+# 0. Recurrence rate based
+###########################################################################################
 """
     recurrencerate(R[; theiler])
 
@@ -75,8 +76,56 @@ function _rrdenominator(R::M; theiler=0, kwargs...) where
     return k*(k+1)
 end
 
-# Generic parameters of histograms: mean, average and entropy
+"""
+    transitivity(R::AbstractRecurrenceMatrix) → T
+Returns the network transitivity `T` of the ε-recurrence network `R`. Here the
+recurrence plot `R` is identified as the network adjacency matrix `A`.
 
+## Description
+
+We quote from [^Donner2011], where the authors provide a complete description:
+Transitivity is related to fundamental algebraic relationships between triples
+of discrete objects. Specifically, in graph-theoretical terms, we identify the
+set `X` with the set of vertices `V` , and the relation `R with the mutual
+adjacency of pairs of vertices. Hence, for a given vertex `i ∈ V` , transitivity
+refers to the fact that for two other vertices `j, k ∈ V` with
+`A_ij = A_ik = 1, A_jk = 1` also holds. In a general network, this is typically
+not the case for all vertices. Consequently, characterising the degree of
+transitivity (or, alternatively, the relative frequency of closed 3-loops, which
+are commonly referred to as triangles) with respect to some individual vertex or
+the whole network provides important information on the structural graph
+properties, which may be related to important general features of the underlying
+system.
+
+The network transitivity averages the local transitivity or clustering
+coefficient
+```math
+\\mathcal{C} = \\frac{number of triangles including vertex i}{number of triples centred on vertex i}
+```
+over the all nodes in the network [^Boccaletti2006]:
+```math
+\\mathcal{T} = \\frac{trace(R^3)}{\\sum R^2}
+```
+
+## References
+
+[^Donner2011]: R.V. Donner *et al.*, [The geometry of chaotic dynamics — a complex network perspective, Eur. Phys. J. B 84, 653–672 (2011)](https://doi.org/10.1140/epjb/e2011-10899-1)
+[^Boccaletti2006]: S.Boccaletti *et al.*, [Complex networks: Structure and dynamics, Physics Reports Volume 424, Issues 4–5 (2006)](https://doi.org/10.1016/j.physrep.2005.10.009)
+"""
+function transitivity(R::ARM)
+    if size(R, 1) ≠ size(R, 2)
+        @warn "Computing network transitivity of a non-square adjacency matrix is impossible"
+        return zero(eltype(R.data))
+    end
+    R² = R.data * R.data
+    R³ = R² * R.data
+    trans = LinearAlgebra.tr(R³) / sum(R²)
+end
+
+
+###########################################################################################
+# 0. Histograms
+###########################################################################################
 macro histogram_params(keyword, description, hist_fun)
     combined_descriptions = Dict(:average => "average of the $(description)s",
                                  :max     => "longest $(description)",
@@ -124,9 +173,9 @@ macro histogram_params(keyword, description, hist_fun)
     return esc(ret)
 end
 
-
+###########################################################################################
 # 1. Based on diagonal lines
-
+###########################################################################################
 @histogram_params dl "diagonal line" diagonalhistogram
 
 """
@@ -196,7 +245,7 @@ where ``RR[d]`` is the local recurrence rate of the diagonal ``d``,
 ``\\tilde{N}`` is the number of the outmost diagonal that is included.
 
 This parameter is expressed in units of variation recurrence rate every
-1000 data points, hence the factor ``10^3`` in the formula [1]. 
+1000 data points, hence the factor ``10^3`` in the formula [1].
 
 The 10 outermost diagonals (counting from the corners of the matrix)
 are excluded by default to avoid "border effects". Use the keyword argument
@@ -259,8 +308,9 @@ end
 #     overlap * diag_hist
 # end
 
-
+###########################################################################################
 # 2. Based on vertical lines
+###########################################################################################
 
 @histogram_params vl "vertical line" vl_histogram
 
@@ -306,8 +356,10 @@ to [`vl_average`](@ref).
 """
 trappingtime(R::ARM; kwargs...) = vl_average(R; kwargs...)
 
-
+###########################################################################################
 # 3. Based on recurrence times
+###########################################################################################
+
 
 @histogram_params rt "recurrence time" rt_histogram
 
@@ -344,8 +396,9 @@ of recurrence times [1].
 """
 nmprt(R::ARM; kwargs) = maximum(verticalhistograms(R; kwargs...)[2])
 
-
+###########################################################################################
 # 4. All in one
+###########################################################################################
 
 """
     rqa(R; kwargs...)
@@ -360,6 +413,7 @@ one by one.
 The returned value is a NamedTuple with the following entries:
 
 * `RR`: recurrence rate (see [`recurrencerate`](@ref))
+* `TRANS`: transitivity (see [`transitivity`](@ref))
 * `DET`: determinsm (see [`determinism`](@ref))
 * `L`: average length of diagonal structures (see [`dl_average`](@ref))
 * `Lmax`: maximum length of diagonal structures (see [`dl_max`](@ref))
@@ -421,12 +475,13 @@ function rqa(R; onlydiagonal=false, kwargs...)
     dhist = diagonalhistogram(R; kw_d...)
     rr_d = recurrencerate(R; kw_d...)
     if onlydiagonal
-        return (RR  = recurrencerate(R; kwargs...),
-        DET   = _determinism(dhist, rr_d*_rrdenominator(R; kw_d...)),
-        L     = _dl_average(dhist),
-        Lmax  = _dl_max(dhist),
-        DIV   = 1.0/_dl_max(dhist),
-        ENTR  = _dl_entropy(dhist)
+        return (
+            RR  = recurrencerate(R; kwargs...),
+            DET   = _determinism(dhist, rr_d*_rrdenominator(R; kw_d...)),
+            L     = _dl_average(dhist),
+            Lmax  = _dl_max(dhist),
+            DIV   = 1.0/_dl_max(dhist),
+            ENTR  = _dl_entropy(dhist)
         )
    else
         kw_v = Dict(kwargs)
@@ -434,7 +489,9 @@ function rqa(R; onlydiagonal=false, kwargs...)
         haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
         vhist, rthist = verticalhistograms(R; kw_v...)
         rr_v = recurrencerate(R; kw_v...)
-        return (RR  = recurrencerate(R; kwargs...),
+        return (
+            RR  = rr_d,
+            TRANS = transitivity(R),
             DET  = _determinism(dhist, rr_d*_rrdenominator(R; kw_v...)),
             L    = _dl_average(dhist),
             Lmax = _dl_max(dhist),

@@ -1,5 +1,11 @@
 # RecurrenceAnalysis.jl News
 
+## v1.3.0
+- Increased performance of `RecurrenceMatrix`.
+- Possible to make `JointRecurrenceMatrix` from input arguments.
+- New RQA measure: `transitivity`.
+- Dropped support for Julia 1.0, moving to new LTS 1.6.
+
 ## v1.2.0
 *(no notable changes until so far)*
 

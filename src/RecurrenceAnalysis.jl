@@ -47,6 +47,7 @@ export embed,
        sorteddistances,
        @windowed
 
+include("distance_matrix.jl")
 include("matrices.jl")
 include("plot.jl")
 include("histograms.jl")

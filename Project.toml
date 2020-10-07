@@ -1,7 +1,7 @@
 name = "RecurrenceAnalysis"
 uuid = "639c3291-70d9-5ea2-8c5b-839eba1ee399"
 repo = "https://github.com/JuliaDynamics/RecurrenceAnalysis.jl.git"
-version = "1.2.0"
+version = "1.3.0"
 
 [deps]
 DelayEmbeddings = "5732040d-69e3-5649-938a-b6b4f237613f"
@@ -19,7 +19,7 @@ DelayEmbeddings = "0.1,0.2,0.3,1"
 Distances = "0.8, 0.9"
 StaticArrays = "0.8,0.9,0.10,0.11,0.12"
 UnicodePlots = "0.3,1"
-julia = "1"
+julia = "1.5"
 
 [extras]
 DynamicalSystemsBase = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
