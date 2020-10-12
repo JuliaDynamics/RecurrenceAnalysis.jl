@@ -186,17 +186,14 @@ function resolve_scale(args...; scale=1, fixedrate=false, fan=false)
         metric = args[3]
     else
         metric = args[2]
+        y = x
     end
     # Check fixed recurrence rate - ε must be within (0, 1)
-    if fixedrate && fan == false
+    if fixedrate && (fan == false)
         sfun = (m) -> quantile(vec(m), ε)
         return resolve_scale(Base.front(args)..., 1.0; scale=sfun, fixedrate=false)
-    elseif fixedrate && fan || fixedrate == false && fan
-        try
-            return get_fan_threshold(x, y, metric, ε)
-        catch
-            return get_fan_threshold(x, x, metric, ε)
-        end
+    elseif (fixedrate && fan) || (fixedrate == false && fan)
+        return get_fan_threshold(x, y, metric, ε)
     else
         scale_value = _computescale(scale, Base.front(args)...)
         return ε*scale_value
