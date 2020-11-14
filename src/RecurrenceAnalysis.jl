@@ -45,6 +45,7 @@ export embed,
        nmprt,
        rqa,
        sorteddistances,
+       transitivity,
        @windowed
 
 include("distance_matrix.jl")
