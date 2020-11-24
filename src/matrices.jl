@@ -94,7 +94,7 @@ by the following keyword arguments:
   used.
 * `metric="euclidean"` : metric of the distances, either `Metric` or a string,
    as in [`distancematrix`](@ref).
-* `parallel=false` : whether to parallelize the computation of the recurrence
+* `parallel::Bool=false` : whether to parallelize the computation of the recurrence
    matrix.  This will split the computation of the matrix across multiple threads.
    This **may not work on Julia versions before v1.3**, so be warned!
 
@@ -110,10 +110,11 @@ recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
 function RecurrenceMatrix(x, ε; metric = DEFAULT_METRIC,
-    parallel::Bool = length(x) > 500 && Threads.nthreads() > 1, kwargs...)
+    parallel::Bool = length(x) > 500 && Threads.nthreads() > 1, fan::Bool = false,
+    kwargs...)
     m = getmetric(metric)
-    s = resolve_scale(x, m, ε; kwargs...)
-    m = recurrence_matrix(x, m, s, Val(parallel))
+    s = resolve_scale(x, m, ε; fan, kwargs...)
+    m = recurrence_matrix(x, m, s, Val(parallel), Val(fan))
     return RecurrenceMatrix(m)
 end
 
@@ -131,10 +132,11 @@ See [`RecurrenceMatrix`](@ref) for details, references and keywords.
 See also: [`JointRecurrenceMatrix`](@ref).
 """
 function CrossRecurrenceMatrix(x, y, ε; metric = DEFAULT_METRIC,
-    parallel::Bool = length(x) > 500 && Threads.nthreads() > 1, kwargs...)
+    parallel::Bool = length(x) > 500 && Threads.nthreads() > 1, fan::Bool = false,
+    kwargs...)
     m = getmetric(metric)
-    s = resolve_scale(x, y, m, ε; kwargs...)
-    m = recurrence_matrix(x, y, m, s, Val(parallel))
+    s = resolve_scale(x, y, m, ε; fan, kwargs...)
+    m = recurrence_matrix(x, y, m, s, Val(parallel), Val(fan))
     return CrossRecurrenceMatrix(m)
 end
 
@@ -180,34 +182,41 @@ end
 # here args... is (x, y, metric, ε) or just (x, metric, ε)
 function resolve_scale(args...; scale=1, fixedrate=false, fan=false)
     ε = args[end]
-    x = args[1]
-    if length(args) > 3
-        y = args[2]
-    end
+    epsilons = zeros(Float64,length(args[1]))
     # Check fixed recurrence rate - ε must be within (0, 1)
-    if fixedrate && fan == false
+    if fixedrate && (fan == false)
         sfun = (m) -> quantile(vec(m), ε)
         return resolve_scale(Base.front(args)..., 1.0; scale=sfun, fixedrate=false)
-    elseif fixedrate && fan || fixedrate == false && fan
-        try
-            fan_threshold = get_fan_threshold(x, y, metric, ε)
-        catch
-            fan_threshold = get_fan_threshold(x, x, metric, ε)
-        end
-        return fan_threshold
+    elseif fan
+        epsilons .= get_fan_threshold(args...)
+        return epsilons
     else
         scale_value = _computescale(scale, Base.front(args)...)
-        return ε*scale_value
+        epsilons[:] .= ε*scale_value
+        return epsilons
     end
 end
 
 """
-    get_fan_threshold(x, y, metric, ε) → ε_fan
+    get_fan_threshold(args) → ε_fan
 Compute the adaptive Fixed Amount of Neibours (FAN) `ε_fan`
+Here args... is (x, y, metric, ε) or just (x, metric, ε)
 """
 function get_fan_threshold(x, y, metric, ε::Real)
     @assert length(x) == length(y)
     @assert 0 < ε < 1 "Global recurrence rate must be ∈ (0, 1)"
+    fan_threshold = zeros(length(x))
+    d = distancematrix(x, y, metric)
+
+    for i in 1:size(d, 1)
+        fan_threshold[i] = quantile(view(d, i ,:), ε)
+    end
+    return fan_threshold
+end
+
+function get_fan_threshold(x, metric, ε::Real)
+    @assert 0 < ε < 1 "Global recurrence rate must be ∈ (0, 1)"
+    y = x
     fan_threshold = zeros(length(x))
     d = distancematrix(x, y, metric)
 
@@ -282,35 +291,16 @@ Return a sparse matrix which encodes recurrence points.
 Note that `parallel` may be either `Val(true)` or `Val(false)`.
 """
 function recurrence_matrix(x::AbstractMatrix, y::AbstractMatrix,
-                           metric::Metric, ε, parallel::Val)
+                           metric::Metric, ε, parallel::Val, fan::Val)
     # Convert Matrices to Datasets (better performance in all cases)
-    return recurrence_matrix(Dataset(x), Dataset(y), metric, ε, parallel)
+    return recurrence_matrix(Dataset(x), Dataset(y), metric, ε, parallel, fan)
 end
 
 
 # First, we define the non-parallel versions.
 
 # Core function
-function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε, parallel::Val{false})
-    x = xx.data
-    y = yy.data
-    rowvals = Vector{Int}()
-    colvals = Vector{Int}()
-    for j in 1:length(y)
-        nzcol = 0
-        for i in 1:length(x)
-            @inbounds if evaluate(metric, x[i], y[j]) ≤ ε
-                push!(rowvals, i)
-                nzcol += 1
-            end
-        end
-        append!(colvals, fill(j, (nzcol,)))
-    end
-    nzvals = fill(true, (length(rowvals),))
-    return sparse(rowvals, colvals, nzvals, length(x), length(y))
-end
-# for FAN threshold: not necessarily symmetric RP anymore
-function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε::Vector, parallel::Val{false})
+function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε::Vector, parallel::Val{false}, fan)
     x = xx.data
     y = yy.data
     @assert length(ε) == length(x)
@@ -332,25 +322,7 @@ end
 
 
 # Vector version can be more specialized (and metric is irrelevant)
-function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε, parallel::Val{false})
-    rowvals = Vector{Int}()
-    colvals = Vector{Int}()
-    for j in 1:length(y)
-        nzcol = 0
-        for i in 1:length(x)
-            if @inbounds abs(x[i] - y[j]) ≤ ε
-                push!(rowvals, i)
-                nzcol += 1
-            end
-        end
-        append!(colvals, fill(j, (nzcol,)))
-    end
-    nzvals = fill(true, (length(rowvals),))
-    return sparse(rowvals, colvals, nzvals, length(x), length(y))
-end
-
-# for FAN threshold: not necessarily symmetric RP anymore
-function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε::Vector, parallel::Val{false})
+function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε::Vector, parallel::Val{false}, fan)
     @assert length(ε) == length(x)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
@@ -368,24 +340,7 @@ function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε::Vec
     return sparse(rowvals, colvals, nzvals, length(x), length(y))
 end
 
-function recurrence_matrix(x::AbstractVector, metric::Metric, ε::Real, parallel::Val{false})
-    rowvals = Vector{Int}()
-    colvals = Vector{Int}()
-    for j in 1:length(x)
-        nzcol = 0
-        for i in 1:j
-            if @inbounds evaluate(metric, x[i], x[j]) ≤ ε
-                push!(rowvals, i)
-                nzcol += 1
-            end
-        end
-        append!(colvals, fill(j, (nzcol,)))
-    end
-    nzvals = fill(true, (length(rowvals),))
-    return Symmetric(sparse(rowvals, colvals, nzvals, length(x), length(x)), :U)
-end
-
-function recurrence_matrix(x::AbstractVector, metric::Metric, ε::Vector, parallel::Val{false})
+function recurrence_matrix(x::AbstractVector, metric::Metric, ε::Vector, parallel::Val{false}, fan::Val{false})
     @assert length(ε) == length(x)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
@@ -403,15 +358,33 @@ function recurrence_matrix(x::AbstractVector, metric::Metric, ε::Vector, parall
     return Symmetric(sparse(rowvals, colvals, nzvals, length(x), length(x)), :U)
 end
 
+function recurrence_matrix(x::AbstractVector, metric::Metric, ε::Vector, parallel::Val{false}, fan::Val{true})
+    @assert length(ε) == length(x)
+    rowvals = Vector{Int}()
+    colvals = Vector{Int}()
+    for j in 1:length(x)
+        nzcol = 0
+        for i in 1:length(x)
+            if @inbounds evaluate(metric, x[i], x[j]) ≤ ε[i]
+                push!(rowvals, i)
+                nzcol += 1
+            end
+        end
+        append!(colvals, fill(j, (nzcol,)))
+    end
+    nzvals = fill(true, (length(rowvals),))
+    return sparse(rowvals, colvals, nzvals, length(x), length(x))
+end
 
-function recurrence_matrix(xx::Dataset, metric::Metric, ε::Real, parallel::Val{false})
+function recurrence_matrix(xx::Dataset, metric::Metric, ε::Vector, parallel::Val{false}, fan::Val{false})
     x = xx.data
+    @assert length(ε) == length(x)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
     for j in 1:length(x)
         nzcol = 0
         for i in 1:j
-            @inbounds if evaluate(metric, x[i], x[j]) ≤ ε
+            @inbounds if evaluate(metric, x[i], x[j]) ≤ ε[i]
                 push!(rowvals, i)
                 nzcol += 1
             end
@@ -423,7 +396,7 @@ function recurrence_matrix(xx::Dataset, metric::Metric, ε::Real, parallel::Val{
 end
 
 # for FAN threshold: not necessarily symmetric RP anymore
-function recurrence_matrix(xx::Dataset, metric::Metric, ε::Vector, parallel::Val{false})
+function recurrence_matrix(xx::Dataset, metric::Metric, ε::Vector, parallel::Val{false}, fan::Val{true})
     x = xx.data
     @assert length(ε) == length(x)
     rowvals = Vector{Int}()
@@ -439,41 +412,14 @@ function recurrence_matrix(xx::Dataset, metric::Metric, ε::Vector, parallel::Va
         append!(colvals, fill(j, (nzcol,)))
     end
     nzvals = fill(true, (length(rowvals),))
-    return Symmetric(sparse(rowvals, colvals, nzvals, length(x), length(x)), :U)
+    return sparse(rowvals, colvals, nzvals, length(x), length(x))
 end
 
 
 # Now, we define the parallel versions of these functions.
 
 # Core function
-function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε, parallel::Val{true})
-    x = xx.data
-    y = yy.data
-    # We create an `Array` of `Array`s, for each thread to have its
-    # own array to push to.  This avoids race conditions with
-    # multiple threads pushing to the same `Array` (`Array`s are not atomic).
-    rowvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
-    colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
-
-    # This is the same logic as the serial function, but parallelized.
-    Threads.@threads for j in 1:length(y)
-        threadn = Threads.threadid()
-        nzcol = 0
-        for i in 1:length(x)
-            @inbounds if evaluate(metric, x[i], y[j]) ≤ ε
-                push!(rowvals[threadn], i) # push to the thread-specific row array
-                nzcol += 1
-            end
-        end
-        append!(colvals[threadn], fill(j, (nzcol,)))
-    end
-    finalrows = vcat(rowvals...) # merge into one array
-    finalcols = vcat(colvals...) # merge into one array
-    nzvals = fill(true, (length(finalrows),))
-    return sparse(finalrows, finalcols, nzvals, length(x), length(y))
-end
-
-function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε::Vector, parallel::Val{true})
+function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε::Vector, parallel::Val{true}, fan)
     x = xx.data
     y = yy.data
     @assert length(ε) == length(x)
@@ -502,33 +448,8 @@ function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε::Vector,
 end
 
 # Vector version can be more specialized (and metric is irrelevant)
-function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε, parallel::Val{true})
-    # We create an `Array` of `Array`s, for each thread to have its
-    # own array to push to.  This avoids race conditions with
-    # multiple threads pushing to the same `Array` (`Array`s are not atomic).
-    rowvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
-    colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
-
-    # This is the same logic as the serial function, but parallelized.
-    Threads.@threads for j in 1:length(y)
-        threadn = Threads.threadid()
-        nzcol = 0
-        for i in 1:length(x)
-            @inbounds if abs(x[i] - y[j]) ≤ ε
-                push!(rowvals[threadn], i) # push to the thread-specific row array
-                nzcol += 1
-            end
-        end
-        append!(colvals[threadn], fill(j, (nzcol,)))
-    end
-    finalrows = vcat(rowvals...) # merge into one array
-    finalcols = vcat(colvals...) # merge into one array
-    nzvals = fill(true, (length(finalrows),))
-    return sparse(finalrows, finalcols, nzvals, length(x), length(y))
-end
-
-
-function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε::Vector, parallel::Val{true})
+function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε::Vector, parallel::Val{true}, fan)
+    @assert length(ε) == length(x)
     # We create an `Array` of `Array`s, for each thread to have its
     # own array to push to.  This avoids race conditions with
     # multiple threads pushing to the same `Array` (`Array`s are not atomic).
@@ -554,8 +475,9 @@ function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric, ε::Vec
 end
 
 
-function recurrence_matrix(xx::AbstractVector, metric::Metric, ε::Real, parallel::Val{true})
+function recurrence_matrix(xx::AbstractVector, metric::Metric, ε::Vector, parallel::Val{true}, fan::Val{false})
     x = xx
+    @assert length(ε) == length(x)
     # We create an `Array` of `Array`s, for each thread to have its
     # own array to push to.  This avoids race conditions with
     # multiple threads pushing to the same `Array` (`Array`s are not atomic).
@@ -568,7 +490,7 @@ function recurrence_matrix(xx::AbstractVector, metric::Metric, ε::Real, paralle
         for j in k
             nzcol = 0
             for i in 1:j
-                @inbounds if abs(x[i] - x[j]) ≤ ε
+                @inbounds if abs(x[i] - x[j]) ≤ ε[i]
                     push!(rowvals[threadn], i) # push to the thread-specific row array
                     nzcol += 1
                 end
@@ -582,8 +504,38 @@ function recurrence_matrix(xx::AbstractVector, metric::Metric, ε::Real, paralle
     return Symmetric(sparse(finalrows, finalcols, nzvals, length(x), length(x)), :U)
 end
 
-function recurrence_matrix(xx::Dataset, metric::Metric, ε::Real, parallel::Val{true})
+function recurrence_matrix(xx::AbstractVector, metric::Metric, ε::Vector, parallel::Val{true}, fan::Val{true})
+    x = xx
+    @assert length(ε) == length(x)
+    # We create an `Array` of `Array`s, for each thread to have its
+    # own array to push to.  This avoids race conditions with
+    # multiple threads pushing to the same `Array` (`Array`s are not atomic).
+    rowvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+    colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+
+    # This is the same logic as the serial function, but parallelized.
+    Threads.@threads for k in partition_indices(length(x))
+        threadn = Threads.threadid()
+        for j in k
+            nzcol = 0
+            for i in 1:length(x)
+                @inbounds if abs(x[i] - x[j]) ≤ ε[i]
+                    push!(rowvals[threadn], i) # push to the thread-specific row array
+                    nzcol += 1
+                end
+            end
+            append!(colvals[threadn], fill(j, (nzcol,)))
+        end
+    end
+    finalrows = vcat(rowvals...) # merge into one array
+    finalcols = vcat(colvals...) # merge into one array
+    nzvals = fill(true, (length(finalrows),))
+    return sparse(finalrows, finalcols, nzvals, length(x), length(x))
+end
+
+function recurrence_matrix(xx::Dataset, metric::Metric, ε::Vector, parallel::Val{true}, fan::Val{false})
     x = xx.data
+    @assert length(ε) == length(x)
     # We create an `Array` of `Array`s, for each thread to have its
     # own array to push to.  This avoids race conditions with
     # multiple threads pushing to the same `Array` (`Array`s are not atomic).
@@ -596,7 +548,7 @@ function recurrence_matrix(xx::Dataset, metric::Metric, ε::Real, parallel::Val{
         for j in k
             nzcol = 0
             for i in 1:j
-                @inbounds if evaluate(metric, x[i], x[j]) ≤ ε
+                @inbounds if evaluate(metric, x[i], x[j]) ≤ ε[i]
                     push!(rowvals[threadn], i) # push to the thread-specific row array
                     nzcol += 1
                 end
@@ -608,4 +560,33 @@ function recurrence_matrix(xx::Dataset, metric::Metric, ε::Real, parallel::Val{
     finalcols = vcat(colvals...) # merge into one array
     nzvals = fill(true, (length(finalrows),))
     return Symmetric(sparse(finalrows, finalcols, nzvals, length(x), length(x)), :U)
+end
+
+function recurrence_matrix(xx::Dataset, metric::Metric, ε::Vector, parallel::Val{true}, fan::Val{true})
+    x = xx.data
+    @assert length(ε) == length(x)
+    # We create an `Array` of `Array`s, for each thread to have its
+    # own array to push to.  This avoids race conditions with
+    # multiple threads pushing to the same `Array` (`Array`s are not atomic).
+    rowvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+    colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+
+    # This is the same logic as the serial function, but parallelized.
+    Threads.@threads for k in partition_indices(length(x))
+        threadn = Threads.threadid()
+        for j in k
+            nzcol = 0
+            for i in 1:length(x)
+                @inbounds if evaluate(metric, x[i], x[j]) ≤ ε[i]
+                    push!(rowvals[threadn], i) # push to the thread-specific row array
+                    nzcol += 1
+                end
+            end
+            append!(colvals[threadn], fill(j, (nzcol,)))
+        end
+    end
+    finalrows = vcat(rowvals...) # merge into one array
+    finalcols = vcat(colvals...) # merge into one array
+    nzvals = fill(true, (length(finalrows),))
+    return sparse(finalrows, finalcols, nzvals, length(x), length(x))
 end

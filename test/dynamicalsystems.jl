@@ -34,7 +34,7 @@ rqa_threshold = Dict(
 dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
 @testset "$k" for k in dict_keys
     data = trajectories[k]
-    x = data[:,1]
+    x = data[:,1].*0.00000001.*randn(length(data[:,1]))
     y = data[1:100,2]
     if k ≠ "White noise"
         xe = embed(x, embed_params[k]...)
@@ -77,6 +77,17 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
     @test .04 < recurrencerate(crmat_fixed) < .06
     @test .04 < recurrencerate(crmat_fixed_p) < .06
     @test recurrencerate(crmat_fixed) ≈ recurrencerate(crmat_fixed_p)
+    # fan method for recurrence threshold
+    cr_fan = CrossRecurrenceMatrix(xe, xe, 0.05; fan = true, fixedrate=true, parallel = false)
+    cr_fan_p = CrossRecurrenceMatrix(xe, xe, 0.05; fan = true, parallel = true)
+    rp_fan = RecurrenceMatrix(xe, 0.05; fan = true, fixedrate=true, parallel = false)
+    rp_fan_p = RecurrenceMatrix(Dataset(xe), 0.05; fan = true, parallel = true)
+    @test .04 < recurrencerate(cr_fan) < .06
+    @test .04 < recurrencerate(cr_fan_p) < .06
+    @test .04 < recurrencerate(rp_fan) < .06
+    @test .04 < recurrencerate(rp_fan_p) < .06
+    @test cr_fan == cr_fan_p == rp_fan == rp_fan_p
+    @test recurrencerate(cr_fan) ≈ recurrencerate(cr_fan_p) ≈ recurrencerate(rp_fan_p; theiler=0)
 
     # Recurrence plot
     crp = grayscale(crmat, width=125)
