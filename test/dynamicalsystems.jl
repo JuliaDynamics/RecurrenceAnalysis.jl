@@ -78,10 +78,10 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
     @test .04 < recurrencerate(crmat_fixed_p) < .06
     @test recurrencerate(crmat_fixed) ≈ recurrencerate(crmat_fixed_p)
     # fan method for recurrence threshold
-    cr_fan = CrossRecurrenceMatrix(xe, xe, 0.05; fan = true, fixedrate=true, parallel = false)
-    cr_fan_p = CrossRecurrenceMatrix(xe, xe, 0.05; fan = true, parallel = true)
-    rp_fan = RecurrenceMatrix(xe, 0.05; fan = true, fixedrate=true, parallel = false)
-    rp_fan_p = RecurrenceMatrix(Dataset(xe), 0.05; fan = true, parallel = true)
+    cr_fan = CrossRecurrenceMatrix{FAN}(xe, xe, 0.05; fixedrate=true, parallel = false)
+    cr_fan_p = CrossRecurrenceMatrix{FAN}(xe, xe, 0.05; parallel = true)
+    rp_fan = RecurrenceMatrix{FAN}(xe, 0.05; fixedrate=true, parallel = false)
+    rp_fan_p = RecurrenceMatrix{FAN}(Dataset(xe), 0.05; parallel = true)
     @test .04 < recurrencerate(cr_fan) < .06
     @test .04 < recurrencerate(cr_fan_p) < .06
     @test .04 < recurrencerate(rp_fan) < .06
