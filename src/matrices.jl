@@ -288,7 +288,7 @@ end
 Compute the adaptive Fixed Amount of Neibours (FAN) `ε_fan`
 Here args... is (x, y, metric, ε) or just (x, metric, ε)
 """
-function get_fan_threshold(x, y, metric, ε::Real)
+function get_fan_threshold(x, y, metric, ε)
     @assert length(x) == length(y)
     @assert 0 < ε < 1 "Global recurrence rate must be ∈ (0, 1)"
     fan_threshold = zeros(length(x))
@@ -335,7 +335,7 @@ function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε, ::Val{f
     for j in 1:length(y)
         nzcol = 0
         for i in 1:length(x)
-            @inbounds if evaluate(metric, x[i], y[j]) ≤ ( (ε isa Real) ? ε : ε[i] )
+            @inbounds if evaluate(metric, x[i], y[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
                 push!(rowvals, i)
                 nzcol += 1
             end
@@ -354,7 +354,7 @@ function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric::Metric,
     for j in 1:length(y)
         nzcol = 0
         for i in 1:length(x)
-            if @inbounds abs(x[i] - y[j]) ≤ ( (ε isa Real) ? ε : ε[i] )
+            if @inbounds abs(x[i] - y[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
                 push!(rowvals, i)
                 nzcol += 1
             end
@@ -373,7 +373,7 @@ function recurrence_matrix(x::AbstractVector, metric::Metric, ε, ::Val{false})
     for j in 1:length(x)
         nzcol = 0
         for i in 1:j
-            if @inbounds abs(x[i] - x[j]) ≤ ( (ε isa Real) ? ε : ε[i] )
+            if @inbounds abs(x[i] - x[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
                 push!(rowvals, i)
                 nzcol += 1
             end
@@ -392,7 +392,7 @@ function recurrence_matrix(xx::Dataset, metric::Metric, ε, ::Val{false})
     for j in 1:length(x)
         nzcol = 0
         for i in 1:j
-            @inbounds if evaluate(metric, x[i], x[j]) ≤ ( (ε isa Real) ? ε : ε[i] )
+            @inbounds if evaluate(metric, x[i], x[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
                 push!(rowvals, i)
                 nzcol += 1
             end
@@ -422,7 +422,7 @@ function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε, ::Val{t
         threadn = Threads.threadid()
         nzcol = 0
         for i in 1:length(x)
-            @inbounds if evaluate(metric, x[i], y[j]) ≤ ( (ε isa Real) ? ε : ε[i] )
+            @inbounds if evaluate(metric, x[i], y[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
                 push!(rowvals[threadn], i) # push to the thread-specific row array
                 nzcol += 1
             end
@@ -449,7 +449,7 @@ function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric::Metric,
         threadn = Threads.threadid()
         nzcol = 0
         for i in 1:length(x)
-            @inbounds if abs(x[i] - y[j]) ≤ ( (ε isa Real) ? ε : ε[i] )
+            @inbounds if abs(x[i] - y[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
                 push!(rowvals[threadn], i) # push to the thread-specific row array
                 nzcol += 1
             end
@@ -477,7 +477,7 @@ function recurrence_matrix(x::AbstractVector, metric::Metric, ε, ::Val{true})
         for j in k
             nzcol = 0
             for i in 1:j
-                @inbounds if abs(x[i] - x[j]) ≤ ( (ε isa Real) ? ε : ε[i] )
+                @inbounds if abs(x[i] - x[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
                     push!(rowvals[threadn], i) # push to the thread-specific row array
                     nzcol += 1
                 end
@@ -506,7 +506,7 @@ function recurrence_matrix(xx::Dataset, metric::Metric, ε, ::Val{true})
         for j in k
             nzcol = 0
             for i in 1:j
-                @inbounds if evaluate(metric, x[i], x[j]) ≤ ( (ε isa Real) ? ε : ε[i] )
+                @inbounds if evaluate(metric, x[i], x[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
                     push!(rowvals[threadn], i) # push to the thread-specific row array
                     nzcol += 1
                 end
