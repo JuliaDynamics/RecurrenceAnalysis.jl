@@ -241,7 +241,7 @@ _computescale(scale, x, x, metric)
 # generic method that uses `distancematrix`
 function _computescale(scale::Function, x, y, metric)
     if x===y
-        distances = zeros(Int(length(x)*(length(x)-1)/2))
+        distances = zeros(Int(length(x)*(length(x)-1)/2), 1)
         c = 0
         @inbounds for i in 1:length(x)-1, j=(i+1):length(x)
             distances[c+=1] = evaluate(metric, x[i], y[j])
@@ -293,7 +293,9 @@ function get_fan_threshold(x, y, metric, ε)
     @assert 0 < ε < 1 "Global recurrence rate must be ∈ (0, 1)"
     fan_threshold = zeros(length(x))
     d = distancematrix(x, y, metric)
-
+    if x === y
+        ε += 1/length(x)
+    end
     for i in 1:size(d, 1)
         fan_threshold[i] = quantile(view(d, i ,:), ε)
     end
