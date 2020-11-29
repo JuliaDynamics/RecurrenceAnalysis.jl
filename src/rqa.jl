@@ -115,7 +115,7 @@ over the all nodes in the network [^Boccaletti2006]:
 function transitivity(R::ARM)
     if size(R, 1) ≠ size(R, 2)
         @warn "Computing network transitivity of a non-square adjacency matrix is impossible"
-        return zero(eltype(R.data))
+        return 0.0
     end
     R² = R.data * R.data
     R³ = R² * R.data
