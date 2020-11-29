@@ -289,15 +289,14 @@ Compute the adaptive Fixed Amount of Neibours (FAN) `ε_fan`
 Here args... is (x, y, metric, ε) or just (x, metric, ε)
 """
 function get_fan_threshold(x, y, metric, ε)
-    @assert length(x) == length(y)
     @assert 0 < ε < 1 "Global recurrence rate must be ∈ (0, 1)"
-    fan_threshold = zeros(length(x))
+    fan_threshold = zeros(length(y))
     d = distancematrix(x, y, metric)
     if x === y
         ε += 1/length(x)
     end
-    for i in 1:size(d, 1)
-        fan_threshold[i] = quantile(view(d, i ,:), ε)
+    for i in 1:size(d, 2)
+        fan_threshold[i] = quantile(view(d, : ,i), ε)
     end
     return fan_threshold
 end
@@ -331,7 +330,7 @@ end
 function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε, ::Val{false})
     x = xx.data
     y = yy.data    
-    @assert ε isa Real || length(ε) == length(x)
+    @assert ε isa Real || length(ε) == length(y)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
     for j in 1:length(y)
@@ -350,7 +349,7 @@ end
 
 # Vector version can be more specialized (and metric is irrelevant)
 function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric::Metric, ε, ::Val{false})
-    @assert ε isa Real || length(ε) == length(x)
+    @assert ε isa Real || length(ε) == length(y)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
     for j in 1:length(y)
@@ -369,7 +368,7 @@ end
 
 # For one dataset
 function recurrence_matrix(x::AbstractVector, metric::Metric, ε, ::Val{false})
-    @assert ε isa Real || length(ε) == length(x)
+    @assert ε isa Real || length(ε) == length(y)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
     for j in 1:length(x)
@@ -388,7 +387,7 @@ end
 
 function recurrence_matrix(xx::Dataset, metric::Metric, ε, ::Val{false})
     x = xx.data
-    @assert ε isa Real || length(ε) == length(x)
+    @assert ε isa Real || length(ε) == length(y)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
     for j in 1:length(x)
@@ -412,7 +411,7 @@ end
 function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε, ::Val{true})
     x = xx.data
     y = yy.data
-    @assert ε isa Real || length(ε) == length(x)
+    @assert ε isa Real || length(ε) == length(y)
     # We create an `Array` of `Array`s, for each thread to have its
     # own array to push to.  This avoids race conditions with
     # multiple threads pushing to the same `Array` (`Array`s are not atomic).
@@ -466,7 +465,7 @@ end
 
 
 function recurrence_matrix(x::AbstractVector, metric::Metric, ε, ::Val{true})
-    @assert ε isa Real || length(ε) == length(x)
+    @assert ε isa Real || length(ε) == length(y)
     # We create an `Array` of `Array`s, for each thread to have its
     # own array to push to.  This avoids race conditions with
     # multiple threads pushing to the same `Array` (`Array`s are not atomic).
@@ -495,7 +494,7 @@ end
 
 function recurrence_matrix(xx::Dataset, metric::Metric, ε, ::Val{true})
     x = xx.data
-    @assert ε isa Real || length(ε) == length(x)
+    @assert ε isa Real || length(ε) == length(y)
     # We create an `Array` of `Array`s, for each thread to have its
     # own array to push to.  This avoids race conditions with
     # multiple threads pushing to the same `Array` (`Array`s are not atomic).
