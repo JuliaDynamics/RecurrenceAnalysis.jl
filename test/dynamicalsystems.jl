@@ -109,6 +109,7 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
 
     # Windowed RQA
     rmatw = @windowed RecurrenceMatrix(xe, ε, metric=RecurrenceAnalysis.Chebyshev()) 50
+    @windowed RecurrenceMatrix{FAN}(xe, ε) 50 # not meaningful, only to check that it does not error
     crmatw = @windowed(CrossRecurrenceMatrix(xe, ye, ε),30)
     @windowed jrmatw = JointRecurrenceMatrix(xe, ye, ε) 30
     @test jrmatw[3 .+ (1:30), 3 .+ (1:30)] == jrmat[3 .+ (1:30), 3 .+ (1:30)]
