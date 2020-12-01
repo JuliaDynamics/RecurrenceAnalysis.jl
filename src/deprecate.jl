@@ -2,7 +2,6 @@
            RecurrenceMatrix(Dataset(x), ε; kwargs...))
 
 for call in (:CrossRecurrenceMatrix, :JointRecurrenceMatrix)
-    )
     eval(quote
         @deprecate(($call)(x::AbstractMatrix, y, ε; kwargs...), 
                    ($call)(Dataset(x), y, ε; kwargs...))
