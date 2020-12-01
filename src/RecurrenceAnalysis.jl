@@ -55,5 +55,6 @@ include("histograms.jl")
 include("rqa.jl")
 include("radius.jl")
 include("windowed.jl")
+include("deprecate.jl")
 
 end
