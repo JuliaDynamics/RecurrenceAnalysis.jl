@@ -9,7 +9,7 @@ for call in (:CrossRecurrenceMatrix, :JointRecurrenceMatrix)
         @deprecate(($call)(x, y::AbstractMatrix, ε; kwargs...), 
                    ($call)(x, Dataset(y), ε; kwargs...))
         
-        @deprecate(($call)(x::AbstractMatrix, y::AbstractMatrix, ε; kwargs...) where T,
+        @deprecate(($call)(x::AbstractMatrix, y::AbstractMatrix, ε; kwargs...),
                    ($call)(Dataset(x), Dataset(y), ε; kwargs...))
     end)
 end
