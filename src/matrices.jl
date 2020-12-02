@@ -69,7 +69,7 @@ The recurrence matrix is a numeric representation of a "recurrence plot" [^1, ^2
 in the form of a sparse square matrix of Boolean values.
 
 `x` must be a `Vector` or a `Dataset`
-(possibly representing and embedded phase space; see [`embed`](@ref)).
+(possibly representing an embedded phase space; see [`embed`](@ref)).
 If `d(x[i], x[j]) ≤ ε` (with `d` the distance function),
 then the cell `(i, j)` of the matrix will have a `true`
 value. The criteria to evaluate distances between data points are defined
