@@ -68,8 +68,8 @@ Objects of type `<:AbstractRecurrenceMatrix` are displayed as a [`recurrenceplot
 The recurrence matrix is a numeric representation of a "recurrence plot" [^1, ^2],
 in the form of a sparse square matrix of Boolean values.
 
-`x` must be a `Vector` or a `Dataset` or a `Matrix` with data points in rows
-(possibly representing and embedded phase space; see [`embed`](@ref)).
+`x` must be a `Vector` or a `Dataset`
+(possibly representing an embedded phase space; see [`embed`](@ref)).
 If `d(x[i], x[j]) ≤ ε` (with `d` the distance function),
 then the cell `(i, j)` of the matrix will have a `true`
 value. The criteria to evaluate distances between data points are defined
@@ -240,6 +240,12 @@ end
 ################################################################################
 # TODO: increase the efficiency here by not computing everything!
 
+# Core function
+
+# First, we define the non-parallel versions.
+
+# For two datasets
+
 """
     recurrence_matrix(x, y, metric::Metric, ε::Real, parallel::Val)
 
@@ -247,15 +253,6 @@ Return a sparse matrix which encodes recurrence points.
 
 Note that `parallel` may be either `Val(true)` or `Val(false)`.
 """
-function recurrence_matrix(x::AbstractMatrix, y::AbstractMatrix,
-                           metric::Metric, ε, parallel::Val)
-    # Convert Matrices to Datasets (better performance in all cases)
-    return recurrence_matrix(Dataset(x), Dataset(y), metric, ε, parallel)
-end
-
-# First, we define the non-parallel versions.
-
-# Core function
 function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε, parallel::Val{false})
     x = xx.data
     y = yy.data

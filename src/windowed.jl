@@ -25,6 +25,12 @@ const rqa_types = Dict(
     )
 )
 
+# Temporary workaround until `Dataset` can be sliced by single index
+# (https://github.com/JuliaDynamics/DelayEmbeddings.jl/pull/73)
+# Later on it will suffice with x[i]
+_subsetdata(x::AbstractVector, i) = x[i]
+_subsetdata(x::Dataset, i) = x[i,:]
+
 """
     ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
 
@@ -66,7 +72,7 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
         elseif dindex > 0
             ix = ix .- dindex*bsize
         end
-        rmat_b = CrossRecurrenceMatrix(x[ix,:], y[iy,:], vargs...; kwargs...)
+        rmat_b = CrossRecurrenceMatrix(_subsetdata(x, ix), _subsetdata(y, iy), vargs...; kwargs...)
         append!(rws, rowvals(rmat_b) .+ix[1] .- 1)
         append!(cls, colvals(rmat_b) .+iy[1] .- 1)
     end
@@ -77,7 +83,7 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
     rx = ix1:ix2
     ry = iy1:iy2
     if length(rx) > 0 && length(ry) > 0
-        rmat_b = CrossRecurrenceMatrix(x[ix1:ix2,:], y[iy1:iy2,:], vargs...; kwargs...)
+        rmat_b = CrossRecurrenceMatrix(_subsetdata(x, ix1:ix2), _subsetdata(y, iy1:iy2), vargs...; kwargs...)
         append!(rws, rowvals(rmat_b) .+ ix1 .- 1)
         append!(cls, colvals(rmat_b) .+ iy1 .- 1)
     end
@@ -231,8 +237,8 @@ macro windowed(ex, options...)
             x = ex.args[2]
             y = ex.args[3]
             minsz = :(min(size($x,1),size($y,1)))
-            subx = :($x[1:$minsz,:])
-            suby = :($y[1:$minsz,:])
+            subx = :(RecurrenceAnalysis._subsetdata($x, 1:$minsz))
+            suby = :(RecurrenceAnalysis._subsetdata($y, 1:$minsz))
             # Call `@windowed RecurrenceMatrix` twice, recycling the argument (`x` and `y`)
             ex.args[1] = :RecurrenceMatrix
             deleteat!(ex.args, 3)
