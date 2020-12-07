@@ -29,7 +29,7 @@ const rqa_types = Dict(
 # (https://github.com/JuliaDynamics/DelayEmbeddings.jl/pull/73)
 # Later on it will suffice with x[i]
 _subsetdata(x::AbstractVector, i) = x[i]
-_subsetdata(x::Dataset, i) = x[i,:]
+_subsetdata(x::AbstractDataset, i) = x[i,:]
 
 """
     ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)

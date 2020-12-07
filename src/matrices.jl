@@ -74,7 +74,7 @@ Objects of type `<:AbstractRecurrenceMatrix` are displayed as a [`recurrenceplot
 The recurrence matrix is a numeric representation of a "recurrence plot" [^1, ^2],
 in the form of a sparse square matrix of Boolean values.
 
-`x` must be a `Vector` or a `Dataset`
+`x` must be a `Vector` or an `AbstractDataset`
 (possibly representing an embedded phase space; see [`embed`](@ref)).
 If `d(x[i], x[j]) ≤ ε` (with `d` the distance function),
 then the cell `(i, j)` of the matrix will have a `true`
@@ -322,7 +322,7 @@ Return a sparse matrix which encodes recurrence points.
 
 Note that `parallel` may be either `Val(true)` or `Val(false)`.
 """
-function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε, ::Val{false})
+function recurrence_matrix(xx::AbstractDataset, yy::AbstractDataset, metric::Metric, ε, ::Val{false})
     x = xx.data
     y = yy.data    
     @assert ε isa Real || length(ε) == length(y)
@@ -380,7 +380,7 @@ function recurrence_matrix(x::AbstractVector, metric::Metric, ε, ::Val{false})
     return Symmetric(sparse(rowvals, colvals, nzvals, length(x), length(x)), :U)
 end
 
-function recurrence_matrix(xx::Dataset, metric::Metric, ε, ::Val{false})
+function recurrence_matrix(xx::AbstractDataset, metric::Metric, ε, ::Val{false})
     x = xx.data
     @assert ε isa Real || length(ε) == length(y)
     rowvals = Vector{Int}()
@@ -403,7 +403,7 @@ end
 # Now, we define the parallel versions of these functions.
 
 # Core function
-function recurrence_matrix(xx::Dataset, yy::Dataset, metric::Metric, ε, ::Val{true})
+function recurrence_matrix(xx::AbstractDataset, yy::AbstractDataset, metric::Metric, ε, ::Val{true})
     x = xx.data
     y = yy.data
     @assert ε isa Real || length(ε) == length(y)
@@ -487,7 +487,7 @@ function recurrence_matrix(x::AbstractVector, metric::Metric, ε, ::Val{true})
     return Symmetric(sparse(finalrows, finalcols, nzvals, length(x), length(x)), :U)
 end
 
-function recurrence_matrix(xx::Dataset, metric::Metric, ε, ::Val{true})
+function recurrence_matrix(xx::AbstractDataset, metric::Metric, ε, ::Val{true})
     x = xx.data
     @assert ε isa Real || length(ε) == length(y)
     # We create an `Array` of `Array`s, for each thread to have its
