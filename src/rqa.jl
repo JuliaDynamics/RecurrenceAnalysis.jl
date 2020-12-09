@@ -419,6 +419,11 @@ end
 
 Dict(rqa::RQA) = Dict(rqa.data)
 
+function Base.show(io::IO, mime::MIME"text/plain", result::RQA)
+    print(io, "RQA parameters in ")
+    show(io, mime, result.data)
+end
+
 """
     rqa(R; kwargs...)
 
