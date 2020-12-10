@@ -21,6 +21,7 @@ for call in (:CrossRecurrenceMatrix, :JointRecurrenceMatrix)
 end
 
 function rqa(::Type{NamedTuple}, R; onlydiagonal=false, kwargs...)
+    @warn "RQA with `NamedTuple` output is deprecated, and will be removed in later versions"
     # Parse arguments for diagonal and vertical structures
     kw_d = Dict(kwargs)
     haskey(kw_d, :theilerdiag) && (kw_d[:theiler] = kw_d[:theilerdiag])
