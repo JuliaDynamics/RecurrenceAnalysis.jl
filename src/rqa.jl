@@ -417,7 +417,7 @@ for f in (:getindex, :get, :length, :keys, :values, :collect, :iterate)
     @eval Base.$f(result::RQA, args...; kwargs...) = $f(result.data, args...; kwargs...)
 end
 
-Dict(rqa::RQA) = Dict(rqa.data)
+Dict(rqa::RQA) = rqa.data
 
 function Base.show(io::IO, mime::MIME"text/plain", result::RQA)
     print(io, "RQA parameters in ")
