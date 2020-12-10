@@ -86,7 +86,7 @@ recurrence plot `R` is identified as the network adjacency matrix `A`.
 We quote from [^Donner2011], where the authors provide a complete description:
 Transitivity is related to fundamental algebraic relationships between triples
 of discrete objects. Specifically, in graph-theoretical terms, we identify the
-set `X` with the set of vertices `V` , and the relation `R with the mutual
+set `X` with the set of vertices `V` , and the relation `R` with the mutual
 adjacency of pairs of vertices. Hence, for a given vertex `i ∈ V` , transitivity
 refers to the fact that for two other vertices `j, k ∈ V` with
 `A_ij = A_ik = 1, A_jk = 1` also holds. In a general network, this is typically
@@ -100,7 +100,7 @@ system.
 The network transitivity averages the local transitivity or clustering
 coefficient
 ```math
-\\mathcal{C} = \\frac{number of triangles including vertex i}{number of triples centred on vertex i}
+\\mathcal{C} = \\frac{\textrm{number of triangles including vertex i}}{\textrm{number of triples centred on vertex i}}
 ```
 over the all nodes in the network [^Boccaletti2006]:
 ```math
