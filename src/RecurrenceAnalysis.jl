@@ -51,6 +51,7 @@ export embed,
 include("distance_matrix.jl")
 include("matrices.jl")
 include("plot.jl")
+include("graphs.jl")
 include("histograms.jl")
 include("rqa.jl")
 include("radius.jl")
