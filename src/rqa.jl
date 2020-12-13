@@ -92,12 +92,14 @@ refers to the fact that for two other vertices `j, k ∈ V` with
 `A_ij = A_ik = 1, A_jk = 1` also holds. In a general network, this is typically
 not the case for all vertices. Consequently, characterising the degree of
 transitivity (or, alternatively, the relative frequency of closed 3-loops, which
-are commonly referred to as triangles) with respect to some individual vertex or
+are commonly referred to as triangles) with respect to 
 the whole network provides important information on the structural graph
 properties, which may be related to important general features of the underlying
 system.
 
-The network transitivity is defined as:
+The network transitivity measures the fraction of closed triangles with respect to
+the number of linked triples of vertices in the whole network:
+
 ```math
 \\mathcal{T} = \\frac{3 \\times \\textrm{number of triangles in the network}}{\\textrm{number of linked triples of vertices}}
 ```
