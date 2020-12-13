@@ -86,7 +86,7 @@ recurrence plot `R` is identified as the network adjacency matrix `A`.
 We quote from [^Donner2011], where the authors provide a complete description:
 Transitivity is related to fundamental algebraic relationships between triples
 of discrete objects. Specifically, in graph-theoretical terms, we identify the
-set `X` with the set of vertices `V` , and the relation `R with the mutual
+set `X` with the set of vertices `V` , and the relation `R` with the mutual
 adjacency of pairs of vertices. Hence, for a given vertex `i ∈ V` , transitivity
 refers to the fact that for two other vertices `j, k ∈ V` with
 `A_ij = A_ik = 1, A_jk = 1` also holds. In a general network, this is typically
@@ -97,20 +97,18 @@ the whole network provides important information on the structural graph
 properties, which may be related to important general features of the underlying
 system.
 
-The network transitivity averages the local transitivity or clustering
-coefficient
+The network transitivity is defined as:
 ```math
-\\mathcal{C} = \\frac{number of triangles including vertex i}{number of triples centred on vertex i}
+\\mathcal{T} = \\frac{3 \\times \\textrm{number of triangles in the network}}{\\textrm{number of linked triples of vertices}}
 ```
-over the all nodes in the network [^Boccaletti2006]:
+or given the adjacency matrix `A`
 ```math
-\\mathcal{T} = \\frac{trace(R^3)}{\\sum R^2}
+\\mathcal{T} = \\frac{trace(A^3)}{\\sum(A^2) - trace(A^2)}
 ```
 
 ## References
 
 [^Donner2011]: R.V. Donner *et al.*, [The geometry of chaotic dynamics — a complex network perspective, Eur. Phys. J. B 84, 653–672 (2011)](https://doi.org/10.1140/epjb/e2011-10899-1)
-[^Boccaletti2006]: S.Boccaletti *et al.*, [Complex networks: Structure and dynamics, Physics Reports Volume 424, Issues 4–5 (2006)](https://doi.org/10.1016/j.physrep.2005.10.009)
 """
 function transitivity(R::ARM)
     if size(R, 1) ≠ size(R, 2)
@@ -118,8 +116,14 @@ function transitivity(R::ARM)
         return NaN
     end
     R² = R.data * R.data
-    R³ = R² * R.data
-    trans = LinearAlgebra.tr(R³) / sum(R²)
+    numerator = zero(eltype(R²))
+    for col = 1:size(R,2)
+        rows = view(rowvals(R), nzrange(R,col))
+        for r = rows
+            numerator += R²[r, col]
+        end
+    end
+    trans = numerator / (sum(R²) - LinearAlgebra.tr(R²))
 end
 
 
