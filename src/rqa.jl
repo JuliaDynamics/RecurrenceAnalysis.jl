@@ -92,25 +92,25 @@ refers to the fact that for two other vertices `j, k ∈ V` with
 `A_ij = A_ik = 1, A_jk = 1` also holds. In a general network, this is typically
 not the case for all vertices. Consequently, characterising the degree of
 transitivity (or, alternatively, the relative frequency of closed 3-loops, which
-are commonly referred to as triangles) with respect to some individual vertex or
+are commonly referred to as triangles) with respect to 
 the whole network provides important information on the structural graph
 properties, which may be related to important general features of the underlying
 system.
 
-The network transitivity averages the local transitivity or clustering
-coefficient
+The network transitivity measures the fraction of closed triangles with respect to
+the number of linked triples of vertices in the whole network:
+
 ```math
-\\mathcal{C} = \\frac{\textrm{number of triangles including vertex i}}{\textrm{number of triples centred on vertex i}}
+\\mathcal{T} = \\frac{3 \\times \\textrm{number of triangles in the network}}{\\textrm{number of linked triples of vertices}}
 ```
-over the all nodes in the network [^Boccaletti2006]:
+or given the adjacency matrix `A`
 ```math
-\\mathcal{T} = \\frac{trace(R^3)}{\\sum R^2}
+\\mathcal{T} = \\frac{trace(A^3)}{\\sum(A^2) - trace(A^2)}
 ```
 
 ## References
 
 [^Donner2011]: R.V. Donner *et al.*, [The geometry of chaotic dynamics — a complex network perspective, Eur. Phys. J. B 84, 653–672 (2011)](https://doi.org/10.1140/epjb/e2011-10899-1)
-[^Boccaletti2006]: S.Boccaletti *et al.*, [Complex networks: Structure and dynamics, Physics Reports Volume 424, Issues 4–5 (2006)](https://doi.org/10.1016/j.physrep.2005.10.009)
 """
 function transitivity(R::ARM)
     if size(R, 1) ≠ size(R, 2)
@@ -118,8 +118,14 @@ function transitivity(R::ARM)
         return NaN
     end
     R² = R.data * R.data
-    R³ = R² * R.data
-    trans = LinearAlgebra.tr(R³) / sum(R²)
+    numerator = zero(eltype(R²))
+    for col = 1:size(R,2)
+        rows = view(rowvals(R), nzrange(R,col))
+        for r = rows
+            numerator += R²[r, col]
+        end
+    end
+    trans = numerator / (sum(R²) - LinearAlgebra.tr(R²))
 end
 
 

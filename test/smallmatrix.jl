@@ -120,3 +120,16 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
         @test rqa_params[:NMPRT] == 3
     end
 end
+
+### Recurrence network
+@testset "Recurrence networks" begin
+    # 7 edges, 12 linked triples, 1 triangle (1-2-4)
+    mat =  [0 1 0 1 0 0
+            1 0 1 1 1 0
+            0 1 0 0 0 0
+            1 1 0 0 0 1
+            0 1 0 0 0 1
+            0 0 0 1 1 0]
+    adjmat = RecurrenceMatrix(mat)
+    @test transitivity(adjmat) == 0.25 # (3/12)
+end
