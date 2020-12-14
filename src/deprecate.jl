@@ -1,4 +1,4 @@
-for T in (:FixedRange, :FixedAmount)
+for T in (:WithinRange, :NeighborNumber)
     @eval function RecurrenceMatrix{$T}(x::AbstractMatrix, ε; kwargs...)
         @warn string("`RecurrenceMatrix{", $T, "}(x::AbstractMatrix, ε; kwargs...)` is deprecated, use `RecurrenceMatrix{", $T, "}(Dataset(x), ε; kwargs...)`")
         RecurrenceMatrix{$T}(Dataset(x), ε; kwargs...)

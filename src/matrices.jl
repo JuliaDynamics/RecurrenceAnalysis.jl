@@ -8,9 +8,7 @@ The low level interface is contained in the function
 ################################################################################
 # AbstractRecurrenceMatrix type definitions and documentation strings
 ################################################################################
-struct FixedRange end
-struct FixedAmount end
-const FAN = FixedAmount
+const FAN = NeighborNumber
 
 abstract type AbstractRecurrenceMatrix{T} end
 const ARM = AbstractRecurrenceMatrix
@@ -49,8 +47,8 @@ for operator in [:(==), :(!=)]
     @eval Base.$operator(x::ARM, y::ARM) = $operator(x.data, y.data)
 end
 
-LinearAlgebra.issymmetric(::RecurrenceMatrix{FixedRange}) = true
-LinearAlgebra.issymmetric(::JointRecurrenceMatrix{FixedRange}) = true
+LinearAlgebra.issymmetric(::RecurrenceMatrix{WithinRange}) = true
+LinearAlgebra.issymmetric(::JointRecurrenceMatrix{WithinRange}) = true
 # column values in sparse matrix (parallel to rowvals)
 function colvals(x::SparseMatrixCSC)
     cv = zeros(Int,nnz(x))
@@ -96,16 +94,20 @@ by the following keyword arguments:
 * `parallel::Bool=false` : whether to parallelize the computation of the recurrence
    matrix.  This will split the computation of the matrix across multiple threads.
 
-The parametrized constructor `RecurrenceMatrix{FixedAmount}` (or in shorter form,
-`RecurrenceMatrix{FAN}`) creates the recurrence matrix with a
-Fixed Amount of Neighbors for each point in the phase space, i.e. the number
+The parametrized constructor `RecurrenceMatrix{NeighborNumber}` creates the recurrence matrix
+with a fixed number of neighbors for each point in the phase space, i.e. the number
 of recurrences is the same for all columns of the recurrence matrix.
 In such case, `ε` is taken as the target fixed local recurrence rate,
 defined as a value between 0 and 1, and `scale` and `fixedrate` are ignored.
+This is often referred to in the literature as the method of "Fixed Amount of Nearest Neighbors"
+(or FAN for short); `RecurrenceMatrix{FAN}` can be used as a convenient alias
+for `RecurrenceMatrix{NeighborNumber}`.
 
 If no parameter is specified, `RecurrenceMatrix` returns a
-`RecurrenceMatrix{FixedRange}` object. Note that while recurrence matrices
-with neighbors defined by a fixed range are always symmetric, those defined
+`RecurrenceMatrix{WithinRange}` object, meaning that recurrences will be taken
+for pairs of data points whose distance is within the range determined by
+the input arguments. Note that while recurrence matrices
+with neighbors defined within a given range are always symmetric, those defined
 by a fixed amount of neighbors can be non-symmetric.
 
 See also: [`CrossRecurrenceMatrix`](@ref), [`JointRecurrenceMatrix`](@ref) and
@@ -119,24 +121,24 @@ use [`recurrenceplot`](@ref) to turn the result of these functions into a plotta
 recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
-function RecurrenceMatrix{FixedRange}(x, ε; metric = DEFAULT_METRIC,
+function RecurrenceMatrix{WithinRange}(x, ε; metric = DEFAULT_METRIC,
     parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
     kwargs...)
     m = getmetric(metric)
     s = resolve_scale(x, m, ε; kwargs...)
     m = recurrence_matrix(x, m, s, Val(parallel))
-    return RecurrenceMatrix{FixedRange}(m)
+    return RecurrenceMatrix{WithinRange}(m)
 end
 
-RecurrenceMatrix(args...; kwargs...) = RecurrenceMatrix{FixedRange}(args...; kwargs...)
+RecurrenceMatrix(args...; kwargs...) = RecurrenceMatrix{WithinRange}(args...; kwargs...)
 
-function RecurrenceMatrix{FixedAmount}(x, ε; metric = DEFAULT_METRIC,
+function RecurrenceMatrix{NeighborNumber}(x, ε; metric = DEFAULT_METRIC,
     parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
     kwargs...)
     m = getmetric(metric)
     s = get_fan_threshold(x, m, ε)
     m = recurrence_matrix(x, x, m, s, Val(parallel)) # to allow for non-symmetry
-    return RecurrenceMatrix{FixedAmount}(m)
+    return RecurrenceMatrix{NeighborNumber}(m)
 end
 
 """
@@ -156,24 +158,24 @@ are not generally symmetric, regardless of the method used to make them.
 See [`RecurrenceMatrix`](@ref) for details, references and keywords.
 See also: [`JointRecurrenceMatrix`](@ref).
 """
-function CrossRecurrenceMatrix{FixedRange}(x, y, ε; metric = DEFAULT_METRIC,
+function CrossRecurrenceMatrix{WithinRange}(x, y, ε; metric = DEFAULT_METRIC,
     parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
     kwargs...)
     m = getmetric(metric)
     s = resolve_scale(x, y, m, ε; kwargs...)
     m = recurrence_matrix(x, y, m, s, Val(parallel))
-    return CrossRecurrenceMatrix{FixedRange}(m)
+    return CrossRecurrenceMatrix{WithinRange}(m)
 end
 
-CrossRecurrenceMatrix(args...; kwargs...) = CrossRecurrenceMatrix{FixedRange}(args...; kwargs...)
+CrossRecurrenceMatrix(args...; kwargs...) = CrossRecurrenceMatrix{WithinRange}(args...; kwargs...)
 
-function CrossRecurrenceMatrix{FixedAmount}(x, y, ε; metric = DEFAULT_METRIC,
+function CrossRecurrenceMatrix{NeighborNumber}(x, y, ε; metric = DEFAULT_METRIC,
     parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
     kwargs...)
     m = getmetric(metric)
     s = get_fan_threshold(x, y, m, ε)
     m = recurrence_matrix(x, y, m, s, Val(parallel))
-    return CrossRecurrenceMatrix{FixedAmount}(m)
+    return CrossRecurrenceMatrix{NeighborNumber}(m)
 end
 
 """
@@ -203,7 +205,7 @@ function JointRecurrenceMatrix{T}(x, y, ε; kwargs...) where T
     return JointRecurrenceMatrix{T}(rm1.data .* rm2.data)
 end
 
-JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{FixedRange}(args...; kwargs...)
+JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{WithinRange}(args...; kwargs...)
 
 """
     JointRecurrenceMatrix(R1, R2; kwargs...)
