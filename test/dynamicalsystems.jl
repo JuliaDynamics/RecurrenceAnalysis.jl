@@ -1,5 +1,5 @@
 using RecurrenceAnalysis
-using DynamicalSystemsBase, Random, Statistics
+using DynamicalSystemsBase, Random, Statistics, SparseArrays
 using Test
 
 RA = RecurrenceAnalysis
@@ -34,14 +34,14 @@ rqa_threshold = Dict(
 dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
 @testset "$k" for k in dict_keys
     data = trajectories[k]
-    x = data[:,1]
+    x = data[:,1].*0.00000001.*randn(length(data[:,1]))
     y = data[1:100,2]
     if k ≠ "White noise"
         xe = embed(x, embed_params[k]...)
         ye = embed(y, embed_params[k]...)
     else
         xe = x
-        ye = x
+        ye = copy(x)
     end
 
     # Distance and recurrence matrices
@@ -77,6 +77,22 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
     @test .04 < recurrencerate(crmat_fixed) < .06
     @test .04 < recurrencerate(crmat_fixed_p) < .06
     @test recurrencerate(crmat_fixed) ≈ recurrencerate(crmat_fixed_p)
+    # fan method for recurrence threshold
+    cr_fan = CrossRecurrenceMatrix{FAN}(xe, ye, 0.05; fixedrate=true, parallel = false)
+    cr_fan_p = CrossRecurrenceMatrix{FAN}(xe, ye, 0.05; parallel = true)
+    rp_fan = RecurrenceMatrix{FAN}(xe, 0.05; fixedrate=true, parallel = false)
+    rp_fan_p = RecurrenceMatrix{FAN}(Dataset(xe), 0.05; parallel = true)
+    n = length(xe)
+    @test all(.04 < nnz(cr_fan[:,i])/n < .06 for i=1:size(cr_fan, 2))
+    @test all(.04 < (nnz(rp_fan[:,i])-1)/n < .06 for i=1:size(rp_fan, 2))
+    @test .04 < recurrencerate(cr_fan) < .06
+    @test .04 < recurrencerate(cr_fan_p) < .06
+    @test .04 < recurrencerate(rp_fan) < .06
+    @test .04 < recurrencerate(rp_fan_p) < .06
+    @test cr_fan == cr_fan_p
+    @test rp_fan == rp_fan_p
+    @test recurrencerate(cr_fan) ≈ recurrencerate(cr_fan_p)
+    @test recurrencerate(rp_fan_p; theiler=0) > recurrencerate(rp_fan_p)
 
     # Recurrence plot
     crp = grayscale(crmat, width=125)
@@ -93,6 +109,7 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
 
     # Windowed RQA
     rmatw = @windowed RecurrenceMatrix(xe, ε, metric=RecurrenceAnalysis.Chebyshev()) 50
+    @windowed RecurrenceMatrix{FAN}(xe, ε) 50 # not meaningful, only to check that it does not error
     crmatw = @windowed(CrossRecurrenceMatrix(xe, ye, ε),30)
     @windowed jrmatw = JointRecurrenceMatrix(xe, ye, ε) 30
     @test jrmatw[3 .+ (1:30), 3 .+ (1:30)] == jrmat[3 .+ (1:30), 3 .+ (1:30)]

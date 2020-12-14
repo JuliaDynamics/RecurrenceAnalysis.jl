@@ -23,7 +23,7 @@ end
 
 
 export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix,
-       AbstractRecurrenceMatrix
+       AbstractRecurrenceMatrix, WithinRange, NeighborNumber, FAN
 
 export embed,
        reconstruct,

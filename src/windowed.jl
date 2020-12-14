@@ -29,7 +29,7 @@ const rqa_types = Dict(
 # (https://github.com/JuliaDynamics/DelayEmbeddings.jl/pull/73)
 # Later on it will suffice with x[i]
 _subsetdata(x::AbstractVector, i) = x[i]
-_subsetdata(x::Dataset, i) = x[i,:]
+_subsetdata(x::AbstractDataset, i) = x[i,:]
 
 """
     ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
@@ -88,6 +88,16 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
         append!(cls, colvals(rmat_b) .+ iy1 .- 1)
     end
     rws, cls
+end
+
+# check if call is a constructor of a type with given name 
+function _check_constructor(call, name)
+    call == name && return true
+    if (call isa Expr) && call.head == :curly && call.args[1] == name
+        return true
+    else
+        return false
+    end
 end
 
 """
@@ -188,7 +198,7 @@ macro windowed(ex, options...)
             return esc(ret_ex)
         end
         # Iteration of matrix construction functions
-        if f == :CrossRecurrenceMatrix
+        if _check_constructor(f, :CrossRecurrenceMatrix)
             # ij_block_rmat(x,y,width,d,...) with d=-1,0,1
             x = ex.args[2]
             y = ex.args[3]
@@ -212,7 +222,7 @@ macro windowed(ex, options...)
                 CrossRecurrenceMatrix(m)
             end
             return esc(ret_ex)
-        elseif f == :RecurrenceMatrix
+        elseif _check_constructor(f, :RecurrenceMatrix)
             # ij_block_rmat(x,x,width,d,...) with d=-1,0
             ex.args[1] = :(RecurrenceAnalysis.ij_block_rmat)
             x = ex.args[2]
@@ -233,7 +243,7 @@ macro windowed(ex, options...)
                 RecurrenceMatrix(m)
             end
             return esc(ret_ex)
-        elseif f == :JointRecurrenceMatrix
+        elseif _check_constructor(f, :JointRecurrenceMatrix)
             x = ex.args[2]
             y = ex.args[3]
             minsz = :(min(size($x,1),size($y,1)))

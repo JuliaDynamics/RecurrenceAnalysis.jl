@@ -7,7 +7,7 @@
 Create a matrix with the distances between each pair of points of the
 time series `x` and `y` using `metric`.
 
-The time series `x` and `y` can be `Dataset`s or vectors or matrices with data points
+The time series `x` and `y` can be `AbstractDataset`s or vectors or matrices with data points
 in rows.
 The data point dimensions (or number of columns) must be the same for `x` and `y`.
 The returned value is a `n×m` matrix, with `n` being the length (or number of rows)
@@ -34,7 +34,7 @@ distancematrix(x, y, metric::String, parallel = size(x)[1] > 500) = distancematr
 
 const MAXDIM = 9
 function distancematrix(x::Tx, y::Ty, metric::Metric=DEFAULT_METRIC, parallel = size(x)[1] > 500) where
-         {Tx<:Union{AbstractMatrix, Dataset}} where {Ty<:Union{AbstractMatrix, Dataset}}
+         {Tx<:Union{AbstractMatrix, AbstractDataset}} where {Ty<:Union{AbstractMatrix, AbstractDataset}}
     sx, sy = size(x), size(y)
     @assert sx[2] == sy[2] """
         The dimensions of the data points in `x` and `y` must be equal!
@@ -54,8 +54,8 @@ end
 _distancematrix(x::AbstractMatrix, y::AbstractMatrix, metric::Metric, ::Val{false}) = pairwise(metric, x', y', dims=2)
 
 # First we define the serial versions of the functions.
-# Core function for Datasets
-function _distancematrix(x::Dataset{S,Tx}, y::Dataset{S,Ty},
+# Core function for AbstractDatasets
+function _distancematrix(x::AbstractDataset{S,Tx}, y::AbstractDataset{S,Ty},
     metric::Metric, ::Val{false}) where {S, Tx, Ty}
 
     x = x.data
@@ -71,7 +71,7 @@ end
 
 # Now, we define the parallel versions.
 
-function _distancematrix(x::Dataset{S,Tx}, y::Dataset{S,Ty},
+function _distancematrix(x::AbstractDataset{S,Tx}, y::AbstractDataset{S,Ty},
     metric::Metric, ::Val{true}) where {S, Tx, Ty}
 
     x = x.data
@@ -118,7 +118,7 @@ function _distancematrix(x::Vector{T}, metric::Metric, ::Val{false}) where T
 
 end
 
-function _distancematrix(x::Dataset{S, T}, metric::Metric, ::Val{false}) where T where S
+function _distancematrix(x::AbstractDataset{S, T}, metric::Metric, ::Val{false}) where T where S
     d = zeros(T, length(x), length(x))
 
     for j in 1:length(x)
@@ -175,7 +175,7 @@ function _distancematrix(x::Vector{T}, metric::Metric, ::Val{true}) where T
 
 end
 
-function _distancematrix(x::Dataset{S, T}, metric::Metric, ::Val{true}) where T where S
+function _distancematrix(x::AbstractDataset{S, T}, metric::Metric, ::Val{true}) where T where S
     d = zeros(T, length(x), length(x))
 
     Threads.@threads for k in partition_indices(length(x))
