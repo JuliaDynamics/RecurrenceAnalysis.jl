@@ -406,6 +406,30 @@ nmprt(R::ARM; kwargs) = maximum(verticalhistograms(R; kwargs...)[2])
 # 4. All in one
 ###########################################################################################
 
+# Transient type
+struct RQA
+    data::Dict
+end
+
+function Base.getproperty(result::RQA, name::Symbol)
+    if name === :data
+        return getfield(result, :data)
+    end
+    @warn "x.$name is deprecated for results of `rqa`; use x[:$name] instead"
+    getindex(result.data, name)
+end
+
+for f in (:getindex, :get, :length, :keys, :values, :collect, :iterate)
+    @eval Base.$f(result::RQA, args...; kwargs...) = $f(result.data, args...; kwargs...)
+end
+
+Dict(rqa::RQA) = rqa.data
+
+function Base.show(io::IO, mime::MIME"text/plain", result::RQA)
+    print(io, "RQA parameters in ")
+    show(io, mime, result.data)
+end
+
 """
     rqa(R; kwargs...)
 
@@ -416,29 +440,33 @@ Using this function is much more efficient than calling all individual functions
 one by one.
 
 ## Return
-The returned value is a NamedTuple with the following entries:
+The returned value contains the following entries,
+which can be retrieved as from a dictionary (e.g. `results[:RR]`, etc.):
 
-* `RR`: recurrence rate (see [`recurrencerate`](@ref))
-* `TRANS`: transitivity (see [`transitivity`](@ref))
-* `DET`: determinsm (see [`determinism`](@ref))
-* `L`: average length of diagonal structures (see [`dl_average`](@ref))
-* `Lmax`: maximum length of diagonal structures (see [`dl_max`](@ref))
-* `DIV`: divergence (see [`divergence`](@ref))
-* `ENTR`: entropy of diagonal structures (see [`dl_entropy`](@ref))
-* `TREND`: trend of recurrences (see [`trend`](@ref))
-* `LAM`: laminarity (see [`laminarity`](@ref))
-* `TT`: trapping time (see [`trappingtime`](@ref))
-* `Vmax`: maximum length of vertical structures (see [`vl_max`](@ref))
-* `VENTR`: entropy of vertical structures (see [`vl_entropy`](@ref))
-* `MRT`: mean recurrence time (see [`meanrecurrencetime`](@ref))
-* `RTE` recurrence time entropy (see [`rt_entropy`](@ref))
-* `NMPRT`: number of the most probable recurrence time (see [`nmprt`](@ref))
+* `:RR`: recurrence rate (see [`recurrencerate`](@ref))
+* `:TRANS`: transitivity (see [`transitivity`](@ref))
+* `:DET`: determinsm (see [`determinism`](@ref))
+* `:L`: average length of diagonal structures (see [`dl_average`](@ref))
+* `:Lmax`: maximum length of diagonal structures (see [`dl_max`](@ref))
+* `:DIV`: divergence (see [`divergence`](@ref))
+* `:ENTR`: entropy of diagonal structures (see [`dl_entropy`](@ref))
+* `:TREND`: trend of recurrences (see [`trend`](@ref))
+* `:LAM`: laminarity (see [`laminarity`](@ref))
+* `:TT`: trapping time (see [`trappingtime`](@ref))
+* `:Vmax`: maximum length of vertical structures (see [`vl_max`](@ref))
+* `:VENTR`: entropy of vertical structures (see [`vl_entropy`](@ref))
+* `:MRT`: mean recurrence time (see [`meanrecurrencetime`](@ref))
+* `:RTE` recurrence time entropy (see [`rt_entropy`](@ref))
+* `:NMPRT`: number of the most probable recurrence time (see [`nmprt`](@ref))
 
+All the parameters returned by `rqa` are `Float64` numbers,
+even for parameters like `:Lmax`, `:Vmax` or `:NMPRT` which are integer values.
 In the case of empty histograms (e.g. no existing vertical lines
 less than the keyword `lminvert`) the average and maximum values
-(`L`, `Lmax`, `TT`, `Vmax`, `MRT`)
-are returned as `0.0` but their respective entropies (`ENTR`, `VENTR`, `RTE`)
+(`:L`, `:Lmax`, `:TT`, `:Vmax`, `:MRT`)
+are returned as `0.0` but their respective entropies (`:ENTR`, `:VENTR`, `:RTE`)
 are returned as `NaN`.
+`:TRANS` is only returned when the input is a square matrix.
 
 ## Keyword Arguments
 
@@ -459,7 +487,7 @@ i.e. `theiler`, `lmin`, and `border`:
   describe the distributions of diagonal or vertical lines (it is set as 2 by
   default).
 
-* `border` is used to avoid border effects in the calculation of `TREND`
+* `border` is used to avoid border effects in the calculation of `:TREND`
   (cf. [`trend`](@ref)).
 
 In addition `theilerdiag`, `lmindiag` may be used to
@@ -470,10 +498,38 @@ structures.
 
 The keyword argument `onlydiagonal` (`false` by default) can be set to `true`
 in order to restrict the analysis to the recurrence rate and the parameters related
-to diagonal structures (`RR`, `DET`, `L`, `Lmax`, `DIV` and `ENTR`), which makes
+to diagonal structures (`:RR`, `:DET`, `:L`, `:Lmax`, `:DIV` and `:ENTR`), which makes
 this function slightly faster.
+
+## Transitional note on the returned type
+
+In older versions, the `rqa` function returned a `NamedTuple`,
+and in future versions it is planned to return a `Dict` instead.
+In both cases, the results can be indexed with square brackets and `Symbol` keys,
+as `result[:RR]`, `result[:DET]`, etc.
+However, named tuples can also be indexed with "dot syntax", e.g. `result.RR`,
+whereas this will not be possible with dictionaries, and there are other
+differences in the indexing and iteration of those two types.
+
+In order to facilitate the transition between versions, this function currently
+returns a `RQA` object that essentially works as a dictionary, but can
+also be indexed with the dot syntax (logging a deprecation warning).
+The returned type can also be specified as a first argument of `rqa`
+in order to replicate the output of different versions:
+
+* `rqa(NamedTuple, R...)` to obtain the output of the older version (as in 1.3).
+* `rqa(Dict, R...)` to obtain the output of the planned future version.
+* `rqa(RQA, R...)` to obtain the default current output (same as `rqa(R...)`)
+
 """
-function rqa(R; onlydiagonal=false, kwargs...)
+rqa(R; kwargs...) = rqa(RQA, R; kwargs...)
+
+function rqa(::Type{RQA}, R; kwargs...)
+    rqa_dict = rqa(Dict, R; kwargs...)
+    RQA(rqa_dict)
+end
+
+function rqa(::Type{Dict}, R; onlydiagonal=false, kwargs...)
     # Parse arguments for diagonal and vertical structures
     kw_d = Dict(kwargs)
     haskey(kw_d, :theilerdiag) && (kw_d[:theiler] = kw_d[:theilerdiag])
@@ -481,13 +537,13 @@ function rqa(R; onlydiagonal=false, kwargs...)
     dhist = diagonalhistogram(R; kw_d...)
     rr_d = recurrencerate(R; kw_d...)
     if onlydiagonal
-        return (
-            RR  = recurrencerate(R; kwargs...),
-            DET   = _determinism(dhist, rr_d*_rrdenominator(R; kw_d...)),
-            L     = _dl_average(dhist),
-            Lmax  = _dl_max(dhist),
-            DIV   = 1.0/_dl_max(dhist),
-            ENTR  = _dl_entropy(dhist)
+        return Dict{Symbol, Float64}(
+            :RR    => recurrencerate(R; kwargs...),
+            :DET   => _determinism(dhist, rr_d*_rrdenominator(R; kw_d...)),
+            :L     => _dl_average(dhist),
+            :Lmax  => _dl_max(dhist),
+            :DIV   => 1.0/_dl_max(dhist),
+            :ENTR  => _dl_entropy(dhist)
         )
    else
         kw_v = Dict(kwargs)
@@ -495,22 +551,25 @@ function rqa(R; onlydiagonal=false, kwargs...)
         haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
         vhist, rthist = verticalhistograms(R; kw_v...)
         rr_v = recurrencerate(R; kw_v...)
-        return (
-            RR  = rr_d,
-            TRANS = transitivity(R),
-            DET  = _determinism(dhist, rr_d*_rrdenominator(R; kw_v...)),
-            L    = _dl_average(dhist),
-            Lmax = _dl_max(dhist),
-            DIV  = 1.0/_dl_max(dhist),
-            ENTR  = _dl_entropy(dhist),
-            TREND = trend(R; kw_d...),
-            LAM  = _laminarity(vhist, rr_v*_rrdenominator(R; kw_v...)),
-            TT   = _vl_average(vhist),
-            Vmax = _vl_max(vhist),
-            VENTR = _vl_entropy(vhist),
-            MRT  = _rt_average(rthist),
-            RTE = _rt_entropy(rthist),
-            NMPRT = maximum(rthist)
+        rqa_dict = Dict{Symbol, Float64}(
+            :RR    => rr_d,
+            :DET   => _determinism(dhist, rr_d*_rrdenominator(R; kw_v...)),
+            :L     => _dl_average(dhist),
+            :Lmax  => _dl_max(dhist),
+            :DIV   => 1.0/_dl_max(dhist),
+            :ENTR  => _dl_entropy(dhist),
+            :TREND => trend(R; kw_d...),
+            :LAM   => _laminarity(vhist, rr_v*_rrdenominator(R; kw_v...)),
+            :TT    => _vl_average(vhist),
+            :Vmax  => _vl_max(vhist),
+            :VENTR => _vl_entropy(vhist),
+            :MRT   => _rt_average(rthist),
+            :RTE   => _rt_entropy(rthist),
+            :NMPRT => maximum(rthist)
         )
+        if size(R, 1) == size(R, 2)
+            rqa_dict[:TRANS] = transitivity(R)
+        end
+        return rqa_dict
     end
 end

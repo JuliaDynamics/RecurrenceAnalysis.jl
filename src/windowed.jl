@@ -169,31 +169,34 @@ macro windowed(ex, options...)
                 local nw = size($x,1) - $(dict_op[:width])
                 local ni = div(nw, s)+1 # number of items
                 local mtype = typeof($x)
-                local rqa_tuple = (
-                    RR   = zeros(Float64,ni),
-                    TRANS = zeros(Float64,ni),
-                    DET  = zeros(Float64,ni),
-                    L    = zeros(Float64,ni),
-                    Lmax = zeros(Int,ni),
-                    DIV  = zeros(Float64,ni),
-                    ENTR  = zeros(Float64,ni),
-                    TREND  = zeros(Float64,ni),
-                    LAM  = zeros(Float64,ni),
-                    TT   = zeros(Float64,ni),
-                    Vmax = zeros(Int,ni),
-                    VENTR = zeros(Float64,ni),
-                    MRT  = zeros(Float64,ni),
-                    RTE  = zeros(Float64,ni),
-                    NMPRT = zeros(Int,ni)
+                local rqa_dict = Dict{Symbol, Vector{Float64}}(
+                    :RR    => zeros(ni),
+                    :TRANS => zeros(ni),
+                    :DET   => zeros(ni),
+                    :L     => zeros(ni),
+                    :Lmax  => zeros(ni),
+                    :DIV   => zeros(ni),
+                    :ENTR  => zeros(ni),
+                    :TREND => zeros(ni),
+                    :LAM   => zeros(ni),
+                    :TT    => zeros(ni),
+                    :Vmax  => zeros(ni),
+                    :VENTR => zeros(ni),
+                    :MRT   => zeros(ni),
+                    :RTE   => zeros(ni),
+                    :NMPRT => zeros(ni)
                 )
                 for i=1:ni
                     local rqa_i = $ex
+                    if i==1 # filter parameters
+                        filter!(p->p.first in keys(rqa_i), rqa_dict)
+                    end
                     #@show rqa_i
-                    for k in keys(rqa_i)
-                        rqa_tuple[k][i] = rqa_i[k]
+                    for (k,v) in rqa_i
+                        rqa_dict[k][i] = v
                     end
                 end
-                rqa_tuple
+                rqa_dict
             end
             return esc(ret_ex)
         end
