@@ -8,7 +8,7 @@ v = Dataset(rand(10, 2))
     R = RecurrenceMatrix(xm[:,1], 0.5)
     rqa_params = rqa(R, onlydiagonal=true)
     @test_logs (:warn, "x.RR is deprecated for results of `rqa`; use x[:RR] instead") rqa_params.RR
-    @test_logs (:warn, "RQA with `NamedTuple` output is deprecated, and will be removed in later versions") rqa_tuple = rqa(NamedTuple, R, onlydiagonal=true)
+    rqa_tuple = @test_logs (:warn, "RQA with `NamedTuple` output is deprecated, and will be removed in later versions") rqa(NamedTuple, R, onlydiagonal=true)
     @test rqa_params[:RR] == rqa_tuple.RR
     @test rqa_params[:DET] == rqa_tuple.DET
     @test rqa_params[:ENTR] == rqa_tuple.ENTR
