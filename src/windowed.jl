@@ -29,7 +29,7 @@ const rqa_types = Dict(
 # (https://github.com/JuliaDynamics/DelayEmbeddings.jl/pull/73)
 # Later on it will suffice with x[i]
 _subsetdata(x::AbstractVector, i) = x[i]
-_subsetdata(x::Dataset, i) = x[i,:]
+_subsetdata(x::AbstractDataset, i) = x[i,:]
 
 """
     ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
@@ -88,6 +88,16 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
         append!(cls, colvals(rmat_b) .+ iy1 .- 1)
     end
     rws, cls
+end
+
+# check if call is a constructor of a type with given name 
+function _check_constructor(call, name)
+    call == name && return true
+    if (call isa Expr) && call.head == :curly && call.args[1] == name
+        return true
+    else
+        return false
+    end
 end
 
 """
@@ -159,36 +169,39 @@ macro windowed(ex, options...)
                 local nw = size($x,1) - $(dict_op[:width])
                 local ni = div(nw, s)+1 # number of items
                 local mtype = typeof($x)
-                local rqa_tuple = (
-                    RR   = zeros(Float64,ni),
-                    TRANS = zeros(Float64,ni),
-                    DET  = zeros(Float64,ni),
-                    L    = zeros(Float64,ni),
-                    Lmax = zeros(Int,ni),
-                    DIV  = zeros(Float64,ni),
-                    ENTR  = zeros(Float64,ni),
-                    TREND  = zeros(Float64,ni),
-                    LAM  = zeros(Float64,ni),
-                    TT   = zeros(Float64,ni),
-                    Vmax = zeros(Int,ni),
-                    VENTR = zeros(Float64,ni),
-                    MRT  = zeros(Float64,ni),
-                    RTE  = zeros(Float64,ni),
-                    NMPRT = zeros(Int,ni)
+                local rqa_dict = Dict{Symbol, Vector{Float64}}(
+                    :RR    => zeros(ni),
+                    :TRANS => zeros(ni),
+                    :DET   => zeros(ni),
+                    :L     => zeros(ni),
+                    :Lmax  => zeros(ni),
+                    :DIV   => zeros(ni),
+                    :ENTR  => zeros(ni),
+                    :TREND => zeros(ni),
+                    :LAM   => zeros(ni),
+                    :TT    => zeros(ni),
+                    :Vmax  => zeros(ni),
+                    :VENTR => zeros(ni),
+                    :MRT   => zeros(ni),
+                    :RTE   => zeros(ni),
+                    :NMPRT => zeros(ni)
                 )
                 for i=1:ni
                     local rqa_i = $ex
+                    if i==1 # filter parameters
+                        filter!(p->p.first in keys(rqa_i), rqa_dict)
+                    end
                     #@show rqa_i
-                    for k in keys(rqa_i)
-                        rqa_tuple[k][i] = rqa_i[k]
+                    for (k,v) in rqa_i
+                        rqa_dict[k][i] = v
                     end
                 end
-                rqa_tuple
+                rqa_dict
             end
             return esc(ret_ex)
         end
         # Iteration of matrix construction functions
-        if f == :CrossRecurrenceMatrix
+        if _check_constructor(f, :CrossRecurrenceMatrix)
             # ij_block_rmat(x,y,width,d,...) with d=-1,0,1
             x = ex.args[2]
             y = ex.args[3]
@@ -212,7 +225,7 @@ macro windowed(ex, options...)
                 CrossRecurrenceMatrix(m)
             end
             return esc(ret_ex)
-        elseif f == :RecurrenceMatrix
+        elseif _check_constructor(f, :RecurrenceMatrix)
             # ij_block_rmat(x,x,width,d,...) with d=-1,0
             ex.args[1] = :(RecurrenceAnalysis.ij_block_rmat)
             x = ex.args[2]
@@ -233,7 +246,7 @@ macro windowed(ex, options...)
                 RecurrenceMatrix(m)
             end
             return esc(ret_ex)
-        elseif f == :JointRecurrenceMatrix
+        elseif _check_constructor(f, :JointRecurrenceMatrix)
             x = ex.args[2]
             y = ex.args[3]
             minsz = :(min(size($x,1),size($y,1)))
