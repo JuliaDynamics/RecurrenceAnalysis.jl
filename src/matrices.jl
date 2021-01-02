@@ -59,6 +59,13 @@ function colvals(x::SparseMatrixCSC)
 end
 colvals(x::ARM) = colvals(x.data)
 
+# Convert to matrices
+Base.Array{T}(R::ARM) where T = Matrix{T}(R.data)
+Base.Matrix{T}(R::ARM) where T = Matrix{T}(R.data)
+Base.Array(R::ARM) = Matrix(R.data)
+Base.Matrix(R::ARM) = Matrix(R.data)
+SparseArrays.SparseMatrixCSC{T}(R::ARM) where T = SparseMatrixCSC{T}(R.data)
+SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 
 """
     RecurrenceMatrix(x, ε; kwargs...)
@@ -209,6 +216,7 @@ JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{WithinRange}(a
 
 """
     JointRecurrenceMatrix(R1, R2; kwargs...)
+    
 Create a joint recurrence matrix from given recurrence matrices `R1, R2`.
 """
 function JointRecurrenceMatrix(
