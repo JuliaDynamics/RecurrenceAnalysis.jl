@@ -31,4 +31,11 @@ of time series". *Physics Letters A 373*(46), 4246-4254 (2009).
 Webber, C.L. & Marwan N. (eds.) *Recurrence Quantification Analysis.
 Theory and Best Practices*, Springer, pp. 101-165 (2015).
 """
-LightGraphs.SimpleGraphs.SimpleGraph(R::AbstractRecurrenceMatrix) = SimpleGraph(R.data)
+function LightGraphs.SimpleGraphs.SimpleGraph(R::AbstractRecurrenceMatrix, keepdiagonal=false)
+    graph = SimpleGraph(R.data)
+    if !keepdiagonal
+        delta = SimpleGraphFromIterator(Edge(v,v) for v=1:size(graph, 1))
+        graph = difference(graph, delta)
+    end
+    return graph
+end
