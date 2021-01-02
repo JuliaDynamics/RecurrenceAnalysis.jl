@@ -1,5 +1,6 @@
 using RecurrenceAnalysis
 using DynamicalSystemsBase, Random, Statistics, SparseArrays
+using LightGraphs, LinearAlgebra
 using Test
 
 RA = RecurrenceAnalysis
@@ -48,7 +49,7 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
     ε = rqa_threshold[k]
     dmat = distancematrix(xe, ye)
     crmat = CrossRecurrenceMatrix(xe, ye, ε)
-    @test Matrix(crmat.data) == (dmat .≤ ε)
+    @test Matrix(crmat) == (dmat .≤ ε)
     rmat = RecurrenceMatrix(xe, ε; parallel = false)
     rmat_p = RecurrenceMatrix(xe, ε; parallel = true)
     jrmat = JointRecurrenceMatrix(xe, ye, ε; parallel = false)
@@ -117,4 +118,9 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
     @windowed rqaw = rqa(rmatw) width=50 step=40
     @test rqaw[:RR] == rrw
 
+    # Recurrence networks
+    graph = SimpleGraph(rmat)
+    amat = adjacency_matrix(graph)
+    @test amat == Matrix(rmat) - I
+    density(graph) == recurrencerate(rmat)
 end

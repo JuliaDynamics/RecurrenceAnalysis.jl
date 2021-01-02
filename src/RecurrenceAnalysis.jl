@@ -23,7 +23,8 @@ end
 
 
 export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix,
-       AbstractRecurrenceMatrix, WithinRange, NeighborNumber, FAN
+       AbstractRecurrenceMatrix, WithinRange, NeighborNumber, FAN,
+       SimpleGraph
 
 export embed,
        reconstruct,
@@ -46,15 +47,23 @@ export embed,
        rqa,
        sorteddistances,
        transitivity,
-       @windowed
+       @windowed,
+       # reexported from LightGraphs:
+       degree, density, local_clustering,
+       closeness_centrality, betweenness_centrality,
+       laplacian_matrix, laplacian_spectrum,
+       # based on (but not exported from) LightGraphs
+       averageclustering, transitivity, averagepath
+       
 
 include("distance_matrix.jl")
 include("matrices.jl")
 include("plot.jl")
-include("graphs.jl")
 include("histograms.jl")
 include("rqa.jl")
 include("radius.jl")
+include("graphs.jl")
+include("rna.jl")
 include("windowed.jl")
 include("deprecate.jl")
 

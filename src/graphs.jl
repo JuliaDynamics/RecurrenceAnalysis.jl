@@ -1,14 +1,35 @@
 using LightGraphs
 
 """
-    SimpleGraph(R::AbstractRecurrenceMatrix[, keepdiagonal=false])
+    SimpleGraph(R::AbstractRecurrenceMatrix)
 
-Construct a `SimpleGraph` from the symmetric adjacency matrix defined by `R`.
+Create a recurrent network as a `SimpleGraph`, from the symmetric recurrence matrix `R`.
 That matrix is typically the result of calculating a [`RecurrenceMatrix`](@ref)
 or a [`JointRecurrenceMatrix`](@ref).
 
-Diagonal points, i.e. self-connected nodes of the graph, are ommited by default.
-Set the optional argument `keepdiagonal` as `true` to keep them.
+The recurrence structure of `R` is interpreted as the adjacency matrix of an
+undirected complex network, where two different vertices are connected if they are
+neighbors in the embedded phase space, i.e.
+
+```math
+A_{i,j} = R_{i,j} - \\delta_{i,j}
+```
+
+Following this definition, diagonal points of `R` are ommited, i.e.
+the graph does not contain self-connected nodes.
+
+See the package [LightGraphs.jl](https://juliagraphs.org/LightGraphs.jl/stable/)
+for further options to work with `SimpleGraph` objects, besides the functions
+for Recurrence Network Analysis provided in this package.
+
+# References
+
+[1] : N. Marwan *et al.* "Complex network approach for recurrence anlaysis
+of time series". *Physics Letters A 373*(46), 4246-4254 (2009).
+
+[2] : R.V. Donner *et al.* "Complex Network Analysis of Recurrences", in:
+Webber, C.L. & Marwan N. (eds.) *Recurrence Quantification Analysis.
+Theory and Best Practices*, Springer, pp. 101-165 (2015).
 """
 function LightGraphs.SimpleGraphs.SimpleGraph(R::AbstractRecurrenceMatrix, keepdiagonal=false)
     graph = SimpleGraph(R.data)
@@ -18,15 +39,3 @@ function LightGraphs.SimpleGraphs.SimpleGraph(R::AbstractRecurrenceMatrix, keepd
     end
     return graph
 end
-
-"""
-    SimpleDiGraph(R::AbstractRecurrenceMatrix)
-
-Construct a `SimpleDiGraph` from the adjacency matrix defined by `R`. 
-That matrix can be the result of calculating a [`RecurrenceMatrix`](@ref),
-a [`JointRecurrenceMatrix`](@ref) or a [`CrossRecurrenceMatrix`](@ref).
-
-The point `R[i,j]` of the matrix represents a connection from node `i` to `j`.
-Points in the diagonal are taken as self-connections. 
-"""
-LightGraphs.SimpleGraphs.SimpleDiGraph(R::AbstractRecurrenceMatrix) = SimpleDiGraph(R.data)

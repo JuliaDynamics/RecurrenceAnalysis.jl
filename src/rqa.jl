@@ -76,59 +76,6 @@ function _rrdenominator(R::M; theiler=0, kwargs...) where
     return k*(k+1)
 end
 
-"""
-    transitivity(R::AbstractRecurrenceMatrix) → T
-Returns the network transitivity `T` of the ε-recurrence network `R`. Here the
-recurrence plot `R` is identified as the network adjacency matrix `A`.
-
-## Description
-
-We quote from [^Donner2011], where the authors provide a complete description:
-Transitivity is related to fundamental algebraic relationships between triples
-of discrete objects. Specifically, in graph-theoretical terms, we identify the
-set `X` with the set of vertices `V` , and the relation `R` with the mutual
-adjacency of pairs of vertices. Hence, for a given vertex `i ∈ V` , transitivity
-refers to the fact that for two other vertices `j, k ∈ V` with
-`A_ij = A_ik = 1, A_jk = 1` also holds. In a general network, this is typically
-not the case for all vertices. Consequently, characterising the degree of
-transitivity (or, alternatively, the relative frequency of closed 3-loops, which
-are commonly referred to as triangles) with respect to 
-the whole network provides important information on the structural graph
-properties, which may be related to important general features of the underlying
-system.
-
-The network transitivity measures the fraction of closed triangles with respect to
-the number of linked triples of vertices in the whole network:
-
-```math
-\\mathcal{T} = \\frac{3 \\times \\textrm{number of triangles in the network}}{\\textrm{number of linked triples of vertices}}
-```
-or given the adjacency matrix `A`
-```math
-\\mathcal{T} = \\frac{trace(A^3)}{\\sum(A^2) - trace(A^2)}
-```
-
-## References
-
-[^Donner2011]: R.V. Donner *et al.*, [The geometry of chaotic dynamics — a complex network perspective, Eur. Phys. J. B 84, 653–672 (2011)](https://doi.org/10.1140/epjb/e2011-10899-1)
-"""
-function transitivity(R::ARM)
-    if size(R, 1) ≠ size(R, 2)
-        @warn "Computing network transitivity of a non-square adjacency matrix is impossible"
-        return NaN
-    end
-    R² = R.data * R.data
-    numerator = zero(eltype(R²))
-    for col = 1:size(R,2)
-        rows = view(rowvals(R), nzrange(R,col))
-        for r = rows
-            numerator += R²[r, col]
-        end
-    end
-    trans = numerator / (sum(R²) - LinearAlgebra.tr(R²))
-end
-
-
 ###########################################################################################
 # 0. Histograms
 ###########################################################################################
@@ -444,7 +391,6 @@ The returned value contains the following entries,
 which can be retrieved as from a dictionary (e.g. `results[:RR]`, etc.):
 
 * `:RR`: recurrence rate (see [`recurrencerate`](@ref))
-* `:TRANS`: transitivity (see [`transitivity`](@ref))
 * `:DET`: determinsm (see [`determinism`](@ref))
 * `:L`: average length of diagonal structures (see [`dl_average`](@ref))
 * `:Lmax`: maximum length of diagonal structures (see [`dl_max`](@ref))
@@ -466,7 +412,6 @@ less than the keyword `lminvert`) the average and maximum values
 (`:L`, `:Lmax`, `:TT`, `:Vmax`, `:MRT`)
 are returned as `0.0` but their respective entropies (`:ENTR`, `:VENTR`, `:RTE`)
 are returned as `NaN`.
-`:TRANS` is only returned when the input is a square matrix.
 
 ## Keyword Arguments
 
@@ -567,9 +512,6 @@ function rqa(::Type{Dict}, R; onlydiagonal=false, kwargs...)
             :RTE   => _rt_entropy(rthist),
             :NMPRT => maximum(rthist)
         )
-        if size(R, 1) == size(R, 2)
-            rqa_dict[:TRANS] = transitivity(R)
-        end
         return rqa_dict
     end
 end

@@ -1,5 +1,5 @@
 using RecurrenceAnalysis, SparseArrays
-using Test
+using Test, Statistics
 
 cells = [(1,1),(2,2),(3,2),(6,2),(7,2),(8,2),(6,3),(7,3),(10,3),(2,4),(4,4),
     (1,5),(2,5),(3,5),(5,5),(9,5),(10,5),(2,6),(3,6),(6,6),(7,6),(10,6),
@@ -124,12 +124,63 @@ end
 ### Recurrence network
 @testset "Recurrence networks" begin
     # 7 edges, 12 linked triples, 1 triangle (1-2-4)
-    mat =  [0 1 0 1 0 0
-            1 0 1 1 1 0
-            0 1 0 0 0 0
-            1 1 0 0 0 1
-            0 1 0 0 0 1
-            0 0 0 1 1 0]
-    adjmat = RecurrenceMatrix(mat)
-    @test transitivity(adjmat) == 0.25 # (3/12)
+    adjmat7 =  [0 1 0 1 0 0
+                1 0 1 1 1 0
+                0 1 0 0 0 0
+                1 1 0 0 0 1
+                0 1 0 0 0 1
+                0 0 0 1 1 0]
+    graph = SimpleGraph(RecurrenceMatrix(adjmat7))
+    @test transitivity(graph) == 0.25 # (3/12)
+    @test averageclustering(graph) == 0.25 # mean([1, 1/6, 0, 1/3, 0, 0])
+    # taken from Donner et al. https://doi.org/10.1088/1367-2630/12/3/033025
+    adjmat10 = [0 0 0 1 0 0 0 1 0 0
+                0 0 0 0 1 0 0 0 1 0
+                0 0 0 0 0 1 0 0 0 1
+                1 0 0 0 0 0 1 0 0 0
+                0 1 0 0 0 0 0 1 0 0
+                0 0 1 0 0 0 0 0 1 0
+                0 0 0 1 0 0 0 0 0 1
+                1 0 0 0 1 0 0 0 0 0
+                0 1 0 0 0 1 0 0 0 0
+                0 0 1 0 0 0 1 0 0 0]
+    dismat10 = [0 3 4 1 2 5 2 1 4 3
+                3 0 3 4 1 2 5 2 1 4
+                4 3 0 3 4 1 2 5 2 1
+                1 4 3 0 3 4 1 2 5 2
+                2 1 4 3 0 3 4 1 2 5
+                5 2 1 4 3 0 3 4 1 2
+                2 5 2 1 4 3 0 3 4 1
+                1 2 5 2 1 4 3 0 3 4
+                4 1 2 5 2 1 4 3 0 3
+                3 4 1 2 5 2 1 4 3 0]
+    graph = SimpleGraph(RecurrenceMatrix(adjmat10))
+    @test transitivity(graph) == averageclustering(graph) == 0
+    @test averagepath(graph) ≈ mean(dismat10) * 10/9
+    adjmat9 =  [0 0 0 0 1 0 0 1 1
+                0 0 0 0 0 1 0 0 1
+                0 0 0 1 0 0 1 0 0
+                0 0 1 0 1 0 1 1 0
+                1 0 0 1 0 0 1 1 1
+                0 1 0 0 0 0 0 0 0
+                0 0 1 1 1 0 0 0 0
+                1 0 0 1 1 0 0 0 1
+                1 1 0 0 1 0 0 1 0]
+    dismat9 =  [0 1 2 2 1 2 3 1 1
+                1 0 2 3 1 1 2 2 1
+                2 2 0 4 1 1 1 3 2
+                2 3 4 0 3 4 5 1 3
+                1 1 1 3 0 1 2 2 1
+                2 1 1 4 1 0 1 3 2
+                3 2 1 5 2 1 0 4 3
+                1 2 3 1 2 3 4 0 2
+                1 1 2 3 1 2 3 2 0]
+    graph = SimpleGraph(RecurrenceMatrix(adjmat9))
+    triples = [3, 1, 1, 6, 10, 0, 3, 6, 6]
+    triangles = [3, 0, 1, 3, 5, 0, 2, 4, 3]
+    lcc = local_clustering_coefficient(graph)
+    @test all(lcc .≈ replace(triangles./triples, NaN=>0))
+    @test transitivity(graph) ≈ sum(triangles) / sum(triples)
+    @test averageclustering(graph) ≈ mean(lcc)
+    @test averagepath(graph) ≈ mean(dismat9) * 9/8
 end

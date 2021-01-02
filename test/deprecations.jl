@@ -21,4 +21,6 @@ v = Dataset(rand(10, 2))
     @test_logs (:warn, "`JointRecurrenceMatrix{WithinRange}(x::AbstractMatrix, y, ε; kwargs...)` is deprecated, use `JointRecurrenceMatrix{WithinRange}(Dataset(x), y, ε; kwargs...)`") JointRecurrenceMatrix(xm, v, 0.5)
     @test_logs (:warn, "`JointRecurrenceMatrix{WithinRange}(x, y::AbstractMatrix, ε; kwargs...)` is deprecated, use `JointRecurrenceMatrix{WithinRange}(x, Dataset(y), ε; kwargs...)`") JointRecurrenceMatrix(v, ym, 0.5)
     @test_logs (:warn, "`JointRecurrenceMatrix{WithinRange}(x::AbstractMatrix, y::AbstractMatrix, ε; kwargs...)` is deprecated, use `JointRecurrenceMatrix{WithinRange}(Dataset(x), Dataset(y), ε; kwargs...)`") JointRecurrenceMatrix(xm, ym, 0.5)
+    # transitivity
+    @test_logs (:warn, "`transitivity(x::AbstractRecurrenceMatrix)` is deprecated, use `transitivity(SimpleGraph(x))`") transitivity(R)
 end
