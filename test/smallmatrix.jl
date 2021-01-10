@@ -130,9 +130,9 @@ end
                 1 1 0 0 0 1
                 0 1 0 0 0 1
                 0 0 0 1 1 0]
-    graph = SimpleGraph(RecurrenceMatrix(adjmat7))
-    @test transitivity(graph) == 0.25 # (3/12)
-    @test averageclustering(graph) == 0.25 # mean([1, 1/6, 0, 1/3, 0, 0])
+    rna_dict = rna(RecurrenceMatrix(adjmat7))
+    @test rna_dict[:density] == 7/15
+    @test rna_dict[:transitivity] == 0.25 # (3/12)
     # taken from Donner et al. https://doi.org/10.1088/1367-2630/12/3/033025
     adjmat10 = [0 0 0 1 0 0 0 1 0 0
                 0 0 0 0 1 0 0 0 1 0
@@ -154,9 +154,11 @@ end
                 1 2 5 2 1 4 3 0 3 4
                 4 1 2 5 2 1 4 3 0 3
                 3 4 1 2 5 2 1 4 3 0]
-    graph = SimpleGraph(RecurrenceMatrix(adjmat10))
-    @test transitivity(graph) == averageclustering(graph) == 0
-    @test averagepath(graph) ≈ mean(dismat10) * 10/9
+    rna_dict = rna(RecurrenceMatrix(adjmat10))
+    @test rna_dict[:density] == 2/9
+    @test rna_dict[:transitivity] == 0
+    @test rna_dict[:averagepath] ≈ sum(dismat10) / (10*9)
+    @test rna_dict[:diameter] ≈ maximum(sum(dismat10, dims=1)/9)
     adjmat9 =  [0 0 0 0 1 0 0 1 1
                 0 0 0 0 0 1 0 0 1
                 0 0 0 1 0 0 1 0 0
@@ -175,12 +177,11 @@ end
                 3 2 1 5 2 1 0 4 3
                 1 2 3 1 2 3 4 0 2
                 1 1 2 3 1 2 3 2 0]
-    graph = SimpleGraph(RecurrenceMatrix(adjmat9))
+    rna_dict = rna(RecurrenceMatrix(adjmat9))
     triples = [3, 1, 1, 6, 10, 0, 3, 6, 6]
     triangles = [3, 0, 1, 3, 5, 0, 2, 4, 3]
-    lcc = local_clustering_coefficient(graph)
-    @test all(lcc .≈ replace(triangles./triples, NaN=>0))
-    @test transitivity(graph) ≈ sum(triangles) / sum(triples)
-    @test averageclustering(graph) ≈ mean(lcc)
-    @test averagepath(graph) ≈ mean(dismat9) * 9/8
+    @test rna_dict[:density] == 7/18
+    @test rna_dict[:transitivity] ≈ sum(triangles) / sum(triples)
+    @test rna_dict[:averagepath] ≈ sum(dismat9) / (9*8)
+    @test rna_dict[:diameter] ≈ maximum(sum(dismat9, dims=1)/8)
 end

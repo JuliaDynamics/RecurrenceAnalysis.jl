@@ -122,5 +122,6 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
     graph = SimpleGraph(rmat)
     amat = adjacency_matrix(graph)
     @test amat == Matrix(rmat) - I
-    density(graph) == recurrencerate(rmat)
+    rna_dict = rna(rmat)
+    rna_dict[:density] == recurrencerate(rmat)
 end

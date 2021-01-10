@@ -66,7 +66,7 @@ function rqa(::Type{NamedTuple}, R; onlydiagonal=false, kwargs...)
 end
 
 function transitivity(R::AbstractRecurrenceMatrix)
-    @warn "`transitivity(x::AbstractRecurrenceMatrix)` is deprecated, use `transitivity(SimpleGraph(x))`"
+    @warn "`transitivity(x::AbstractRecurrenceMatrix)` is deprecated`, use `rna` to analyse network parameters"
     if size(R, 1) ≠ size(R, 2)
         @warn "Computing network transitivity of a non-square adjacency matrix is impossible"
         return NaN

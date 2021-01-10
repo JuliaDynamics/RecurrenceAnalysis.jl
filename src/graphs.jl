@@ -24,8 +24,8 @@ for Recurrence Network Analysis provided in this package.
 
 # References
 
-[1] : N. Marwan *et al.* "Complex network approach for recurrence anlaysis
-of time series". *Physics Letters A 373*(46), 4246-4254 (2009).
+[1] : R.V. Donner *et al.* "Recurrence networks — a novel paradigm for nonlinear time series analysis",
+*New Journal of Physics* 12, 033025 (2010).
 
 [2] : R.V. Donner *et al.* "Complex Network Analysis of Recurrences", in:
 Webber, C.L. & Marwan N. (eds.) *Recurrence Quantification Analysis.
