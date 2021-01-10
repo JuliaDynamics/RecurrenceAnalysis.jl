@@ -158,7 +158,7 @@ end
     @test rna_dict[:density] == 2/9
     @test rna_dict[:transitivity] == 0
     @test rna_dict[:averagepath] ≈ sum(dismat10) / (10*9)
-    @test rna_dict[:diameter] ≈ maximum(sum(dismat10, dims=1)/9)
+    @test rna_dict[:diameter] == maximum(dismat10)
     adjmat9 =  [0 0 0 0 1 0 0 1 1
                 0 0 0 0 0 1 0 0 1
                 0 0 0 1 0 0 1 0 0
@@ -183,5 +183,5 @@ end
     @test rna_dict[:density] == 7/18
     @test rna_dict[:transitivity] ≈ sum(triangles) / sum(triples)
     @test rna_dict[:averagepath] ≈ sum(dismat9) / (9*8)
-    @test rna_dict[:diameter] ≈ maximum(sum(dismat9, dims=1)/8)
+    @test rna_dict[:diameter] == maximum(dismat9)
 end
