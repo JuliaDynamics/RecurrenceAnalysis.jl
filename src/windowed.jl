@@ -1,6 +1,5 @@
 const rqa_funs = [
     :recurrencerate,
-    :transitivity,
     :determinism,
     :dl_average,
     :dl_max,

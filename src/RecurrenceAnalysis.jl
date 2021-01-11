@@ -45,8 +45,10 @@ export embed,
        nmprt,
        rqa,
        sorteddistances,
-       transitivity,
-       @windowed
+       @windowed,
+       rna,
+       # deprecated:
+       transitivity  
 
 include("distance_matrix.jl")
 include("matrices.jl")
@@ -54,6 +56,8 @@ include("plot.jl")
 include("histograms.jl")
 include("rqa.jl")
 include("radius.jl")
+include("graphs.jl")
+include("rna.jl")
 include("windowed.jl")
 include("deprecate.jl")
 

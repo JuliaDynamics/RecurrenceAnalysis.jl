@@ -64,3 +64,20 @@ function rqa(::Type{NamedTuple}, R; onlydiagonal=false, kwargs...)
         )
     end
 end
+
+function transitivity(R::AbstractRecurrenceMatrix)
+    @warn "`transitivity(x::AbstractRecurrenceMatrix)` is deprecated`, use `rna` to analyse network parameters"
+    if size(R, 1) ≠ size(R, 2)
+        @warn "Computing network transitivity of a non-square adjacency matrix is impossible"
+        return NaN
+    end
+    R² = R.data * R.data
+    numerator = zero(eltype(R²))
+    for col = 1:size(R,2)
+        rows = view(rowvals(R), nzrange(R,col))
+        for r = rows
+            numerator += R²[r, col]
+        end
+    end
+    trans = numerator / (sum(R²) - LinearAlgebra.tr(R²))
+end
