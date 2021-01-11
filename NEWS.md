@@ -1,5 +1,22 @@
 # RecurrenceAnalysis.jl News
 
+## v1.5.1
+- Minor documentation fixes.
+
+## v1.5.0
+- Integration with `LightGraphs` to create recurrence networks, and `rna` function.
+
+## v1.4.0
+- New method of Fixed Amount of Neighbors (FAN) method to create recurrence plots.
+- Now `AbstractRecurrenceMatrix` types have a parameter with the possible values:
+    * `WithinRange`: when neighboring points are determined by a given distance in the phase space.
+    * `NeighborNumber`: when each point has a determined number of neighbors.  
+- Input arguments of `RecurrenceMatrix`, etc. are generalized to `AbstractDataset`.
+
+## v1.3.2
+- Bugfixes of `transitivity`
+- Deprecate `AbstractMatrix` inputs to `RecurrenceMatrix` etc., in favor of `Dataset`.
+
 ## v1.3.0
 - Increased performance of `RecurrenceMatrix`.
 - Possible to make `JointRecurrenceMatrix` from input arguments.

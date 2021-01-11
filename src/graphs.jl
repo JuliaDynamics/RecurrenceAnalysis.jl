@@ -26,6 +26,7 @@ for Recurrence Network Analysis provided in this package.
 
 [1] : R.V. Donner *et al.* "Recurrence networks — a novel paradigm for nonlinear time series analysis",
 *New Journal of Physics* 12, 033025 (2010).
+[DOI:10.1088/1367-2630/12/3/033025](https://doi.org/10.1088/1367-2630/12/3/033025)
 
 [2] : R.V. Donner *et al.* "Complex Network Analysis of Recurrences", in:
 Webber, C.L. & Marwan N. (eds.) *Recurrence Quantification Analysis.

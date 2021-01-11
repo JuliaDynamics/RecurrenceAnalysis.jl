@@ -41,6 +41,7 @@ explicitly exclude the LOI or other diagonals around it.
 
 [1] : N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
 *Phys. Reports 438*(5-6), 237-329 (2007).
+[DOI:10.1016/j.physrep.2006.11.001](https://doi.org/10.1016/j.physrep.2006.11.001)
 
 [2] : C.L. Webber & J.P. Zbilut, "Recurrence Quantification Analysis of Nonlinear
 Dynamical Systems", in: Riley MA & Van Orden GC, Tutorials in Contemporary
@@ -344,7 +345,8 @@ of recurrence times [1].
 ## References
 
 [1] : E.J. Ngamga *et al.* "Recurrence analysis of strange nonchaotic dynamics",
-*Physical Review E*, 75(3), 036222(1-8), 2007, DOI:10.1103/physreve.75.036222
+*Physical Review E*, 75(3), 036222(1-8) (2007)
+[DOI:10.1103/physreve.75.036222](https://doi.org/10.1103/physreve.75.036222)
 
 """
 nmprt(R::ARM; kwargs) = maximum(verticalhistograms(R; kwargs...)[2])
