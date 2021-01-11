@@ -76,7 +76,7 @@ Objects of type `<:AbstractRecurrenceMatrix` are displayed as a [`recurrenceplot
 
 ## Description
 
-The recurrence matrix is a numeric representation of a "recurrence plot" [^1, ^2],
+The recurrence matrix is a numeric representation of a "recurrence plot" [1, 2],
 in the form of a sparse square matrix of Boolean values.
 
 `x` must be a `Vector` or an `AbstractDataset`
@@ -121,10 +121,11 @@ See also: [`CrossRecurrenceMatrix`](@ref), [`JointRecurrenceMatrix`](@ref) and
 use [`recurrenceplot`](@ref) to turn the result of these functions into a plottable format.
 
 ## References
-[^1] : N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
+[1] : N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
 *Phys. Reports 438*(5-6), 237-329 (2007).
+[DOI:10.1016/j.physrep.2006.11.001](https://doi.org/10.1016/j.physrep.2006.11.001)
 
-[^2] : N. Marwan & C.L. Webber, "Mathematical and computational foundations of
+[2] : N. Marwan & C.L. Webber, "Mathematical and computational foundations of
 recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
