@@ -43,7 +43,7 @@ function rna(args...; kwargs...)
     return Dict{Symbol, Float64}(
         :density => density(graph),
         :transitivity => global_clustering_coefficient(graph),
-        :averagepath => mean(1 ./ closeness_centrality(graph)),
+        :averagepath => mean(map(x-> isinf(x) ? 0. : x, 1 ./ closeness_centrality(graph))),
         :diameter => diameter(graph)
     )
 end
