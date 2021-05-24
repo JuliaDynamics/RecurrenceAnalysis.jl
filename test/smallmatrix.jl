@@ -184,4 +184,27 @@ end
     @test rna_dict[:transitivity] ≈ sum(triangles) / sum(triples)
     @test rna_dict[:averagepath] ≈ sum(dismat9) / (9*8)
     @test rna_dict[:diameter] == maximum(dismat9)
+    adjmat11 = [0 0 0 1 0 0 0 1 0 0
+                0 0 0 0 1 0 0 0 1 0
+                0 0 0 0 0 1 0 0 0 0
+                1 0 0 0 0 0 1 0 0 0
+                0 1 0 0 0 0 0 1 0 0
+                0 0 1 0 0 0 0 0 1 0
+                0 0 0 1 0 0 0 0 0 0
+                1 0 0 0 1 0 0 0 0 0
+                0 1 0 0 0 1 0 0 0 0
+                0 0 0 0 0 0 0 0 0 0]
+    dismat11 =  [0 3 6 1 2 5 2 1 4 Inf
+                 3 0 3 4 1 2 5 2 1 Inf
+                 6 3 0 7 4 1 8 5 2 Inf
+                 1 4 7 0 3 6 1 2 5 Inf
+                 2 1 4 3 0 3 4 1 2 Inf
+                 5 2 1 6 3 0 7 4 1 Inf
+                 2 5 8 1 4 7 0 3 6 Inf
+                 1 2 5 2 1 4 3 0 3 Inf
+                 4 1 2 5 2 1 6 3 0 Inf
+                 Inf Inf Inf Inf Inf Inf Inf Inf Inf 0]
+    rna_dict = rna(RecurrenceMatrix(adjmat11))
+    @test !isinf(rna_dict[:averagepath])
+    @test rna_dict[:averagepath] ≈ sum(dismat11[1:9,1:9]) / (9*10)
 end
