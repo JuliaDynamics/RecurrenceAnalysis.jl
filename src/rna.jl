@@ -43,7 +43,8 @@ function rna(args...; kwargs...)
     return Dict{Symbol, Float64}(
         :density => density(graph),
         :transitivity => global_clustering_coefficient(graph),
-        :averagepath => mean(map(x-> isinf(x) ? 0. : x, 1 ./ closeness_centrality(graph))),
+        :averagepath => sum(map(x-> x == typemax(x) ? 0. : x,
+                        floyd_warshall_shortest_paths(graph).dists)) / (nv(graph) * (nv(graph) - 1)),
         :diameter => diameter(graph)
     )
 end
