@@ -43,7 +43,22 @@ function rna(args...; kwargs...)
     return Dict{Symbol, Float64}(
         :density => density(graph),
         :transitivity => global_clustering_coefficient(graph),
-        :averagepath => mean(1 ./ closeness_centrality(graph)),
+        :averagepath => averagepath(graph),
         :diameter => diameter(graph)
     )
+end
+
+"""
+    averagepath(graph)
+
+Calculates average minimum path length for a SimpleGraph.
+Uses Donner, 2010, Eq. 26 on pg. 18.
+"""
+function averagepath(graph::SimpleGraph)
+    num_verts = nv(graph)
+
+    dist_mat = floyd_warshall_shortest_paths(graph).dists
+    @. dist_mat[dist_mat == typemax(dist_mat)] = 0.
+
+    return sum(dist_mat) / (num_verts * (num_verts - 1))
 end

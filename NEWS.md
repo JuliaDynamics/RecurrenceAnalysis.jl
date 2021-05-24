@@ -1,5 +1,8 @@
 # RecurrenceAnalysis.jl News
 
+## v1.5.2
+- New, faster formula for `rna[:averagepath]` allowing disconnected graphs.
+
 ## v1.5.1
 - Minor documentation fixes.
 
