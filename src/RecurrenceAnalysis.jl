@@ -50,15 +50,15 @@ export embed,
        # deprecated:
        transitivity  
 
-include("distance_matrix.jl")
-include("matrices.jl")
-include("plot.jl")
-include("histograms.jl")
-include("rqa.jl")
-include("radius.jl")
-include("graphs.jl")
-include("rna.jl")
-include("windowed.jl")
+include("matrices/distance_matrix.jl")
+include("matrices/matrices.jl")
+include("matrices/plot.jl")
+include("rqa/histograms.jl")
+include("rqa/rqa.jl")
+include("rqa/radius.jl")
+include("rna/graphs.jl")
+include("rna/rna.jl")
+include("rqa/windowed.jl")
 include("deprecate.jl")
 
 end

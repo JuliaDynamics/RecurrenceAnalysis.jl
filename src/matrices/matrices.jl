@@ -9,6 +9,7 @@ The low level interface is contained in the function
 # AbstractRecurrenceMatrix type definitions and documentation strings
 ################################################################################
 const FAN = NeighborNumber
+export FAN
 
 abstract type AbstractRecurrenceMatrix{T} end
 const ARM = AbstractRecurrenceMatrix
@@ -69,9 +70,9 @@ SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 
 """
     RecurrenceMatrix(x, ε; kwargs...)
-    RecurrenceMatrix{FAN}(...)
+    RecurrenceMatrix{FAN}(x, ε; kwargs...)
 
-Create a recurrence matrix from trajectory `x`.
+Create a recurrence matrix from trajectory `x` (either a `Dataset` or a `Vector`).
 Objects of type `<:AbstractRecurrenceMatrix` are displayed as a [`recurrenceplot`](@ref).
 
 ## Description
@@ -151,7 +152,7 @@ end
 
 """
     CrossRecurrenceMatrix(x, y, ε; kwargs...)
-    CrossRecurrenceMatrix{FAN}(...)
+    CrossRecurrenceMatrix{FAN}(x, y, ε; kwargs...)
 
 Create a cross recurrence matrix from trajectories `x` and `y`.
 
@@ -188,7 +189,7 @@ end
 
 """
     JointRecurrenceMatrix(x, y, ε; kwargs...)
-    JointRecurrenceMatrix{FAN}(...)
+    JointRecurrenceMatrix{FAN}(x, y, ε; kwargs...)
 
 Create a joint recurrence matrix from `x` and `y`.
 

@@ -1,5 +1,5 @@
 """
-    rna(R)
+    rna(R::AbstractRecurrenceMatrix)
     rna(args...; kwargs...)
 
 Calculate a set of Recurrence Network parameters.
