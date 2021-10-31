@@ -100,8 +100,8 @@ function _linehistograms(rows::T, cols::T, lmin::Integer, theiler::Integer,
 end
 
 deftheiler(x::Union{RecurrenceMatrix,JointRecurrenceMatrix}) = 1
-deftheiler(x::Union{CrossRecurrenceMatrix,SparseMatrixCSC}) = 0
-
+deftheiler(x::CrossRecurrenceMatrix) = 0
+deftheiler(x::SparseMatrixCSC) = 1
 function diagonalhistogram(x::Union{ARM,SparseMatrixCSC}; lmin::Integer=2, theiler::Integer=deftheiler(x), kwargs...)
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))

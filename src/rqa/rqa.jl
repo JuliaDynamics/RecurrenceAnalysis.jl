@@ -68,7 +68,13 @@ end
 
 # Calculate the denominator for the recurrence rate
 _rrdenominator(R::ARM; theiler=0, kwargs...) = length(R)
-_rrdenominator(R::SparseMatrixCSC; theiler=0, kwargs...) = length(R)
+
+function _rrdenominator(R::SparseMatrixCSC; theiler=0, kwargs...)
+
+    (theiler == 0) && (return length(R))
+    k = size(R,1) - theiler
+    return k*(k+1)
+end
 
 function _rrdenominator(R::M; theiler=0, kwargs...) where
     M<:Union{RecurrenceMatrix,JointRecurrenceMatrix}
@@ -347,7 +353,7 @@ of recurrence times [1].
 [DOI:10.1103/physreve.75.036222](https://doi.org/10.1103/physreve.75.036222)
 
 """
-nmprt(R::Union{ARM,SparseMatrixCSC}, kwargs...) = maximum(verticalhistograms(R.data;theiler=deftheiler(R), kwargs...)[2])
+nmprt(R::Union{ARM,SparseMatrixCSC}, kwargs...) = maximum(verticalhistograms(R;theiler=deftheiler(R), kwargs...)[2])
 ###########################################################################################
 # 4. All in one
 ###########################################################################################

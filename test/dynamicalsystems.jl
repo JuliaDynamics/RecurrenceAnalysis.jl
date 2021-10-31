@@ -133,7 +133,11 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
     end
 
     #check for erroring here with sparse matrices
-    @windowed recurrencerate(rmat.data,theiler=1) width=50 step=40
-    @windowed rqa(rmat.data,theiler=1) width=50 step =40
-    coordinates(rmat.data)
+    @windowed(rrw2 = recurrencerate(rmat.data,theiler=1), width=50, step=40)
+    @windowed(rqaw2 = rqa(rmat.data,theiler=1), width=50, step =40)
+    @test rqaw2[:RR]==rrw2
+    rc1 = coordinates(rmat)
+    rc2 = coordinates(rmat.data)
+    @test isequal(rc1[1],rc2[1])
+    @test isequal(rc2[2],rc2[2])
 end
