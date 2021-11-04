@@ -124,4 +124,20 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
     @test amat == Matrix(rmat) - I
     rna_dict = rna(rmat)
     rna_dict[:density] == recurrencerate(rmat)
+
+    #test sparse matrices
+    rqapar_sparse = rqa(rmat.data, theiler=1, lmin=3, border=20)
+    rqadiag_sparse = rqa(rmat.data, theiler=1, lmin=3, border=20, onlydiagonal=true)
+    for p in keys(rqadiag_sparse)
+        @test rqapar_sparse[p]==rqadiag_sparse[p]
+    end
+
+    #check for erroring here with sparse matrices
+    @windowed(rrw2 = recurrencerate(rmat.data,theiler=1), width=50, step=40)
+    @windowed(rqaw2 = rqa(rmat.data,theiler=1), width=50, step =40)
+    @test rqaw2[:RR]==rrw2
+    rc1 = coordinates(rmat)
+    rc2 = coordinates(rmat.data)
+    @test isequal(rc1[1],rc2[1])
+    @test isequal(rc2[2],rc2[2])
 end

@@ -52,7 +52,7 @@ URL: https://www.nsf.gov/pubs/2005/nsf05057/nmbs/nmbs.pdf
 recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
-function recurrencerate(R::ARM; theiler::Integer=deftheiler(R), kwargs...)::Float64
+function recurrencerate(R::Union{ARM,SparseMatrixCSC}; theiler::Integer=deftheiler(R), kwargs...)::Float64
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
     if theiler == 0
@@ -68,6 +68,13 @@ end
 
 # Calculate the denominator for the recurrence rate
 _rrdenominator(R::ARM; theiler=0, kwargs...) = length(R)
+
+function _rrdenominator(R::SparseMatrixCSC; theiler=0, kwargs...)
+
+    (theiler == 0) && (return length(R))
+    k = size(R,1) - theiler
+    return k*(k+1)
+end
 
 function _rrdenominator(R::M; theiler=0, kwargs...) where
     M<:Union{RecurrenceMatrix,JointRecurrenceMatrix}
@@ -153,7 +160,7 @@ is the number of lines of length equal to ``l``.
 points inside the Theiler window (see [`rqa`](@ref) for the
 default values and usage of the keyword argument `theiler`).
 """
-function determinism(R::ARM; kwargs...)
+function determinism(R::Union{ARM,SparseMatrixCSC}; kwargs...)
     npoints = recurrencerate(R; kwargs...)*_rrdenominator(R; kwargs...)
     return _determinism(diagonalhistogram(R; kwargs...), npoints)
 end
@@ -171,8 +178,7 @@ end
 Calculate the divergence of the recurrence matrix `R`
 (actually the inverse of [`dl_max`](@ref)).
 """
-divergence(R::ARM; kwargs...) = ( 1.0/dl_max(R; kwargs...) )
-
+divergence(R::Union{ARM,SparseMatrixCSC}; kwargs...) = ( 1.0/dl_max(R; kwargs...) )
 
 """
     trend(R[; border=10, theiler])
@@ -217,10 +223,10 @@ Dynamical Systems", in: Riley MA & Van Orden GC, *Tutorials in Contemporary
 Nonlinear Methods for the Behavioral Sciences*, 2005, 26-94.
 https://www.nsf.gov/pubs/2005/nsf05057/nmbs/nmbs.pdf
 """
-trend(R::ARM; theiler=deftheiler(R), kwargs...) =
+trend(R::Union{ARM,SparseMatrixCSC}; theiler=deftheiler(R), kwargs...) =
     _trend(tau_recurrence(R); theiler=theiler, kwargs...)
-
-function tau_recurrence(R::ARM)
+    
+function tau_recurrence(R::Union{ARM,SparseMatrixCSC})
     n = minimum(size(R))
     rv = rowvals(R)
     rr_τ = zeros(n)
@@ -290,7 +296,7 @@ is the number of lines of length equal to ``v``.
 points inside the Theiler window (see [`rqa`](@ref) for the
 default values and usage of the keyword argument `theiler`).
 """
-function laminarity(R::ARM; kwargs...)
+function laminarity(R::Union{ARM,SparseMatrixCSC}; kwargs...)
     npoints = recurrencerate(R)*_rrdenominator(R; kwargs...)
     return _laminarity(verticalhistograms(R; kwargs...)[1], npoints)
 end
@@ -308,8 +314,7 @@ default values and usage of the keyword argument `theiler`).
 The trapping time is the average of the vertical line structures and thus equal
 to [`vl_average`](@ref).
 """
-trappingtime(R::ARM; kwargs...) = vl_average(R; kwargs...)
-
+trappingtime(R::Union{ARM,SparseMatrixCSC}; kwargs...) = vl_average(R; kwargs...)
 ###########################################################################################
 # 3. Based on recurrence times
 ###########################################################################################
@@ -327,8 +332,7 @@ default values and usage of the keyword argument `theiler`).
 
 Equivalent to [`rt_average`](@ref).
 """
-meanrecurrencetime(R::ARM; kwargs...) = rt_average(R; kwargs...)
-
+meanrecurrencetime(R::Union{ARM,SparseMatrixCSC}; kwargs...) = rt_average(R; kwargs...)
 
 """
     nmprt(R[; lmin=2, theiler])
@@ -349,8 +353,7 @@ of recurrence times [1].
 [DOI:10.1103/physreve.75.036222](https://doi.org/10.1103/physreve.75.036222)
 
 """
-nmprt(R::ARM; kwargs) = maximum(verticalhistograms(R; kwargs...)[2])
-
+nmprt(R::Union{ARM,SparseMatrixCSC}, kwargs...) = maximum(verticalhistograms(R;theiler=deftheiler(R), kwargs...)[2])
 ###########################################################################################
 # 4. All in one
 ###########################################################################################

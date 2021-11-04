@@ -7,7 +7,7 @@ export recurrenceplot, coordinates, grayscale
     coordinates(R) -> xs, ys
 Return the coordinates of the recurrence points of `R` (in indices).
 """
-function coordinates(R::ARM) # TODO: allow scan every ÷100 elements?
+function coordinates(R::SparseMatrixCSC) # TODO: allow scan every ÷100 elements?
    rows = rowvals(R)
    is = zeros(Int, nnz(R))
    js = zeros(Int, nnz(R))
@@ -22,8 +22,8 @@ function coordinates(R::ARM) # TODO: allow scan every ÷100 elements?
    end
    return is, js
 end
-
-recurrenceplot(R::ARM; kwargs...) = recurrenceplot(stdout, R::ARM; kwargs...)
+coordinates(R::ARM) = coordinates(R.data)
+recurrenceplot(R::Union{ARM,SparseMatrixCSC}; kwargs...) = recurrenceplot(stdout, R::Union{ARM,SparseMatrixCSC}; kwargs...)
 
 """
     recurrenceplot([io,] R; minh = 25, maxh = 0.5, ascii, kwargs...) -> u
@@ -44,7 +44,7 @@ Notice that the accuracy of this function drops drastically for matrices whose s
 is significantly bigger than the width and height of the display (assuming each
 index of the matrix is one character).
 """
-function recurrenceplot(io::IO, R::ARM; minh = 25, maxh = 0.5, ascii = nothing, kwargs...)
+function recurrenceplot(io::IO, R::Union{ARM,SparseMatrixCSC}; minh = 25, maxh = 0.5, ascii = nothing, kwargs...)
     @assert maxh ≤ 1
     h, w = displaysize(io)
     h = max(minh, round(Int, maxh * h)) # make matrix as long as half the screen (but not too short)
@@ -85,7 +85,7 @@ function recurrenceplot(io::IO, R::ARM; minh = 25, maxh = 0.5, ascii = nothing, 
     )
 end
 
-function Base.show(io::IO, ::MIME"text/plain", R::ARM)
+function Base.show(io::IO, ::MIME"text/plain", R::Union{ARM,SparseMatrixCSC})
     a = recurrenceplot(io, R)
     show(io, a)
 end

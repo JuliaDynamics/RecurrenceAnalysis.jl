@@ -101,8 +101,8 @@ end
 
 deftheiler(x::Union{RecurrenceMatrix,JointRecurrenceMatrix}) = 1
 deftheiler(x::CrossRecurrenceMatrix) = 0
-
-function diagonalhistogram(x::ARM; lmin::Integer=2, theiler::Integer=deftheiler(x), kwargs...)
+deftheiler(x::SparseMatrixCSC) = 1
+function diagonalhistogram(x::Union{ARM,SparseMatrixCSC}; lmin::Integer=2, theiler::Integer=deftheiler(x), kwargs...)
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
     (lmin < 1) && throw(ErrorException("lmin must be 1 or greater"))
@@ -113,7 +113,13 @@ function diagonalhistogram(x::ARM; lmin::Integer=2, theiler::Integer=deftheiler(
     if issymmetric(x)
         # If theiler==0, the LOI is counted separately to avoid duplication
         if theiler == 0
-            loi_hist = verticalhistograms(CrossRecurrenceMatrix(hcat(diag(x,0))),lmin=lmin)[1]
+            if all(isequal(1),x.nzval)==false #CrossRecurrenceMatrix won't work if all values aren't equal to 1 and theiler=0
+                xtmp = deepcopy(x)
+                xtmp.nzval .= 1
+                loi_hist = verticalhistograms(CrossRecurrenceMatrix(hcat(diag(xtmp,0))),lmin=lmin)[1]
+            else
+                loi_hist = verticalhistograms(CrossRecurrenceMatrix(hcat(diag(x,0))),lmin=lmin)[1]
+            end
         end
         inside = (dv .< max(theiler,1))
         f = 2
@@ -140,7 +146,8 @@ function diagonalhistogram(x::ARM; lmin::Integer=2, theiler::Integer=deftheiler(
     return dh
 end
 
-function verticalhistograms(x::ARM;
+
+function verticalhistograms(x::Union{ARM,SparseMatrixCSC};
     lmin::Integer=2, theiler::Integer=deftheiler(x), distances=true, kwargs...)
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
@@ -199,7 +206,7 @@ estimator of the Poincaré recurrence times [2].
 recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
-function recurrencestructures(x::ARM;
+function recurrencestructures(x::Union{ARM,SparseMatrixCSC};
     diagonal=true, vertical=true, recurrencetimes=true,
     theiler=deftheiler(x), kwargs...)
 
