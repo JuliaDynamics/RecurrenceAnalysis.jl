@@ -218,7 +218,7 @@ JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{WithinRange}(a
 
 """
     JointRecurrenceMatrix(R1, R2; kwargs...)
-    
+
 Create a joint recurrence matrix from given recurrence matrices `R1, R2`.
 """
 function JointRecurrenceMatrix(
@@ -336,7 +336,7 @@ Note that `parallel` may be either `Val(true)` or `Val(false)`.
 """
 function recurrence_matrix(xx::AbstractDataset, yy::AbstractDataset, metric::Metric, ε, ::Val{false})
     x = xx.data
-    y = yy.data    
+    y = yy.data
     @assert ε isa Real || length(ε) == length(y)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
@@ -526,4 +526,40 @@ function recurrence_matrix(xx::AbstractDataset, metric::Metric, ε, ::Val{true})
     finalcols = vcat(colvals...) # merge into one array
     nzvals = fill(true, (length(finalrows),))
     return Symmetric(sparse(finalrows, finalcols, nzvals, length(x), length(x)), :U)
+end
+
+# Transforms the standard RP into a close returns map
+function convert_recurrence_matrix(R::SparseMatrixCSC{Bool,Int})
+
+    N = size(R)
+    # init new matrix
+    Y = spzeros(Bool, 2*N[1]+1,N[1])
+    # fill rows of Y with the diagonals of R
+    # upper triangle
+    for i = 0:N[1]-1
+       Y[N[1]+i+1,(1:(N[1]-i))] = diag(R,i)
+    end
+    # lower triangle
+    for i = 0:N[1]-1
+       Y[N[1]-i+1,(1:(N[1]-i)).+i] = diag(R,-i)
+    end
+    return Y
+end
+
+# Transforms the reverted RP (close returns map) into a normal RP
+function revert_recurrence_matrix(R::SparseMatrixCSC{Bool,Int})
+
+    N = size(R)
+    # init new matrix
+    Y = spzeros(Bool, N[2],N[2])
+    # make R to a square matrix, fill the new part with zeros
+    Z = [R spzeros(N[1],N[1]+1)]
+    Z = Z[end:-1:1,:]
+
+    # fill columns of Y with the diagonals of Z (but only the first N points)
+    for i = 1:N[2]
+        di = diag(Z,-i)
+        Y[:,N[2]-i+1] = di[1:N[2]]
+    end
+    return Y
 end

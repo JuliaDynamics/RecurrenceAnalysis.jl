@@ -1,6 +1,6 @@
 module RecurrenceAnalysis
 
-using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, StaticArrays
+using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, StaticArrays, Revise
 import Base.Meta.parse
 
 const METRICS = Dict(
@@ -48,7 +48,7 @@ export embed,
        @windowed,
        rna,
        # deprecated:
-       transitivity  
+       transitivity
 
 include("matrices/distance_matrix.jl")
 include("matrices/matrices.jl")
