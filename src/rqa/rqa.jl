@@ -479,7 +479,7 @@ function rqa(::Type{RQA}, R; kwargs...)
     RQA(rqa_dict)
 end
 
-function rqa(::Type{Dict}, R; onlydiagonal=false, kwargs...)
+function rqa(::Type{DT}, R; onlydiagonal=false, kwargs...) where {DT<:AbstractDict}
     # Parse arguments for diagonal and vertical structures
     kw_d = Dict(kwargs)
     haskey(kw_d, :theilerdiag) && (kw_d[:theiler] = kw_d[:theilerdiag])
@@ -487,7 +487,7 @@ function rqa(::Type{Dict}, R; onlydiagonal=false, kwargs...)
     dhist = diagonalhistogram(R; kw_d...)
     rr_d = recurrencerate(R; kw_d...)
     if onlydiagonal
-        return Dict{Symbol, Float64}(
+        return DT{Symbol, Float64}(
             :RR    => recurrencerate(R; kwargs...),
             :DET   => _determinism(dhist, rr_d*_rrdenominator(R; kw_d...)),
             :L     => _dl_average(dhist),
@@ -501,7 +501,7 @@ function rqa(::Type{Dict}, R; onlydiagonal=false, kwargs...)
         haskey(kw_v, :lminvert) && (kw_v[:lmin] = kw_v[:lminvert])
         vhist, rthist = verticalhistograms(R; kw_v...)
         rr_v = recurrencerate(R; kw_v...)
-        rqa_dict = Dict{Symbol, Float64}(
+        rqa_dict = DT{Symbol, Float64}(
             :RR    => rr_d,
             :DET   => _determinism(dhist, rr_d*_rrdenominator(R; kw_v...)),
             :L     => _dl_average(dhist),
