@@ -226,3 +226,90 @@ function recurrencestructures(x::Union{ARM,SparseMatrixCSC};
     end
     return histograms
 end
+
+# compute a `3-by-N` matrix, which stores all horizontal lines from a converted
+# recurrence matrix (after applying `convert_recurrence_matrix` to a ARM). The
+# line lengths of each found line are stored in the first row, and the starting
+# indices of its row and column, are stored in the 2nd and 3rd row, respectively.
+function horizontalhisto(R::SparseMatrixCSC)
+
+    N = size(R)[1]
+    liness = zeros(Int, 3, 1)
+    for j = 1:N
+        d = R[j,:]
+        starts = findall(diff([0; R[j,:]]).==1)
+        ends = findall(diff([R[j,:]; 0]).==-1)
+
+        if ~isempty(starts)
+            lines = zeros(Int, 3, length(starts))
+            for n=1:length(starts)
+                lines[2,n] = j
+                lines[3,n] = starts[n]
+                lines[1,n] = ends[n] - starts[n] + 1
+            end
+        else
+            lines = zeros(Int, 3, 1)
+        end
+        liness = hcat(liness,lines)
+    end
+
+    # remove lines of length zero (=no line)
+    no_zero_lines = findall(liness[1,:].!=0)
+    liness = liness[:,no_zero_lines]
+    return liness[:,sortperm(liness[1, :]; rev=true)]
+end
+
+# manipulates XX inplace and returns a view on l_vec
+function scan_lines!(XX::SparseMatrixCSC, l_vec, line::Int, column::Int)
+
+    # for the input index tuple look for the start indices
+    index = 0
+    del_ind = []
+    while true
+        # check whether the input index tuple is a listed index for starting
+        # points of line lengths in the line matrix
+        loc_line = findall(line .== l_vec[2,:])
+        del_ind = loc_line[column+index .== l_vec[3,loc_line]]
+        ~isempty(del_ind) ? break : index -= 1
+    end
+    del_ind = del_ind[1]
+    # delete the line from RP
+    delete_line_from_cl_ret_RP!(XX, vec(l_vec[:,del_ind]))
+    # bind line length, line & column starting index
+    len, li ,co = l_vec[:,del_ind]
+    #delete the line from the line matix
+    l_vec = @view l_vec[1:end, 1:end .!= del_ind]
+
+    N, M = size(XX)
+    # check for borders of the RP
+    li-1 < 1 ? flag1 = false : flag1 = true
+    li+1 > N ? flag2 = false : flag2 = true
+
+    for i = 1:len
+        # check for borders of the RP
+        (li-1 < 1 || co+i-2 == 0) ? flag1b = false : flag1b = true
+        (li-1 < 1 || co+i > M) ? flag1c = false : flag1c = true
+        (li+1 > N || co+i-2 == 0) ? flag2b = false : flag2b = true
+        (li+1 > N || co+i > M) ? flag2c = false : flag2c = true
+        # check above left for a neighbour
+        if flag1b && XX[li-1, co+i-2] != 0
+            l_vec = scan_lines!(XX, l_vec, li-1, co+i-2)
+        # check above the line for a neighbour
+        elseif flag1 && XX[li-1, co+i-1] != 0
+            l_vec = scan_lines!(XX, l_vec, li-1, co+i-1)
+        # check above right for a neighbour
+        elseif flag1c && XX[li-1,co+i] != 0
+            l_vec = scan_lines!(XX, l_vec, li-1, co+i)
+        # check underneeth left for a neighbour
+        elseif flag2b && XX[li+1,co+i-2] != 0
+            l_vec = scan_lines!(XX, l_vec, li+1, co+i-2)
+        # check underneeth the line for a neighbour
+        elseif flag2 && XX[li+1,co+i-1] != 0
+            l_vec = scan_lines!(XX, l_vec, li+1, co+i-1)
+        # check underneeth right for a neighbour
+        elseif flag2c && XX[li+1,co+i] != 0
+            l_vec = scan_lines!(XX, l_vec, li+1, co+i)
+        end
+    end
+    return l_vec
+end

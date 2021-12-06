@@ -225,7 +225,13 @@ https://www.nsf.gov/pubs/2005/nsf05057/nmbs/nmbs.pdf
 """
 trend(R::Union{ARM,SparseMatrixCSC}; theiler=deftheiler(R), kwargs...) =
     _trend(tau_recurrence(R); theiler=theiler, kwargs...)
-    
+
+"""
+    tau_recurrence(R) → τ-RR
+
+Compute the diagonalwise recurrence rate `τ-RR` from a recurrence matrix `R`.
+Note that this only works for squared recurrence matrices.
+"""
 function tau_recurrence(R::Union{ARM,SparseMatrixCSC})
     n = minimum(size(R))
     rv = rowvals(R)
@@ -235,14 +241,14 @@ function tau_recurrence(R::Union{ARM,SparseMatrixCSC})
             if (r=rv[i]) ≤ n
                 d = abs(r-col)
                 if d==0
-                    rr_τ[1] += 1.0/(n-d)
+                    rr_τ[1] += 1.0
                 else
-                    rr_τ[d+1] += 0.5/(n-d)
+                    rr_τ[d+1] += 0.5
                 end
             end
         end
     end
-    return rr_τ
+    return rr_τ ./ (n:-1:1)
 end
 
 function _trend(rr_τ::Vector; theiler=1, border=10, kwargs...)::Float64

@@ -45,6 +45,7 @@ export embed,
        nmprt,
        rqa,
        sorteddistances,
+       skeletonize,
        @windowed,
        rna,
        # deprecated:

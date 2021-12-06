@@ -529,7 +529,7 @@ function recurrence_matrix(xx::AbstractDataset, metric::Metric, ε, ::Val{true})
 end
 
 # Transforms the standard RP into a close returns map
-function convert_recurrence_matrix(R::SparseMatrixCSC{Bool,Int})
+function convert_recurrence_matrix(R::SparseMatrixCSC)
 
     N = size(R)
     # init new matrix
@@ -547,7 +547,7 @@ function convert_recurrence_matrix(R::SparseMatrixCSC{Bool,Int})
 end
 
 # Transforms the reverted RP (close returns map) into a normal RP
-function revert_recurrence_matrix(R::SparseMatrixCSC{Bool,Int})
+function revert_close_returns_map(R::SparseMatrixCSC)
 
     N = size(R)
     # init new matrix
@@ -562,4 +562,172 @@ function revert_recurrence_matrix(R::SparseMatrixCSC{Bool,Int})
         Y[:,N[2]-i+1] = di[1:N[2]]
     end
     return Y
+end
+
+# from the 3-by-N Matrix, which stores all horizontal lines in the reverted RP,
+# (close returns map) [obtained by calling first `revert_recurrence_matrix` on a
+# recurrence Matrix R, and consecutevely `horizontalhisto(R)`] construct and return
+# a "dummy" close returns map, where all lines are encoded according to their length.
+function create_close_returns_map(lines::AbstractMatrix{Int}, size_of_cl_ret_RP::Tuple{Int, Int})
+    X = zeros(Int, size_of_cl_ret_RP)
+    for i = 1:size(lines,2)
+        line_ind = lines[2,i]
+        column_ind = lines[3,i]
+        for j = 0:lines[1,i]-1
+            X[line_ind,column_ind+j] = lines[1,i]
+        end
+    end
+    return sparse(X)
+end
+
+# deletes a line, specified in 'l_vec' (line vector, with first line being
+# the total line length, the second line the line-index of the starting point
+# and the third line the column-index of the starting pint) from the close
+# returns "RP" 'R'.
+function delete_line_from_cl_ret_RP!(R::SparseMatrixCSC,line::Vector{Int})
+    @assert length(line) == 3
+    R[line[2], line[3] .+ (1:line[1]).-1] .= 0
+end
+
+
+"""
+    skeletonize(R) → R_skel
+
+Skeletonizes the recurrence matrix `R` (see [`recurrence_matrix`](@ref)) by using
+the algorithm proposed by Kraemer & Marwan [^Kraemer2019]. This function returns
+`R_skel`, a recurrence matrix, which only consists of diagonal lines of
+"thickness" one.
+
+## References
+[^Kraemer2019]: Kraemer, K.H., Marwan, N. (2019). [Border effect corrections for diagonal line based recurrence quantification analysis measures. Physics Letters A 383(34)](https://doi.org/10.1016/j.physleta.2019.125977).
+"""
+function skeletonize(X::Union{ARM,SparseMatrixCSC})
+    if issymmetric(X)
+        symm = true
+        # convert lower triangle into a close returns map
+        X_cl1 = convert_recurrence_matrix(tril(X))
+        # get "horizontal" line distribution with position indices
+        lines1 = horizontalhisto(X_cl1)
+        lines_copy1 = deepcopy(lines1)
+
+        Nlines1 = size(lines1,2) # number of found lines
+
+        # create a close returns map with horizontal lines represented by
+        # numbers, equal to their lengths
+        X_hori1 = create_close_returns_map(lines1, size(X_cl1))
+    else
+        symm = false
+        # convert upper and lower triangles into close returns maps
+        X_cl1 = convert_recurrence_matrix(tril(X))
+        X_cl2 = convert_recurrence_matrix(sparse(triu(X)'))
+
+        # get "horizontal" line distribution with position indices
+        lines1 = horizontalhisto(X_cl1)
+        lines2 = horizontalhisto(X_cl2)
+        lines_copy1 = deepcopy(lines1)
+        lines_copy2 = deepcopy(lines2)
+
+        Nlines1 = size(lines1,2) # number of found lines in lower triangle
+        Nlines2 = size(lines2,2) # number of found lines in upper triangle
+
+        # create close returns maps with horizontal lines represented by
+        # numbers, equal to their lengths
+        X_hori1 = create_close_returns_map(lines1, size(X_cl1))
+        X_hori2 = create_close_returns_map(lines2, size(X_cl2))
+    end
+
+    # scan the lines, start with the longest one and discard all adjacent lines
+
+    # initialize final line matrix
+    line_matrix_final = zeros(Int, 3, 1)
+    # go through all lines stored in the sorted line matrix
+    N, M = size(X_hori1)
+    for l_ind = 1:Nlines1
+        # check if line is still in the rendered line matrix
+        ismember = [lines1[:,l_ind]==lines_copy1[:,i] for i = 1:size(lines_copy1,2)]
+        ~any(ismember) ? continue : nothing
+        # get index pair for start of the line
+        linei, columni = lines1[2,l_ind], lines1[3,l_ind]
+        # copy this line in the final line matrix
+        line_matrix_final = hcat(line_matrix_final, lines1[:,l_ind])
+        # delete this line from the RP
+        delete_line_from_cl_ret_RP!(X_hori1, lines1[:,l_ind])
+        # go along each point of the line and check for neighbours
+        l_max = lines1[1,l_ind]
+        for l = 1:l_max
+            # scan each line twice - above and underneth
+            for index = -1:2:1
+                # make sure not to exceed RP-boundaries
+                (linei+index > N || linei+index == 0) ? break : nothing
+                # if there is a neighbouring point, call recursive scan-function
+                (X_hori1[linei+index, columni+l-1] != 0) ? lines_copy1 = scan_lines!(X_hori1, lines_copy1, linei+index, columni+l-1) : nothing
+            end
+        end
+    end
+
+    # if not symmetric input RP, than compute for the upper triangle as well
+    if ~symm
+        # initialize final line matrix
+        line_matrix_final2 = zeros(Int, 3, 1)
+        for l_ind = 1:Nlines2
+            # check if line is still in the rendered line matrix
+            ismember = [lines2[:,l_ind]==lines_copy2[:,i] for i = 1:size(lines_copy2,2)]
+            ~any(ismember) ? continue : nothing
+            # get index pair for start of the line
+            linei, columni = lines2[2,l_ind], lines2[3,l_ind]
+            # copy this line in the final line matrix
+            line_matrix_final2 = hcat(line_matrix_final2, lines2[:,l_ind])
+            # delete this line from the RP
+            delete_line_from_cl_ret_RP!(X_hori2, lines2[:,l_ind])
+            # go along each point of the line and check for neighbours
+            l_max = lines2[1,l_ind]
+            for l = 1:l_max
+                # scan each line twice - above and underneth
+                for scan = 1:2
+                    if scan == 1
+                        index = 1
+                        (linei+index > N) ? break : nothing # make sure not to exceed RP-boundaries
+                    else
+                        index = -1
+                        (linei+index == 0) ? break : nothing # make sure not to exceed RP-boundaries
+                    end
+                    # if there is a neighbouring point, call recursive scan-function
+                    (X_hori2[linei+index,columni+l-1] != 0) ? lines_copy2 = scan_lines!(X_hori2, lines_copy2, linei+index, columni+l-1) : nothing
+                end
+            end
+        end
+    end
+
+    # build RP based on the histogramm of the reduced lines
+    X_cl_new = spzeros(Bool, N, M)
+    ~symm ? X_cl2_new = spzeros(Bool, N, M) : nothing
+    # fill up close returns map with lines stored in the new line matrix
+    for i = 1:size(line_matrix_final, 2)
+        l_max = line_matrix_final[1,i]
+        linei = line_matrix_final[2,i]
+        columni = line_matrix_final[3,i]
+        for j = 1:l_max
+            X_cl_new[linei, columni+j-1] = true
+        end
+    end
+    if symm
+        XX = revert_close_returns_map(X_cl_new) # revert this close returns map into a legal RP
+        X_new = XX .+ XX'
+        X_new[diagind(X_new)] .= true # LOI
+    else
+        # fill up close returns map with lines stored in the new line matrix
+        for i = 1:size(line_matrix_final2,2)
+            l_max = line_matrix_final2[1,i]
+            linei = line_matrix_final2[2,i]
+            columni = line_matrix_final2[3,i]
+            for j = 1:l_max
+                X_cl2_new[linei,columni+j-1] = true
+            end
+        end
+        XX = revert_close_returns_map(X_cl_new) # revert this close returns map into a legal RP
+        XXX= revert_close_returns_map(X_cl2_new)
+        X_new = XX .+ XXX'
+        X_new[diagind(X_new)] .= true # LOI
+    end
+    return X_new
 end
