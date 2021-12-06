@@ -470,7 +470,7 @@ in order to replicate the output of different versions:
 * `rqa(NamedTuple, R...)` to obtain the output of the older version (as in 1.3).
 * `rqa(Dict, R...)` to obtain the output of the planned future version.
 * `rqa(RQA, R...)` to obtain the default current output (same as `rqa(R...)`)
-
+* `rqa(DT,R...)` to obtain the output as `DT` which is a subtype of `AbstractDict` (e.g. `rqa(OrderedDict,R...)` returns an `OrderedDict`)
 """
 rqa(R; kwargs...) = rqa(RQA, R; kwargs...)
 
