@@ -52,6 +52,7 @@ export embed,
        transitivity
 
 include("matrices/distance_matrix.jl")
+include("matrices/skeletonization.jl")
 include("matrices/matrices.jl")
 include("matrices/plot.jl")
 include("rqa/histograms.jl")
