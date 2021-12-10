@@ -134,7 +134,7 @@ function build_skeletonized_RP(lines1::Vector{Int}, lines2::Vector{Int}, lines3:
 
     X_cl_new = spzeros(Bool, N, M)
     # fill up close returns map with lines stored in the new line matrix
-    @inbounds for i = length(lines1)
+    @inbounds for i = 1:length(lines1)
         l_max = lines1[i]
         linei = lines2[i]
         columni = lines3[i]
@@ -162,7 +162,7 @@ function build_skeletonized_RP(lines1::Vector{Int}, lines2::Vector{Int}, lines3:
             X_cl_new[linei, columni+j-1] = true
         end
     end
-    for i = 1:length(lines11)
+    @inbounds for i = 1:length(lines11)
         l_max = lines11[i]
         linei = lines22[i]
         columni = lines33[i]
@@ -193,9 +193,9 @@ function get_final_line_matrix(lines1t::Vector{Int}, lines1l::Vector{Int},
     # go through all lines stored in the sorted line matrix
     @inbounds for l_ind = 1:Nlines1
         # check if line is still in the rendered line matrix
-        common_ind = intersect(findall(x-> x==true, lines1t[l_ind] .== lines1t),
-                        findall(x-> x==true, lines1l[l_ind] .== lines1l),
-                        findall(x-> x==true, lines1c[l_ind] .== lines1c))
+        common_ind = intersect(findall(x-> x==true, lines1t[l_ind] .== lines_copy1t),
+                        findall(x-> x==true, lines1l[l_ind] .== lines_copy1l),
+                        findall(x-> x==true, lines1c[l_ind] .== lines_copy1c))
         isempty(common_ind) ? continue : nothing
         # get index pair for start of the line
         linei, columni = lines1l[l_ind], lines1c[l_ind]
@@ -235,9 +235,9 @@ function get_final_line_matrix2(lines2t::Vector{Int}, lines2l::Vector{Int},
 
     @inbounds for l_ind = 1:Nlines2
         # check if line is still in the rendered line matrix
-        common_ind = intersect(findall(x-> x==true, lines2t[l_ind] .== lines2t),
-                        findall(x-> x==true, lines2l[l_ind] .== lines2l),
-                        findall(x-> x==true, lines2c[l_ind] .== lines2c))
+        common_ind = intersect(findall(x-> x==true, lines2t[l_ind] .== lines_copy2t),
+                        findall(x-> x==true, lines2l[l_ind] .== lines_copy2l),
+                        findall(x-> x==true, lines2c[l_ind] .== lines_copy2c))
         isempty(common_ind) ? continue : nothing
         # get index pair for start of the line
         linei, columni = lines2l[l_ind], lines2c[l_ind]
