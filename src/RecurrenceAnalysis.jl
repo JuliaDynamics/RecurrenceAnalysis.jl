@@ -52,9 +52,9 @@ export embed,
        transitivity
 
 include("matrices/distance_matrix.jl")
-include("matrices/skeletonization.jl")
 include("matrices/matrices.jl")
 include("matrices/plot.jl")
+include("matrices/skeletonization.jl")
 include("rqa/histograms.jl")
 include("rqa/rqa.jl")
 include("rqa/radius.jl")

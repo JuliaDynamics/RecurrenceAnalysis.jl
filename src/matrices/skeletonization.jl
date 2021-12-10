@@ -16,6 +16,7 @@ the algorithm proposed by Kraemer & Marwan [^Kraemer2019]. This function returns
 [^Kraemer2019]: Kraemer, K.H., Marwan, N. (2019). [Border effect corrections for diagonal line based recurrence quantification analysis measures. Physics Letters A 383(34)](https://doi.org/10.1016/j.physleta.2019.125977).
 """
 function skeletonize(X::Union{ARM,SparseMatrixCSC})
+
     if issymmetric(X)
         symm = true
         # convert lower triangle into a close returns map
@@ -50,8 +51,10 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
         X_hori1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, size(X_cl1))
         X_hori2 = create_close_returns_map(lines_copy2t, lines_copy2l, lines_copy2c, size(X_cl2))
     end
+
     # scan the lines, start with the longest one and discard all adjacent lines
     lines_final_t, lines_final_l, lines_final_c = get_final_line_matrix(lines1t, lines1l, lines1c, lines_copy1t, lines_copy1l, lines_copy1c, X_hori1)
+
     # if not symmetric input RP, than compute for the upper triangle as well
     if ~symm
         lines_final2_t, lines_final2_l, lines_final2_c = get_final_line_matrix2(lines2t, lines2l, lines2c, lines_copy2t, lines_copy2l, lines_copy2c, X_hori2)
