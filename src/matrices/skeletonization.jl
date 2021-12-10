@@ -4,6 +4,7 @@ are defined.
 =#
 
 # Core function, which gets exported
+#const to = TimerOutput()
 """
     skeletonize(R) → R_skel
 
@@ -20,16 +21,24 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
     if issymmetric(X)
         symm = true
         # convert lower triangle into a close returns map
-        X_cl1 = convert_recurrence_matrix(tril(X))
+        #@timeit to "RP-Prep 1" begin
+            X_cl1 = convert_recurrence_matrix(tril(X))
+        #end
         # get "horizontal" line distribution with position indices
-        lines1t, lines1l, lines1c = horizontalhisto(X_cl1)
+        #@timeit to "horzontalhisto" begin
+            lines1t, lines1l, lines1c = horizontalhisto(X_cl1)
+        #end
+
         lines_copy1t = deepcopy(lines1t)
         lines_copy1l = deepcopy(lines1l)
         lines_copy1c = deepcopy(lines1c)
 
+
         # create a close returns map with horizontal lines represented by
         # numbers, equal to their lengths
-        X_hori1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, size(X_cl1))
+        #@timeit to "create close returns" begin
+            X_hori1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, size(X_cl1))
+        #end
     else
         symm = false
         # convert upper and lower triangles into close returns maps
@@ -65,6 +74,7 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
         X_new = build_skeletonized_RP(lines_final_t, lines_final_l, lines_final_c, size(X_hori1,1), size(X_hori1,2))
     end
 
+    #show(to)
     return X_new
 end
 
@@ -72,39 +82,63 @@ end
 # Auxiliary functions
 
 # Transforms the standard RP into a close returns map
-function convert_recurrence_matrix(R::SparseMatrixCSC)
-
-    N = size(R)
-    # init new matrix
-    Y = spzeros(Bool, 2*N[1]+1,N[1])
-    # fill rows of Y with the diagonals of R
-    # upper triangle
-    @inbounds for i = 0:N[1]-1
-       Y[N[1]+i+1,(1:(N[1]-i))] = view(R, diagind(R, i))
+function convert_recurrence_matrix(R::SparseMatrixCSC; triangle::Bool = true)
+    if triangle
+        N = size(R)
+        # init new matrix
+        Y = zeros(Bool, N[1]+1, N[1])
+        # fill rows of Y with the diagonals of R
+        # lower triangle
+        @inbounds for i = 0:N[1]-1
+           Y[N[1]-i+1,(1:(N[1]-i)).+i] = view(R, diagind(R, -i))
+        end
+    else
+        N = size(R)
+        # init new matrix
+        Y = zeros(Bool, 2*N[1]+1,N[1])
+        # fill rows of Y with the diagonals of R
+        # upper triangle
+        @inbounds for i = 0:N[1]-1
+           Y[N[1]+i+1,(1:(N[1]-i))] = view(R, diagind(R, i))
+        end
+        # lower triangle
+        @inbounds for i = 0:N[1]-1
+           Y[N[1]-i+1,(1:(N[1]-i)).+i] = view(R, diagind(R, -i))
+        end
     end
-    # lower triangle
-    @inbounds for i = 0:N[1]-1
-       Y[N[1]-i+1,(1:(N[1]-i)).+i] = view(R, diagind(R, -i))
-    end
-    return Y
+    return sparse(Y)
 end
 
 # Transforms the reverted RP (close returns map) into a normal RP
-function revert_close_returns_map(R::SparseMatrixCSC)
+function revert_close_returns_map(R::SparseMatrixCSC; triangle::Bool = true)
+    if triangle
+        N = size(R)
+        # init new matrix
+        Y = zeros(Bool, N[2], N[2])
+        # make R to a square matrix, fill the new part with zeros
+        Z = [R ; zeros(N[1]-1,N[2])]
+        Z = Z[end:-1:1,:]
 
-    N = size(R)
-    # init new matrix
-    Y = spzeros(Bool, N[2],N[2])
-    # make R to a square matrix, fill the new part with zeros
-    Z = [R spzeros(N[1],N[1]+1)]
-    Z = Z[end:-1:1,:]
+        # fill columns of Y with the diagonals of Z (but only the first N points)
+        @inbounds for i = 1:N[2]
+            di = diag(Z,-i)
+            Y[:,N[2]-i+1] = di[1:N[2]]
+        end
+    else
+        N = size(R)
+        # init new matrix
+        Y = zeros(Bool, N[2], N[2])
+        # make R to a square matrix, fill the new part with zeros
+        Z = [R zeros(N[1],N[1]+1)]
+        Z = Z[end:-1:1,:]
 
-    # fill columns of Y with the diagonals of Z (but only the first N points)
-    for i = 1:N[2]
-        di = diag(Z,-i)
-        Y[:,N[2]-i+1] = di[1:N[2]]
+        # fill columns of Y with the diagonals of Z (but only the first N points)
+        @inbounds for i = 1:N[2]
+            di = diag(Z,-i)
+            Y[:,N[2]-i+1] = di[1:N[2]]
+        end
     end
-    return Y
+    return sparse(Y)
 end
 
 # from the 3-by-N Matrix, which stores all horizontal lines in the reverted RP,
