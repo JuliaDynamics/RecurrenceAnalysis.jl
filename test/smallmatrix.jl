@@ -155,6 +155,9 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
     @test RP_skel[152,236] == 1
     @test RP_skel[151,236] == 0
 
+    @test isempty(findall(!iszero,diag(RP_skel,1))) == true
+    @test isempty(findall(!iszero,diag(RP_skel,-1))) == true
+
     d = RP_skel[152:160,236:243] .== 1
     @test length(findall(diag(d))) == 7
     @test isempty(findall(diag(d,1))) == true

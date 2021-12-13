@@ -4,7 +4,6 @@ are defined.
 =#
 
 # Core function, which gets exported
-#const to = TimerOutput()
 """
     skeletonize(R) → R_skel
 
@@ -21,24 +20,17 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
     if issymmetric(X)
         symm = true
         # convert lower triangle into a close returns map
-        #@timeit to "RP-Prep 1" begin
-            X_cl1 = convert_recurrence_matrix(tril(X))
-        #end
+        X_cl1 = convert_recurrence_matrix(tril(X))
         # get "horizontal" line distribution with position indices
-        #@timeit to "horzontalhisto" begin
-            lines1t, lines1l, lines1c = horizontalhisto(X_cl1)
-        #end
-
+        lines1t, lines1l, lines1c = horizontalhisto(X_cl1)
         lines_copy1t = deepcopy(lines1t)
         lines_copy1l = deepcopy(lines1l)
         lines_copy1c = deepcopy(lines1c)
 
-
         # create a close returns map with horizontal lines represented by
         # numbers, equal to their lengths
-        #@timeit to "create close returns" begin
-            X_hori1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, size(X_cl1))
-        #end
+        X_hori1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, size(X_cl1))
+
     else
         symm = false
         # convert upper and lower triangles into close returns maps
@@ -59,6 +51,7 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
         # numbers, equal to their lengths
         X_hori1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, size(X_cl1))
         X_hori2 = create_close_returns_map(lines_copy2t, lines_copy2l, lines_copy2c, size(X_cl2))
+
     end
 
     # scan the lines, start with the longest one and discard all adjacent lines
@@ -66,7 +59,7 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
 
     # if not symmetric input RP, than compute for the upper triangle as well
     if ~symm
-        lines_final2_t, lines_final2_l, lines_final2_c = get_final_line_matrix2(lines2t, lines2l, lines2c, lines_copy2t, lines_copy2l, lines_copy2c, X_hori2)
+        lines_final2_t, lines_final2_l, lines_final2_c = get_final_line_matrix(lines2t, lines2l, lines2c, lines_copy2t, lines_copy2l, lines_copy2c, X_hori2)
         # build RP based on the histogramm of the reduced lines
         X_new = build_skeletonized_RP(lines_final_t, lines_final_l, lines_final_c, lines_final2_t, lines_final2_l, lines_final2_c, size(X_hori1,1), size(X_hori1,2))
     else
@@ -207,6 +200,7 @@ function build_skeletonized_RP(lines1::Vector{Int}, lines2::Vector{Int}, lines3:
             X_cl2_new[linei,columni+j-1] = true
         end
     end
+
     XX = revert_close_returns_map(X_cl_new) # revert this close returns map into a legal RP
     XXX= revert_close_returns_map(X_cl2_new)
     X_new = XX .+ XXX'
@@ -258,54 +252,6 @@ function get_final_line_matrix(lines1t::Vector{Int}, lines1l::Vector{Int},
     end
     return lines_final_t, lines_final_l, lines_final_c
 end
-function get_final_line_matrix2(lines2t::Vector{Int}, lines2l::Vector{Int},
-    lines2c::Vector{Int}, lines_copy2t::Vector{Int}, lines_copy2l::Vector{Int},
-    lines_copy2c::Vector{Int}, X_hori2::SparseMatrixCSC)
-
-    N, M = size(X_hori2)
-    # initialize final lines
-    lines_final2_t = Int[]
-    lines_final2_l = Int[]
-    lines_final2_c = Int[]
-
-    Nlines2 = length(lines2t) # number of found lines in upper triangle
-
-    @inbounds for l_ind = 1:Nlines2
-        # check if line is still in the rendered line matrix
-        common_ind = intersect(findall(x-> x==true, lines2t[l_ind] .== lines_copy2t),
-                        findall(x-> x==true, lines2l[l_ind] .== lines_copy2l),
-                        findall(x-> x==true, lines2c[l_ind] .== lines_copy2c))
-        isempty(common_ind) ? continue : nothing
-        # get index pair for start of the line
-        linei, columni = lines2l[l_ind], lines2c[l_ind]
-        # copy this line in the final line matrix
-        push!(lines_final2_t, lines2t[l_ind])
-        push!(lines_final2_l, lines2l[l_ind])
-        push!(lines_final2_c, lines2c[l_ind])
-        # delete this line from the RP
-        delete_line_from_cl_ret_RP!(X_hori2, lines2t[l_ind], lines2l[l_ind], lines2c[l_ind])
-        # go along each point of the line and check for neighbours
-        l_max = lines2t[l_ind]
-        @inbounds for l = 1:l_max
-            # scan each line twice - above and underneth
-            for scan = 1:2
-                if scan == 1
-                    index = 1
-                    (linei+index > N) ? break : nothing # make sure not to exceed RP-boundaries
-                else
-                    index = -1
-                    (linei+index == 0) ? break : nothing # make sure not to exceed RP-boundaries
-                end
-                # if there is a neighbouring point, call recursive scan-function
-                (X_hori2[linei+index,columni+l-1] != 0) ? scan_lines!(X_hori2, lines_copy2t,
-                            lines_copy2l, lines_copy2c, linei+index, columni+l-1) : nothing
-            end
-        end
-    end
-    return lines_final2_t, lines_final2_l, lines_final2_c
-end
-
-
 
 # compute a `3-by-N` matrix, which stores all horizontal lines from a converted
 # recurrence matrix (after applying `convert_recurrence_matrix` to a ARM). The
