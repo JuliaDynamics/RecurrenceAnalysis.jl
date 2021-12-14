@@ -4,7 +4,6 @@ are defined.
 =#
 
 # Core function, which gets exported
-const to = TimerOutput()
 """
     skeletonize(R) → R_skel
 
@@ -21,23 +20,16 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
     if issymmetric(X)
         symm = true
         # convert lower triangle into a close returns map
-        @timeit to "RP covert" begin
-            X_cl1 = convert_recurrence_matrix(tril(X))
-        end
+        X_cl1 = convert_recurrence_matrix(tril(X))
         # get "horizontal" line distribution with position indices
-        @timeit to "horizonatla line histo" begin
-            lines1t, lines1l, lines1c = horizontalhisto(X_cl1)
-        end
+        lines1t, lines1l, lines1c = horizontalhisto(X_cl1)
         lines_copy1t = deepcopy(lines1t)
         lines_copy1l = deepcopy(lines1l)
         lines_copy1c = deepcopy(lines1c)
 
         # create a close returns map with horizontal lines represented by
         # numbers, equal to their lengths
-        @timeit to "create close return map" begin
-            X_hori1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, size(X_cl1))
-        end
-
+        X_hori1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, size(X_cl1))
     else
         symm = false
         # convert upper and lower triangles into close returns maps
@@ -58,13 +50,10 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
         # numbers, equal to their lengths
         X_hori1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, size(X_cl1))
         X_hori2 = create_close_returns_map(lines_copy2t, lines_copy2l, lines_copy2c, size(X_cl2))
-
     end
 
     # scan the lines, start with the longest one and discard all adjacent lines
-    @timeit to "get_final_line_matrix" begin
-        lines_final_t, lines_final_l, lines_final_c = get_final_line_matrix(lines1t, lines1l, lines1c, lines_copy1t, lines_copy1l, lines_copy1c, X_hori1)
-    end
+    lines_final_t, lines_final_l, lines_final_c = get_final_line_matrix(lines1t, lines1l, lines1c, lines_copy1t, lines_copy1l, lines_copy1c, X_hori1)
 
     # if not symmetric input RP, than compute for the upper triangle as well
     if ~symm
@@ -73,14 +62,10 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
         X_new = build_skeletonized_RP(lines_final_t, lines_final_l, lines_final_c, lines_final2_t, lines_final2_l, lines_final2_c, size(X_hori1,1), size(X_hori1,2))
     else
         # build RP based on the histogramm of the reduced lines
-        @timeit to "Built Final" begin
-            X_new = build_skeletonized_RP(lines_final_t, lines_final_l, lines_final_c, size(X_hori1,1), size(X_hori1,2))
-        end
+        X_new = build_skeletonized_RP(lines_final_t, lines_final_l, lines_final_c, size(X_hori1,1), size(X_hori1,2))
     end
-    show(to)
     return X_new
 end
-
 
 # Auxiliary functions
 
