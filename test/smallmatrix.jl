@@ -156,12 +156,18 @@ end
     display(RP_skel[151,236] == 0)
     display(RP_skel[152,235])
     display(RP_skel[151,235] == 0)
+    display("Debug msg end 1")
     @test (RP_skel[152,236] == 1 && RP_skel[151,236] == 0) || (RP_skel[152,235] == 1 && RP_skel[151,235] == 0)
 
     @test isempty(findall(!iszero,diag(RP_skel,1))) == true
     @test isempty(findall(!iszero,diag(RP_skel,-1))) == true
 
     d = Bool.(RP_skel[152:160,235:243])
+    display(length(findall(diag(d))))
+    display(findall(diag(d,1)))
+    display(length(findall(diag(d,1))))
+    display(isempty(findall(diag(d))) == true)
+    display("Debug msg end 2")
     @test (length(findall(diag(d))) == 7 && isempty(findall(diag(d,1))) == true) || (length(findall(diag(d,1))) == 7 && isempty(findall(diag(d))) == true)
 
 end
