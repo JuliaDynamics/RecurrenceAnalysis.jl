@@ -151,7 +151,11 @@ end
     data = trajectory(Systems.lorenz(), 2.5, Ttr = 1000)
     RP = RecurrenceMatrix(data, 0.05; fixedrate=true)
     RP_skel = skeletonize(RP)
-
+    display(data[1:3, 1:3])
+    display(RP_skel[152,236])
+    display(RP_skel[151,236] == 0)
+    display(RP_skel[152,235])
+    display(RP_skel[151,235] == 0)
     @test (RP_skel[152,236] == 1 && RP_skel[151,236] == 0) || (RP_skel[152,235] == 1 && RP_skel[151,235] == 0)
 
     @test isempty(findall(!iszero,diag(RP_skel,1))) == true
