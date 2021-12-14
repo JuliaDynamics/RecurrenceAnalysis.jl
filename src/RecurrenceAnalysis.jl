@@ -1,6 +1,6 @@
 module RecurrenceAnalysis
 
-using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, StaticArrays, Revise
+using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, StaticArrays, Revise, TimerOutputs
 import Base.Meta.parse
 
 const METRICS = Dict(

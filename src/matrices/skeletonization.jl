@@ -4,6 +4,7 @@ are defined.
 =#
 
 # Core function, which gets exported
+const to = TimerOutput()
 """
     skeletonize(R) → R_skel
 
@@ -20,16 +21,22 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
     if issymmetric(X)
         symm = true
         # convert lower triangle into a close returns map
-        X_cl1 = convert_recurrence_matrix(tril(X))
+        @timeit to "RP covert" begin
+            X_cl1 = convert_recurrence_matrix(tril(X))
+        end
         # get "horizontal" line distribution with position indices
-        lines1t, lines1l, lines1c = horizontalhisto(X_cl1)
+        @timeit to "horizonatla line histo" begin
+            lines1t, lines1l, lines1c = horizontalhisto(X_cl1)
+        end
         lines_copy1t = deepcopy(lines1t)
         lines_copy1l = deepcopy(lines1l)
         lines_copy1c = deepcopy(lines1c)
 
         # create a close returns map with horizontal lines represented by
         # numbers, equal to their lengths
-        X_hori1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, size(X_cl1))
+        @timeit to "create close return map" begin
+            X_hori1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, size(X_cl1))
+        end
 
     else
         symm = false
@@ -55,7 +62,9 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
     end
 
     # scan the lines, start with the longest one and discard all adjacent lines
-    lines_final_t, lines_final_l, lines_final_c = get_final_line_matrix(lines1t, lines1l, lines1c, lines_copy1t, lines_copy1l, lines_copy1c, X_hori1)
+    @timeit to "get_final_line_matrix" begin
+        lines_final_t, lines_final_l, lines_final_c = get_final_line_matrix(lines1t, lines1l, lines1c, lines_copy1t, lines_copy1l, lines_copy1c, X_hori1)
+    end
 
     # if not symmetric input RP, than compute for the upper triangle as well
     if ~symm
@@ -64,10 +73,11 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
         X_new = build_skeletonized_RP(lines_final_t, lines_final_l, lines_final_c, lines_final2_t, lines_final2_l, lines_final2_c, size(X_hori1,1), size(X_hori1,2))
     else
         # build RP based on the histogramm of the reduced lines
-        X_new = build_skeletonized_RP(lines_final_t, lines_final_l, lines_final_c, size(X_hori1,1), size(X_hori1,2))
+        @timeit to "Built Final" begin
+            X_new = build_skeletonized_RP(lines_final_t, lines_final_l, lines_final_c, size(X_hori1,1), size(X_hori1,2))
+        end
     end
-
-    #show(to)
+    show(to)
     return X_new
 end
 
@@ -282,6 +292,66 @@ function horizontalhisto(R::SparseMatrixCSC)
     liness = liness[:,sortperm(@view liness[1, :]; rev=true)]
     return vec(liness[1,:]), vec(liness[2,:]), vec(liness[3,:])
 end
+
+function horizontalhisto2(R::SparseMatrixCSC)
+    # Transpose R in order to get the "horizontal" lines
+    rows = colvals(R[2:end,:])
+    cols = rowvals(R[2:end,:])
+    p = sortperm(rows)
+    rows = rows[p]
+    cols = cols[p]
+    # check bounds
+    n = length(rows)
+    if length(cols) != n
+        throw(ErrorException("mismatch between number of row and column indices"))
+    end
+    # histogram for lines with start & end indices
+    liness = zeros(Int, 3, 1)
+    # Iterate over columns
+    cprev = cols[1]
+    r1 = rows[1]
+    rprev = r1
+    @inbounds for i=1:n
+        r = rows[i]
+        c = cols[i]
+        # Search the second and later segments in the column
+        if c == cprev
+            if r-rprev != 1 # (a): there is a separation between rprev and r
+                # update histogram of segments
+                current_vert = rprev-r1+1
+                if current_vert ≥ 1
+                    liness = extend_skeleton_histogram!(liness, r, c, current_vert)
+                end
+                r1 = r # update the start of the next segment
+            end
+            rprev = r  # update the previous position
+        else # hit in the first point of a new column
+            # process the last fragment of the previous column
+            current_vert = rprev-r1+1
+            if current_vert ≥ 1
+                liness = extend_skeleton_histogram!(liness, r, c, current_vert)
+            end
+            # initialize values for searching new fragments
+            cprev = c
+            r1 = r
+            rprev = r
+        end
+    end
+    # Process the latest fragment
+    current_vert = rprev-r1+1
+    liness[1,end] = current_vert
+    # process the first dummy-fragment
+    liness[1,1] = 0
+
+    # remove lines of length zero (=no line)
+    no_zero_lines = findall(liness[1,:].!=0)
+    liness = liness[:, no_zero_lines]
+    ls = size(liness)
+    liness = liness[:,sortperm(@view liness[1, :]; rev=true)]
+    return vec(liness[1,:]), vec(liness[2,:]), vec(liness[3,:])
+end
+
+
 
 # manipulates XX inplace and returns a view on l_vec
 function scan_lines!(XX::SparseMatrixCSC, l_vec1::Vector{Int}, l_vec2::Vector{Int}, l_vec3::Vector{Int}, line::Int, column::Int)
