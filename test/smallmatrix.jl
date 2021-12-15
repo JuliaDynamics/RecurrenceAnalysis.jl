@@ -1,5 +1,5 @@
 using RecurrenceAnalysis, SparseArrays, DynamicalSystemsBase
-using Test, Statistics, LinearAlgebra
+using Test, Statistics, LinearAlgebra, DelimitedFiles
 
 cells = [(1,1),(2,2),(3,2),(6,2),(7,2),(8,2),(6,3),(7,3),(10,3),(2,4),(4,4),
     (1,5),(2,5),(3,5),(5,5),(9,5),(10,5),(2,6),(3,6),(6,6),(7,6),(10,6),
@@ -148,28 +148,24 @@ end
     @test mean(diff(c1[3:2:end])) == 60
     @test mean(diff(c2[3:2:end])) == 60
 
-    data = trajectory(Systems.lorenz(), 2.5, Ttr = 1000)
-    RP = RecurrenceMatrix(data, 0.05; fixedrate=true)
+    data = readdlm(joinpath(tsfolder, "test_time_series_lorenz_standard_N_10000_multivariate.csv"))
+
+    RP = RecurrenceMatrix(data[1:250,:], 0.05; fixedrate=true)
     RP_skel = skeletonize(RP)
-    display(data[1:3, 1:3])
-    display(RP_skel[152,236])
-    display(RP_skel[151,236] == 0)
-    display(RP_skel[152,235])
-    display(RP_skel[151,235] == 0)
-    display("Debug msg end 1")
-    @test (RP_skel[152,236] == 1 && RP_skel[151,236] == 0) || (RP_skel[152,235] == 1 && RP_skel[151,235] == 0)
+
+    @test RP_skel[135,61] == 1
+    @test RP_skel[135,60] == 0
+    @test RP_skel[135,60] == 0
+    @test RP_skel[136,61] == 0
+    @test RP_skel[134,61] == 0
 
     @test isempty(findall(!iszero,diag(RP_skel,1))) == true
     @test isempty(findall(!iszero,diag(RP_skel,-1))) == true
 
-    d = Bool.(RP_skel[152:160,235:243])
-    display(length(findall(diag(d))))
-    display(findall(diag(d,1)))
-    display(length(findall(diag(d,1))))
-    display(isempty(findall(diag(d))) == true)
-    display("Debug msg end 2")
-    @test (length(findall(diag(d))) == 7 && isempty(findall(diag(d,1))) == true) || (length(findall(diag(d,1))) == 7 && isempty(findall(diag(d))) == true)
+    d = Bool.(RP_skel[61:79,134:153])
 
+    @test length(findall(diag(d,1))) == 18
+    @test isempty(findall(diag(d))) == true
 end
 
 ## Recurrence network
