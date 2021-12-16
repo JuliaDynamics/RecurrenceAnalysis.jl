@@ -1,4 +1,4 @@
-using RecurrenceAnalysis, SparseArrays, DynamicalSystemsBase
+using RecurrenceAnalysis, SparseArrays
 using Test, Statistics, LinearAlgebra, DelimitedFiles
 
 cells = [(1,1),(2,2),(3,2),(6,2),(7,2),(8,2),(6,3),(7,3),(10,3),(2,4),(4,4),
