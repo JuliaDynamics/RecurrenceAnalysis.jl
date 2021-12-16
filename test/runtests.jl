@@ -22,9 +22,10 @@ end
 ti = time()
 
 @testset "RecurrenceAnalysis tests" begin
-include("dynamicalsystems.jl")
-include("smallmatrix.jl")
-include("deprecations.jl")
+    include("dynamicalsystems.jl")
+    include("smallmatrix.jl")
+    include("skeletontest.jl")
+    include("deprecations.jl")
 end
 
 ti = time() - ti

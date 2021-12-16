@@ -7,12 +7,10 @@ are defined.
 """
     skeletonize(R) → R_skel
 
-Skeletonizes the recurrence matrix `R` (see [`recurrence_matrix`](@ref)) by using
-the algorithm proposed by Kraemer & Marwan [^Kraemer2019]. This function returns
-`R_skel`, a recurrence matrix, which only consists of diagonal lines of
-"thickness" one.
+Skeletonizes the `RecurrenceMatrix R` by using the algorithm proposed by
+Kraemer & Marwan [^Kraemer2019]. This function returns `R_skel`, a recurrence
+matrix, which only consists of diagonal lines of "thickness" one.
 
-## References
 [^Kraemer2019]: Kraemer, K.H., Marwan, N. (2019). [Border effect corrections for diagonal line based recurrence quantification analysis measures. Physics Letters A 383(34)](https://doi.org/10.1016/j.physleta.2019.125977).
 """
 function skeletonize(X::Union{ARM,SparseMatrixCSC})
@@ -56,7 +54,7 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
     lines_final_t, lines_final_l, lines_final_c = get_final_line_matrix(lines1t, lines1l, lines1c, lines_copy1t, lines_copy1l, lines_copy1c, X_hori1)
 
     # if not symmetric input RP, than compute for the upper triangle as well
-    if ~symm
+    if !symm
         lines_final2_t, lines_final2_l, lines_final2_c = get_final_line_matrix(lines2t, lines2l, lines2c, lines_copy2t, lines_copy2l, lines_copy2c, X_hori2)
         # build RP based on the histogramm of the reduced lines
         X_new = build_skeletonized_RP(lines_final_t, lines_final_l, lines_final_c, lines_final2_t, lines_final2_l, lines_final2_c, size(X_hori1,1), size(X_hori1,2))
