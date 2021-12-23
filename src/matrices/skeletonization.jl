@@ -146,7 +146,7 @@ end
 
 # deletes a line, specified in 'l_vec' (line vector, with first line being
 # the total line length, the second line the line-index of the starting point
-# and the third line the column-index of the starting pint) from the close
+# and the third line the column-index of the starting point) from the close
 # returns "RP" 'R'.
 function delete_line_from_cl_ret_RP!(R::Union{ARM,SparseMatrixCSC}, line1::Int, line2::Int, line3::Int)
     R[line2, line3 .+ (1:line1).-1] .= 0
@@ -337,19 +337,22 @@ end
 # end
 
 # manipulates XX inplace and returns a view on l_vec
-function scan_lines!(XX::SparseMatrixCSC, l_vec1::Vector{Int}, l_vec2::Vector{Int}, l_vec3::Vector{Int}, line::Int, column::Int)
+function scan_lines!(XX::SparseMatrixCSC, l_vec1::AbstractVector{<:Integer}, l_vec2::AbstractVector{<:Integer}, l_vec3::AbstractVector{<:Integer}, line::Integer, column::Integer)
 
     # for the input index tuple look for the start indices
     index = 0
-    del_ind = []
+    local del_ind::Int
     while true
         # check whether the input index tuple is a listed index for starting
         # points of line lengths in the line matrix
         loc_line = findall(line .== l_vec2)
-        del_ind = loc_line[column+index .== l_vec3[loc_line]]
-        ~isempty(del_ind) ? break : index -= 1
+        found = findfirst(isequal(column+index), l_vec3[loc_line])
+        if found !== nothing
+            del_ind = loc_line[found]
+            break
+        end
+        index -= 1
     end
-    del_ind = del_ind[1]
     # delete the line from RP
     delete_line_from_cl_ret_RP!(XX, l_vec1[del_ind], l_vec2[del_ind], l_vec3[del_ind])
 
@@ -360,35 +363,21 @@ function scan_lines!(XX::SparseMatrixCSC, l_vec1::Vector{Int}, l_vec2::Vector{In
     deleteat!(l_vec2, del_ind)
     deleteat!(l_vec3, del_ind)
 
-    N, M = size(XX)
     # check for borders of the RP
-    li-1 < 1 ? flag1 = false : flag1 = true
-    li+1 > N ? flag2 = false : flag2 = true
-
     for i = 1:len
-        # check for borders of the RP
-        (li-1 < 1 || co+i-2 == 0) ? flag1b = false : flag1b = true
-        (li-1 < 1 || co+i > M) ? flag1c = false : flag1c = true
-        (li+1 > N || co+i-2 == 0) ? flag2b = false : flag2b = true
-        (li+1 > N || co+i > M) ? flag2c = false : flag2c = true
-        # check above left for a neighbour
-        if flag1b && XX[li-1, co+i-2] != 0
-            scan_lines!(XX, l_vec1, l_vec2, l_vec3, li-1, co+i-2)
-        # check above the line for a neighbour
-        elseif flag1 && XX[li-1, co+i-1] != 0
-            scan_lines!(XX, l_vec1, l_vec2, l_vec3, li-1, co+i-1)
-        # check above right for a neighbour
-        elseif flag1c && XX[li-1,co+i] != 0
-            scan_lines!(XX, l_vec1, l_vec2, l_vec3, li-1, co+i)
-        # check underneeth left for a neighbour
-        elseif flag2b && XX[li+1,co+i-2] != 0
-            scan_lines!(XX, l_vec1, l_vec2, l_vec3, li+1, co+i-2)
-        # check underneeth the line for a neighbour
-        elseif flag2 && XX[li+1,co+i-1] != 0
-            scan_lines!(XX, l_vec1, l_vec2, l_vec3, li+1, co+i-1)
-        # check underneeth right for a neighbour
-        elseif flag2c && XX[li+1,co+i] != 0
-            scan_lines!(XX, l_vec1, l_vec2, l_vec3, li+1, co+i)
+        newli, newco = neighborindices(XX, i, li, co)
+        if newli != 0 && newco != 0
+            scan_lines!(XX, l_vec1, l_vec2, l_vec3, newli, newco)
         end
     end
+end
+
+function neighborindices(XX, i::T, li::T, co::T) where T<:Integer
+    N, M = size(XX)
+    for newli in (li-1, li+1), newco in (co+i .+ (-2:0))
+        if (1 ≤ newli ≤ N) && (newco != 0) && (newco ≤ M)
+            (XX[newli, newco] != 0) && return (newli, newco)
+        end
+    end
+    return zero(T), zero(T) # default if the conditions are not met
 end
