@@ -243,65 +243,65 @@ function horizontalhisto(R::SparseMatrixCSC)
     return vec(liness[1,:]), vec(liness[2,:]), vec(liness[3,:])
 end
 
-function horizontalhisto2(R::SparseMatrixCSC)
-    # Transpose R in order to get the "horizontal" lines
-    # rows = colvals(R[2:end,:])
-    # cols = rowvals(R[2:end,:])
-    rows = colvals(R)
-    cols = rowvals(R)
-    p = sortperm(cols)
-    rows = rows[p]
-    cols = cols[p]
-    # check bounds
-    n = length(rows)
-    if length(cols) != n
-        throw(ErrorException("mismatch between number of row and column indices"))
-    end
-    # histogram for lines with start & end indices
-    liness = zeros(Int, 3, 1)
-    # Iterate over columns
-    cprev = cols[1]
-    r1 = rows[1]
-    rprev = r1
-    @inbounds for i=1:n
-        r = rows[i]
-        c = cols[i]
-        # Search the second and later segments in the column
-        if c == cprev
-            if r-rprev != 1 # (a): there is a separation between rprev and r
-                # update histogram of segments
-                current_vert = rprev-r1+1
-                if current_vert ≥ 1
-                    liness = extend_skeleton_histogram!(liness, r, c, current_vert)
-                end
-                r1 = r # update the start of the next segment
-            end
-            rprev = r  # update the previous position
-        else # hit in the first point of a new column
-            # process the last fragment of the previous column
-            current_vert = rprev-r1+1
-            if current_vert ≥ 1
-                liness = extend_skeleton_histogram!(liness, r, c, current_vert)
-            end
-            # initialize values for searching new fragments
-            cprev = c
-            r1 = r
-            rprev = r
-        end
-    end
-    # Process the latest fragment
-    current_vert = rprev-r1+1
-    liness[1,end] = current_vert
-    # process the first dummy-fragment
-    liness[1,1] = 0
+# function horizontalhisto2(R::SparseMatrixCSC)
+#     # Transpose R in order to get the "horizontal" lines
+#     # rows = colvals(R[2:end,:])
+#     # cols = rowvals(R[2:end,:])
+#     rows = colvals(R)
+#     cols = rowvals(R)
+#     p = sortperm(cols)
+#     rows = rows[p]
+#     cols = cols[p]
+#     # check bounds
+#     n = length(rows)
+#     if length(cols) != n
+#         throw(ErrorException("mismatch between number of row and column indices"))
+#     end
+#     # histogram for lines with start & end indices
+#     liness = zeros(Int, 3, 1)
+#     # Iterate over columns
+#     cprev = cols[1]
+#     r1 = rows[1]
+#     rprev = r1
+#     @inbounds for i=1:n
+#         r = rows[i]
+#         c = cols[i]
+#         # Search the second and later segments in the column
+#         if c == cprev
+#             if r-rprev != 1 # (a): there is a separation between rprev and r
+#                 # update histogram of segments
+#                 current_vert = rprev-r1+1
+#                 if current_vert ≥ 1
+#                     liness = extend_skeleton_histogram!(liness, r, c, current_vert)
+#                 end
+#                 r1 = r # update the start of the next segment
+#             end
+#             rprev = r  # update the previous position
+#         else # hit in the first point of a new column
+#             # process the last fragment of the previous column
+#             current_vert = rprev-r1+1
+#             if current_vert ≥ 1
+#                 liness = extend_skeleton_histogram!(liness, r, c, current_vert)
+#             end
+#             # initialize values for searching new fragments
+#             cprev = c
+#             r1 = r
+#             rprev = r
+#         end
+#     end
+#     # Process the latest fragment
+#     current_vert = rprev-r1+1
+#     liness[1,end] = current_vert
+#     # process the first dummy-fragment
+#     liness[1,1] = 0
 
-    # remove lines of length zero (=no line)
-    no_zero_lines = findall(liness[1,:].!=0)
-    liness = liness[:, no_zero_lines]
-    ls = size(liness)
-    liness = liness[:,sortperm(@view liness[1, :]; rev=true)]
-    return vec(liness[1,:]), vec(liness[2,:]), vec(liness[3,:])
-end
+#     # remove lines of length zero (=no line)
+#     no_zero_lines = findall(liness[1,:].!=0)
+#     liness = liness[:, no_zero_lines]
+#     ls = size(liness)
+#     liness = liness[:,sortperm(@view liness[1, :]; rev=true)]
+#     return vec(liness[1,:]), vec(liness[2,:]), vec(liness[3,:])
+# end
 
 # manipulates XX inplace and returns a view on l_vec
 function scan_lines!(XX::SparseMatrixCSC, l_vec1::AbstractVector{<:Integer}, l_vec2::AbstractVector{<:Integer}, l_vec3::AbstractVector{<:Integer}, line::Integer, column::Integer)
