@@ -84,7 +84,7 @@ end
 # Transforms the reverted RP (close returns map) into a normal RP
 function revert_close_returns_map(R::SparseMatrixCSC; triangle::Bool = true)
     nr = size(R, 2)
-    rowvalues = RA.colvals(R)
+    rowvalues = colvals(R)
     columnvalues = rowvals(R) .+ rowvalues .- (nr + 1)
     if triangle
         lower = (columnvalues .<= rowvalues)
