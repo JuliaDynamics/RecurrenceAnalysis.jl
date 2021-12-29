@@ -98,17 +98,20 @@ end
 # (close returns map) [obtained by calling first `revert_recurrence_matrix` on a
 # recurrence Matrix R, and consecutevely `horizontalhisto(R)`] construct and return
 # a "dummy" close returns map, where all lines are encoded according to their length.
-function create_close_returns_map(lines1::Vector{Int}, lines2::Vector{Int}, lines3::Vector{Int}, size_of_cl_ret_RP::Tuple{Int, Int})
-    X = zeros(Int, size_of_cl_ret_RP)
-    for i = 1:length(lines1)
-        line_length = lines1[i]
-        line_ind = lines2[i]
-        column_ind = lines3[i]
-        for j = 0:line_length-1
-            X[line_ind,column_ind+j] = line_length
-        end
+function create_close_returns_map(lines1, lines2, lines3, dims)
+    nzv = sum(lines1)
+    rowvalues = zeros(Int, nzv)
+    colvalues = zeros(Int, nzv)
+    lenvalues = zeros(Int, nzv)
+    startspan = 0
+    for (i, val) in enumerate(lines1)
+        span = startspan .+ (1:val)
+        rowvalues[span] .= lines2[i]
+        colvalues[span] .= lines3[i]-1 .+ (1:val)
+        lenvalues[span] .= val
+        startspan += val
     end
-    return sparse(X)
+    return sparse(rowvalues, colvalues, lenvalues, dims...)
 end
 
 # deletes a line, specified in 'l_vec' (line vector, with first line being
