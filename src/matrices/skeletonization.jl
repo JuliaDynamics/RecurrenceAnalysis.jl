@@ -104,10 +104,8 @@ end
 # Transforms the reverted RP (close returns map) into a normal RP
 function revert_close_returns_map(R::SparseMatrixCSC; triangle::Bool = true)
     nr = size(R, 1)
-    # rowvalues = colvals(R)
-    # columnvalues = rowvals(R) .+ rowvalues .- (nr + 1)
     rowvalues = rowvals(R)
-    columnvalues = rowvals(R) .+ colvals(R) .- (nr + 1)
+    columnvalues = rowvalues .+ colvals(R) .- (nr + 1)
     if triangle
         lower = (columnvalues .<= rowvalues)
         return sparse(rowvalues[lower], columnvalues[lower], trues(count(lower)), nr, nr)
@@ -226,27 +224,21 @@ end
 # Returns the lines of this sorted matrix as vectors
 function verticalhisto(R::SparseMatrixCSC)
     N = size(R)[2]
-    liness = zeros(Int, 3, 1)
+    lengthvector = Int[]
+    columnvector = Int[]
+    startvector = Int[]
     @inbounds for j = 1:N
-        starts = findall(diff([0; @view R[:,j]]).==1)
-        ends = findall(diff([@view R[:,j]; 0]).==-1)
-
-        if ~isempty(starts)
-            lines = zeros(Int, 3, length(starts))
-            for n=1:length(starts)
-                lines[2,n] = j
-                lines[3,n] = starts[n]
-                lines[1,n] = ends[n] - starts[n] + 1
-            end
-            liness = hcat(liness,lines)
-        end
+        Rjdiffs = diff([0; @view R[:,j]; 0])
+        starts = findall(isequal(1), Rjdiffs)
+        ends = findall(isequal(-1), Rjdiffs)
+        linelengths = ends .- starts
+        mask = (!iszero).(linelengths)
+        append!(lengthvector, view(linelengths, mask))
+        append!(startvector, view(starts, mask))
+        append!(columnvector, repeat([j], count(mask)))
     end
-    # remove lines of length zero (=no line)
-    no_zero_lines = findall(liness[1,:].!=0)
-    liness = liness[:, no_zero_lines]
-    ls = size(liness)
-    liness = liness[:,sortperm(@view liness[1, :]; rev=true)]
-    return vec(liness[1,:]), vec(liness[3,:]), vec(liness[2,:])
+    ordered = sortperm(lengthvector; rev=true)
+    return lengthvector[ordered], startvector[ordered], columnvector[ordered]
 end
 # function verticalhisto2(R::SparseMatrixCSC)
 #     rows = rowvals(R)
@@ -296,7 +288,7 @@ end
 #     liness[1,end] = current_vert
 #     # process the first dummy-fragment
 #     liness[1,1] = 0
-#
+
 #     # remove lines of length zero (=no line)
 #     no_zero_lines = findall(liness[1,:].!=0)
 #     liness = liness[:, no_zero_lines]
