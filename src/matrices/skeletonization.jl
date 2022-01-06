@@ -223,12 +223,13 @@ end
 # indices of its row and column, are stored in the 2nd and 3rd row, respectively.
 # Returns the lines of this sorted matrix as vectors
 function verticalhisto(R::SparseMatrixCSC)
-    N = size(R)[2]
+    M, N = size(R)
     lengthvector = Int[]
     columnvector = Int[]
     startvector = Int[]
+    Rjdiffs = zeros(Int,M+1)
     @inbounds for j = 1:N
-        Rjdiffs = diff([0; @view R[:,j]; 0])
+        extendeddiff!(Rjdiffs, @view R[:,j])
         starts = findall(isequal(1), Rjdiffs)
         ends = findall(isequal(-1), Rjdiffs)
         linelengths = ends .- starts
@@ -240,6 +241,20 @@ function verticalhisto(R::SparseMatrixCSC)
     ordered = sortperm(lengthvector; rev=true)
     return lengthvector[ordered], startvector[ordered], columnvector[ordered]
 end
+
+# in-place extension of diff, adding diffs of initial and final points
+function extendeddiff!(d, x::AbstractVector{T}) where T
+    n = length(x)
+    d[1] = prev = x[1]
+    @inbounds for i in 2:n
+            next = x[i]
+            d[i] = next-prev
+            prev = next
+    end
+    d[n+1] = -prev
+    return d
+end
+
 # function verticalhisto2(R::SparseMatrixCSC)
 #     rows = rowvals(R)
 #     cols = colvals(R)
