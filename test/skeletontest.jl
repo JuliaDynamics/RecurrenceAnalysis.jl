@@ -32,7 +32,7 @@ end
 @testset "Skeletonized chaotic recurrence structures" begin
     data = readdlm(joinpath(tsfolder, "test_time_series_lorenz_standard_N_10000_multivariate.csv"))
 
-    RP = RecurrenceMatrix(data[1:250,:], 0.05; fixedrate=true)
+    RP = RecurrenceMatrix(Dataset(data[1:250,:]), 0.05; fixedrate=true)
     RP_skel = skeletonize(RP)
 
     @test RP_skel[135,61] == 1
