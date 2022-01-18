@@ -129,11 +129,8 @@ function build_skeletonized_RP(lines1::Vector{Int}, lines2::Vector{Int}, lines3:
     X_cl_new = spzeros(Bool, N, M)
     # fill up close returns map with lines stored in the new line matrix
     @inbounds for i = 1:length(lines1)
-        l_max = lines1[i]
-        linei = lines2[i]
-        columni = lines3[i]
-        for j = 1:l_max
-            X_cl_new[linei+j-1, columni] = true
+        for j = 1:lines1[i]
+            X_cl_new[lines2[i]+j-1, lines3[i]] = true
         end
     end
     XX = revert_close_returns_map(X_cl_new) # revert this close returns map into a legal RP
@@ -149,19 +146,13 @@ function build_skeletonized_RP(lines1::Vector{Int}, lines2::Vector{Int}, lines3:
     X_cl2_new = spzeros(Bool, N, M)
     # fill up close returns map with lines stored in the new line matrix
     @inbounds for i = 1:length(lines1)
-        l_max = lines1[i]
-        linei = lines2[i]
-        columni = lines3[i]
-        for j = 1:l_max
-            X_cl_new[linei+j-1, columni] = true
+        for j = 1:lines1[i]
+            X_cl_new[lines2[i]+j-1, lines3[i]] = true
         end
     end
     @inbounds for i = 1:length(lines11)
-        l_max = lines11[i]
-        linei = lines22[i]
-        columni = lines33[i]
-        for j = 1:l_max
-            X_cl2_new[linei+j-1,columni] = true
+        for j = 1:lines11[i]
+            X_cl2_new[lines22[i]+j-1,lines33[i]] = true
         end
     end
 
@@ -217,31 +208,6 @@ function get_final_line_matrix(lines1t::Vector{Int}, lines1l::Vector{Int},
     return lines_final_t, lines_final_l, lines_final_c
 end
 
-# compute a `3-by-N` matrix, which stores all vertical lines from a converted
-# recurrence matrix (after applying `create_close_returns_map` to an ARM). The
-# line lengths of each found line are stored in the first row, and the starting
-# indices of its row and column, are stored in the 2nd and 3rd row, respectively.
-# Returns the lines of this sorted matrix as vectors
-function verticalhisto(R::SparseMatrixCSC)
-    M, N = size(R)
-    lengthvector = Int[]
-    columnvector = Int[]
-    startvector = Int[]
-    Rjdiffs = zeros(Int,M+1)
-    @inbounds for j = 1:N
-        extendeddiff!(Rjdiffs, @view R[:,j])
-        starts = findall(isequal(1), Rjdiffs)
-        ends = findall(isequal(-1), Rjdiffs)
-        linelengths = ends .- starts
-        mask = (!iszero).(linelengths)
-        append!(lengthvector, view(linelengths, mask))
-        append!(startvector, view(starts, mask))
-        append!(columnvector, repeat([j], count(mask)))
-    end
-    ordered = sortperm(lengthvector; rev=true)
-    return lengthvector[ordered], startvector[ordered], columnvector[ordered]
-end
-
 # in-place extension of diff, adding diffs of initial and final points
 function extendeddiff!(d, x::AbstractVector{T}) where T
     n = length(x)
@@ -255,7 +221,11 @@ function extendeddiff!(d, x::AbstractVector{T}) where T
     return d
 end
 
-function verticalhisto2(R::SparseMatrixCSC)
+# compute and store all vertical lines from a converted recurrence matrix
+# (after applying `create_close_returns_map` to an ARM). The
+# line lengths of each found line are stored along with the corresponding starting
+# indices of the row and column.
+function verticalhisto(R::SparseMatrixCSC)
     rows = rowvals(R)
     # early return
     isempty(rows) && return (Int[], Int[], Int[])
