@@ -85,7 +85,7 @@ function recurrenceplot(io::IO, R::Union{ARM,SparseMatrixCSC}; minh = 25, maxh =
     )
 end
 
-function Base.show(io::IO, ::MIME"text/plain", R::Union{ARM,SparseMatrixCSC})
+function Base.show(io::IO, ::MIME"text/plain", R::ARM)
     a = recurrenceplot(io, R)
     show(io, a)
 end
