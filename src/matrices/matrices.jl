@@ -218,7 +218,7 @@ JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{WithinRange}(a
 
 """
     JointRecurrenceMatrix(R1, R2; kwargs...)
-    
+
 Create a joint recurrence matrix from given recurrence matrices `R1, R2`.
 """
 function JointRecurrenceMatrix(
@@ -336,7 +336,7 @@ Note that `parallel` may be either `Val(true)` or `Val(false)`.
 """
 function recurrence_matrix(xx::AbstractDataset, yy::AbstractDataset, metric::Metric, ε, ::Val{false})
     x = xx.data
-    y = yy.data    
+    y = yy.data
     @assert ε isa Real || length(ε) == length(y)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()

@@ -1,5 +1,5 @@
 using RecurrenceAnalysis, SparseArrays
-using Test, Statistics
+using Test, Statistics, LinearAlgebra, DelimitedFiles
 
 cells = [(1,1),(2,2),(3,2),(6,2),(7,2),(8,2),(6,3),(7,3),(10,3),(2,4),(4,4),
     (1,5),(2,5),(3,5),(5,5),(9,5),(10,5),(2,6),(3,6),(6,6),(7,6),(10,6),
@@ -24,7 +24,7 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
 #  9 · · · · x · · · o o ·
 #  A · · x · x x · · · o ·
 #
-###
+##
 
 @testset "Recurrence structures" begin
     @testset "Default parameters" begin
@@ -121,7 +121,7 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
     end
 end
 
-### Recurrence network
+## Recurrence network
 @testset "Recurrence networks" begin
     # 7 edges, 12 linked triples, 1 triangle (1-2-4)
     adjmat7 =  [0 1 0 1 0 0

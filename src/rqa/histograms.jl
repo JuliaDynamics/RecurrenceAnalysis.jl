@@ -11,6 +11,12 @@
     return n
 end
 
+@inline function extend_skeleton_histogram!(h::Matrix{Int}, r::Int, c::Int, p::Int)
+    h[1,end] = p
+    h = hcat(h, [0, c, r]) # revert order for c and r, due to the initial transpose
+    return h
+end
+
 # Calculate the histograms of segments and distances between segments
 # from the indices of rows and columns/diagonals of the matrix
 # `theiler` is used for histograms of vertical structures

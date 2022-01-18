@@ -1,5 +1,8 @@
 # RecurrenceAnalysis.jl News
 
+## v1.7.0
+- New method of skeletonizing a Recurrence Matrix `skeletonize`, in order to eliminate tangential motion.
+
 ## v1.5.2
 - New, faster formula for `rna[:averagepath]` allowing disconnected graphs.
 
