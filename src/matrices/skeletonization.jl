@@ -8,7 +8,7 @@ are defined.
 """
     skeletonize(R) → R_skel
 
-Skeletonizes the `RecurrenceMatrix R` by using the algorithm proposed by
+Skeletonize the `RecurrenceMatrix R` by using the algorithm proposed by
 Kraemer & Marwan [^Kraemer2019]. This function returns `R_skel`, a recurrence
 matrix, which only consists of diagonal lines of "thickness" one.
 
