@@ -1,6 +1,6 @@
 using RecurrenceAnalysis
 using DynamicalSystemsBase, Random, Statistics, SparseArrays
-using LightGraphs, LinearAlgebra
+using Graphs, LinearAlgebra
 using Test
 using DataStructures
 RA = RecurrenceAnalysis
@@ -141,7 +141,7 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
     @test isequal(rc1[1],rc2[1])
     @test isequal(rc2[2],rc2[2])
 
-    
+
     @test isa(rqa(rmat.data).data,Dict)
     @test isa(rqa(Dict,rmat.data),Dict)
     @test isa(rqa(OrderedDict,rmat.data),OrderedDict)
