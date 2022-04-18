@@ -1,4 +1,4 @@
-using LightGraphs
+using Graphs
 
 """
     SimpleGraph(R::AbstractRecurrenceMatrix)
@@ -18,7 +18,7 @@ A_{i,j} = R_{i,j} - \\delta_{i,j}
 Following this definition, diagonal points of `R` are ommited, i.e.
 the graph does not contain self-connected nodes.
 
-See the package [LightGraphs.jl](https://juliagraphs.org/LightGraphs.jl/stable/)
+See the package [Graphs.jl](https://juliagraphs.org/Graphs.jl/stable/)
 for further options to work with `SimpleGraph` objects, besides the functions
 for Recurrence Network Analysis provided in this package.
 
@@ -32,7 +32,7 @@ for Recurrence Network Analysis provided in this package.
 Webber, C.L. & Marwan N. (eds.) *Recurrence Quantification Analysis.
 Theory and Best Practices*, Springer, pp. 101-165 (2015).
 """
-function LightGraphs.SimpleGraphs.SimpleGraph(R::AbstractRecurrenceMatrix)
+function Graphs.SimpleGraphs.SimpleGraph(R::AbstractRecurrenceMatrix)
     graph = SimpleGraph(R.data)
     delta = SimpleGraphFromIterator(Edge(v,v) for v=1:size(graph, 1))
     graph = difference(graph, delta)

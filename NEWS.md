@@ -1,5 +1,8 @@
 # RecurrenceAnalysis.jl News
 
+## v1.8.0
+- Switch to Graphs.jl from LightGraphs.jl for RNA.
+
 ## v1.7.0
 - New method of skeletonizing a Recurrence Matrix `skeletonize`, in order to eliminate tangential motion.
 
@@ -16,7 +19,7 @@
 - New method of Fixed Amount of Neighbors (FAN) method to create recurrence plots.
 - Now `AbstractRecurrenceMatrix` types have a parameter with the possible values:
     * `WithinRange`: when neighboring points are determined by a given distance in the phase space.
-    * `NeighborNumber`: when each point has a determined number of neighbors.  
+    * `NeighborNumber`: when each point has a determined number of neighbors.
 - Input arguments of `RecurrenceMatrix`, etc. are generalized to `AbstractDataset`.
 
 ## v1.3.2

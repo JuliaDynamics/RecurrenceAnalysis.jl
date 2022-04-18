@@ -7,9 +7,9 @@ The input `R` can be a symmetric recurrence matrix that is
 interpreted as the adjacency matrix of an undirected complex network,
 such that linked vertices are neighboring points in the phase space.
 
-Alternatively, the inputs can be a graph object or any 
+Alternatively, the inputs can be a graph object or any
 valid inputs to the `SimpleGraph` constructor of the
-[LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) package.
+[Graphs](https://github.com/JuliaGraphs/Graphs.jl) package.
 
 ## Return
 
