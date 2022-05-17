@@ -33,7 +33,7 @@ Base.show(io::IO, R::AbstractRecurrenceMatrix) = println(io, summary(R))
 # Propagate used functions:
 begin
     extentions = [
-        (:Base, (:getindex, :size, :length, :view, :iterate)),
+        (:Base, (:getindex, :size, :length, :view, :iterate, :eachindex, :axes, :CartesianIndices)),
         (:LinearAlgebra, (:diag, :triu, :tril, :issymmetric)),
         (:SparseArrays, (:nnz, :rowvals, :nzrange, :nonzeros))
     ]
