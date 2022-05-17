@@ -35,7 +35,7 @@ function sorteddistances(x; theiler::Integer=0, scale=1, kwargs...)
     n = size(x,1)
     nd = (n+1)*n/2
     ntheiler = theiler*n - theiler*(theiler-1)/2
-    distarray = zeros(round(Integer,nd-ntheiler))
+    distarray = zeros(round(Int, nd-ntheiler))
     pos = 0
     for d = 1:n
         tmp = dm[d+theiler:n,d]

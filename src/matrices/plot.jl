@@ -169,22 +169,22 @@ function grayscale(R, bwcode::Tuple{TT,T}=(0.0,1.0);
     dims = size(R)
     kwargs = Dict(kwargs)
     if haskey(kwargs, :width) && !haskey(kwargs, :height)
-        width = Integer(kwargs[:width])
-        height = round(Integer, width*dims[2]/dims[1])
+        width = Int(kwargs[:width])
+        height = round(Int, width*dims[2]/dims[1])
         return grayscale(R, bwcode; width=width, height=height)
     elseif haskey(kwargs, :height) && !haskey(kwargs, :width)
-        height = Integer(kwargs[:height])
-        width = round(Integer, height*dims[1]/dims[2])
+        height = Int(kwargs[:height])
+        width = round(Int, height*dims[1]/dims[2])
         return grayscale(R, bwcode; width=width, height=height)
     elseif !haskey(kwargs, :width) || !haskey(kwargs, :height)
-        width, height = Integer.(dims)
+        width, height = Int.(dims)
         return grayscale(R, bwcode; width=width, height=height)
     end
     if exactsize
-        width, height = Integer(kwargs[:width]), Integer(kwargs[:height])
+        width, height = Int(kwargs[:width]), Int(kwargs[:height])
     else
-        width, height = checkgridsize(Integer(kwargs[:width]),
-        Integer(kwargs[:height]), dims)
+        width, height = checkgridsize(Int(kwargs[:width]),
+        Int(kwargs[:height]), dims)
     end
     # initial and final values of the horizontal and vertical blocks
     rows = overlapgrid(width, dims[1])
