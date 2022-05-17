@@ -128,8 +128,8 @@ function build_skeletonized_RP(lines1::Vector{Int}, lines2::Vector{Int}, lines3:
 
     X_cl_new = spzeros(Bool, N, M)
     # fill up close returns map with lines stored in the new line matrix
-    @inbounds for i = 1:length(lines1)
-        for j = 1:lines1[i]
+    @inbounds for i in eachindex(lines1)
+        for j in 1:lines1[i]
             X_cl_new[lines2[i]+j-1, lines3[i]] = true
         end
     end
@@ -145,13 +145,13 @@ function build_skeletonized_RP(lines1::Vector{Int}, lines2::Vector{Int}, lines3:
     X_cl_new = spzeros(Bool, N, M)
     X_cl2_new = spzeros(Bool, N, M)
     # fill up close returns map with lines stored in the new line matrix
-    @inbounds for i = 1:length(lines1)
-        for j = 1:lines1[i]
+    @inbounds for i in eachindex(lines1)
+        for j in 1:lines1[i]
             X_cl_new[lines2[i]+j-1, lines3[i]] = true
         end
     end
-    @inbounds for i = 1:length(lines11)
-        for j = 1:lines11[i]
+    @inbounds for i in eachindex(lines11)
+        for j in 1:lines11[i]
             X_cl2_new[lines22[i]+j-1,lines33[i]] = true
         end
     end
@@ -177,7 +177,7 @@ function get_final_line_matrix(lines1t::Vector{Int}, lines1l::Vector{Int},
     Nlines1 = length(lines1t) # number of found lines
 
     # go through all lines stored in the sorted line matrix
-    @inbounds for l_ind = 1:Nlines1
+    @inbounds for l_ind in 1:Nlines1
         # check if line is still in the rendered line matrix
         common_ind = intersect(findall(x-> x==true, lines1t[l_ind] .== lines_copy1t),
                         findall(x-> x==true, lines1l[l_ind] .== lines_copy1l),
@@ -194,9 +194,9 @@ function get_final_line_matrix(lines1t::Vector{Int}, lines1l::Vector{Int},
         # go along each point of the line and check for neighbours
         l_max = lines1t[l_ind]
 
-        @inbounds for l = 1:l_max
+        @inbounds for l in 1:l_max
             # scan each line twice - above and underneth
-            for index = -1:2:1
+            for index in -1:2:1
                 # make sure not to exceed RP-boundaries
                 (columni+index > M || columni+index == 0) ? break : nothing
                 # if there is a neighbouring point, call recursive scan-function
@@ -238,7 +238,7 @@ function verticalhisto(R::SparseMatrixCSC)
     cprev = cols[1]
     r1 = rows[1]
     rprev = r1 - 1 # coerce that (a) is not hit in the first iteration
-    @inbounds for i=1:n
+    @inbounds for i in 1:n
         r = rows[i]
         c = cols[i]
         # Search the second and later segments in the column
@@ -300,7 +300,7 @@ function scan_lines!(XX::SparseMatrixCSC, l_vec1::AbstractVector{<:Integer}, l_v
     deleteat!(l_vec3, del_ind)
 
     # check for borders of the RP
-    for i = 1:len
+    for i in 1:len
         newli, newco = neighborindices(XX, i, li, co)
         if newli != 0 && newco != 0
             scan_lines!(XX, l_vec1, l_vec2, l_vec3, newli, newco)

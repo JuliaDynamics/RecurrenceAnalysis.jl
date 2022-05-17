@@ -236,7 +236,7 @@ function tau_recurrence(R::Union{ARM,SparseMatrixCSC})
     n = minimum(size(R))
     rv = rowvals(R)
     rr_τ = zeros(n)
-    @inbounds for col=1:n
+    @inbounds for col in 1:n
         for i in nzrange(R, col)
             if (r=rv[i]) ≤ n
                 d = abs(r-col)
@@ -257,7 +257,7 @@ function _trend(rr_τ::Vector; theiler=1, border=10, kwargs...)::Float64
     b = nmax-border
     numerator = denominator = 0.0
     mean_rr = mean(@view rr_τ[a:b])
-    for d = a:b
+    for d in a:b
         δ = d - b/2
         numerator += δ*(rr_τ[d] - mean_rr)
         denominator += δ*δ

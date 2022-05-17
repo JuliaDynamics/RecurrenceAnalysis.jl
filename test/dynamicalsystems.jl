@@ -84,8 +84,8 @@ dict_keys = ["Sine wave","White noise","Hénon (chaotic)","Hénon (periodic)"]
     rp_fan = RecurrenceMatrix{FAN}(xe, 0.05; fixedrate=true, parallel = false)
     rp_fan_p = RecurrenceMatrix{FAN}(Dataset(xe), 0.05; parallel = true)
     n = length(xe)
-    @test all(.04 < nnz(cr_fan[:,i])/n < .06 for i=1:size(cr_fan, 2))
-    @test all(.04 < (nnz(rp_fan[:,i])-1)/n < .06 for i=1:size(rp_fan, 2))
+    @test all(.04 < nnz(cr_fan[:,i])/n < .06 for i in axes(cr_fan, 2))
+    @test all(.04 < (nnz(rp_fan[:,i])-1)/n < .06 for i in axes(rp_fan, 2))
     @test .04 < recurrencerate(cr_fan) < .06
     @test .04 < recurrencerate(cr_fan_p) < .06
     @test .04 < recurrencerate(rp_fan) < .06

@@ -73,9 +73,9 @@ function transitivity(R::AbstractRecurrenceMatrix)
     end
     R² = R.data * R.data
     numerator = zero(eltype(R²))
-    for col = 1:size(R,2)
+    for col in axes(R,2)
         rows = view(rowvals(R), nzrange(R,col))
-        for r = rows
+        for r in rows
             numerator += R²[r, col]
         end
     end

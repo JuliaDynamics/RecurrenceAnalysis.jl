@@ -63,7 +63,7 @@ function ij_block_rmat(x, y, bsize, dindex, vargs...; kwargs...)
     ix = iy = 0:0
     rws = (Int)[]
     cls = (Int)[]
-    for i=abs(dindex):n_fullblocks-1
+    for i in abs(dindex):n_fullblocks-1
         ix = i*bsize .+ brange
         iy = i*bsize .+ brange
         if dindex < 0
@@ -142,7 +142,7 @@ macro windowed(ex, options...)
     if ex.head == :call
         f = ex.args[1]
         # Iteration of RQA functions
-        # fun(x,...) => [fun(x[i+w,i+w],...) for i=0:s:nw]
+        # fun(x,...) => [fun(x[i+w,i+w],...) for i in 0:s:nw]
         if in(f, rqa_funs)
             x = ex.args[2]
             submat = :(mtype($x[i.+w,i.+w])) # e.g. :(RecurrenceMatrix(x[i.+w,i.+w]))
@@ -153,7 +153,7 @@ macro windowed(ex, options...)
                 # only calculate "complete" blocks - until `nw`
                 local nw = size($x,1) - $(dict_op[:width])
                 local mtype = typeof($x) # type of the recurrence matrix
-                ($(rqa_types[f]))[$ex for i=0:s:nw]
+                ($(rqa_types[f]))[$ex for i in 0:s:nw]
             end
             return esc(ret_ex)
         end
@@ -185,7 +185,7 @@ macro windowed(ex, options...)
                     :RTE   => zeros(ni),
                     :NMPRT => zeros(ni)
                 )
-                for i=1:ni
+                for i in 1:ni
                     local rqa_i = $ex
                     if i==1 # filter parameters
                         filter!(p->p.first in keys(rqa_i), rqa_dict)
