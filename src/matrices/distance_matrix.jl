@@ -62,7 +62,7 @@ function _distancematrix(x::AbstractDataset{S,Tx}, y::AbstractDataset{S,Ty},
     y = y.data
     d = zeros(promote_type(Tx,Ty), length(x), length(y))
     for j in eachindex(y), i in eachindex(x)
-        @inbounds d[i,j] = evaluate(metric, x[ij], y[j])
+        @inbounds d[i,j] = evaluate(metric, x[i], y[j])
     end
     return d
 end
