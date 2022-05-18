@@ -33,7 +33,7 @@ Base.show(io::IO, R::AbstractRecurrenceMatrix) = println(io, summary(R))
 # Propagate used functions:
 begin
     extentions = [
-        (:Base, (:getindex, :size, :length, :view, :iterate)),
+        (:Base, (:getindex, :size, :length, :view, :iterate, :eachindex, :axes, :CartesianIndices)),
         (:LinearAlgebra, (:diag, :triu, :tril, :issymmetric)),
         (:SparseArrays, (:nnz, :rowvals, :nzrange, :nonzeros))
     ]
@@ -53,7 +53,7 @@ LinearAlgebra.issymmetric(::JointRecurrenceMatrix{WithinRange}) = true
 # column values in sparse matrix (parallel to rowvals)
 function colvals(x::SparseMatrixCSC)
     cv = zeros(Int,nnz(x))
-    @inbounds for c=1:size(x,2)
+    @inbounds for c in axes(x,2)
         cv[nzrange(x,c)] .= c
     end
     cv
@@ -307,7 +307,7 @@ function get_fan_threshold(x, y, metric, ε)
     if x === y
         ε += 1/length(x)
     end
-    for i in 1:size(d, 2)
+    for i in axes(d, 2)
         fan_threshold[i] = quantile(view(d, : ,i), ε)
     end
     return fan_threshold
@@ -340,9 +340,9 @@ function recurrence_matrix(xx::AbstractDataset, yy::AbstractDataset, metric::Met
     @assert ε isa Real || length(ε) == length(y)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
-    for j in 1:length(y)
+    for j in eachindex(y)
         nzcol = 0
-        for i in 1:length(x)
+        for i in eachindex(x)
             @inbounds if evaluate(metric, x[i], y[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
                 push!(rowvals, i)
                 nzcol += 1
@@ -359,9 +359,9 @@ function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric::Metric,
     @assert ε isa Real || length(ε) == length(y)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
-    for j in 1:length(y)
+    for j in eachindex(y)
         nzcol = 0
-        for i in 1:length(x)
+        for i in eachindex(x)
             if @inbounds abs(x[i] - y[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
                 push!(rowvals, i)
                 nzcol += 1
@@ -378,7 +378,7 @@ function recurrence_matrix(x::AbstractVector, metric::Metric, ε, ::Val{false})
     @assert ε isa Real || length(ε) == length(y)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
-    for j in 1:length(x)
+    for j in eachindex(x)
         nzcol = 0
         for i in 1:j
             if @inbounds abs(x[i] - x[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
@@ -397,7 +397,7 @@ function recurrence_matrix(xx::AbstractDataset, metric::Metric, ε, ::Val{false}
     @assert ε isa Real || length(ε) == length(y)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
-    for j in 1:length(x)
+    for j in eachindex(x)
         nzcol = 0
         for i in 1:j
             @inbounds if evaluate(metric, x[i], x[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
@@ -426,10 +426,10 @@ function recurrence_matrix(xx::AbstractDataset, yy::AbstractDataset, metric::Met
     colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
 
     # This is the same logic as the serial function, but parallelized.
-    Threads.@threads for j in 1:length(y)
+    Threads.@threads for j in eachindex(y)
         threadn = Threads.threadid()
         nzcol = 0
-        for i in 1:length(x)
+        for i in eachindex(x)
             @inbounds if evaluate(metric, x[i], y[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
                 push!(rowvals[threadn], i) # push to the thread-specific row array
                 nzcol += 1
@@ -453,10 +453,10 @@ function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric::Metric,
     colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
 
     # This is the same logic as the serial function, but parallelized.
-    Threads.@threads for j in 1:length(y)
+    Threads.@threads for j in eachindex(y)
         threadn = Threads.threadid()
         nzcol = 0
-        for i in 1:length(x)
+        for i in eachindex(x)
             @inbounds if abs(x[i] - y[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
                 push!(rowvals[threadn], i) # push to the thread-specific row array
                 nzcol += 1

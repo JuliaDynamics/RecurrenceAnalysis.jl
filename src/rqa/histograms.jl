@@ -48,7 +48,7 @@ function _linehistograms(rows::T, cols::T, lmin::Integer, theiler::Integer,
     r1 = rows[firstindex]
     rprev = r1 - 1 # coerce that (a) is not hit in the first iteration
     dist = 0 # placeholder for distances between segments
-    @inbounds for i=firstindex:n
+    @inbounds for i in firstindex:n
         r = rows[i]
         c = cols[i]
         if abs(r-c) ≥ theiler

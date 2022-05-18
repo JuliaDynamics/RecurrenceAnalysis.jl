@@ -61,10 +61,8 @@ function _distancematrix(x::AbstractDataset{S,Tx}, y::AbstractDataset{S,Ty},
     x = x.data
     y = y.data
     d = zeros(promote_type(Tx,Ty), length(x), length(y))
-    for j in 1:length(y)
-        for i in 1:length(x)
-            @inbounds d[i,j] = evaluate(metric, x[i], y[j])
-        end
+    for j in eachindex(y), i in eachindex(x)
+        @inbounds d[i,j] = evaluate(metric, x[i], y[j])
     end
     return d
 end
@@ -77,8 +75,8 @@ function _distancematrix(x::AbstractDataset{S,Tx}, y::AbstractDataset{S,Ty},
     x = x.data
     y = y.data
     d = zeros(promote_type(Tx,Ty), length(x), length(y))
-    Threads.@threads for j in 1:length(y)
-        for i in 1:length(x)
+    Threads.@threads for j in eachindex(y)
+        for i in eachindex(x)
             @inbounds d[i,j] = evaluate(metric, x[i], y[j])
         end
     end
@@ -91,8 +89,8 @@ function _distancematrix(x::Matrix{Tx}, y::Matrix{Ty},
     x = x.data
     y = y.data
     d = zeros(promote_type(Tx,Ty), length(x), length(y))
-    Threads.@threads for j in 1:length(y)
-        for i in 1:length(x)
+    Threads.@threads for j in eachindex(y)
+        for i in eachindex(x)
             @inbounds d[i,j] = evaluate(metric, x[i, :], y[j, :])
         end
     end
@@ -108,7 +106,7 @@ end
 function _distancematrix(x::Vector{T}, metric::Metric, ::Val{false}) where T
     d = zeros(T, length(x), length(x))
 
-    for j in 1:length(x)
+    for j in eachindex(x)
         for i in 1:j
             @inbounds d[i, j] = abs(x[i] - x[j])
         end
@@ -121,7 +119,7 @@ end
 function _distancematrix(x::AbstractDataset{S, T}, metric::Metric, ::Val{false}) where T where S
     d = zeros(T, length(x), length(x))
 
-    for j in 1:length(x)
+    for j in eachindex(x)
         for i in 1:j
             @inbounds d[i, j] = evaluate(metric, x[i], x[j])
         end

@@ -5,7 +5,7 @@ function radius_mrr(x::AbstractVector, rr::Real)
     nr == 0 && error("the recurrence rate does not account for more than one sample")
     xs = sort(x)
     d = zeros(lx)
-    for i=1:lx
+    for i in 1:lx
         dxs = xs[max(1,i-nr+1):min(lx,i+nr-1)] - xs[i]
         d[i] = sort(abs.(dxs))[nr]
     end
@@ -37,7 +37,7 @@ function sorteddistances(x; theiler::Integer=0, scale=1, kwargs...)
     ntheiler = theiler*n - theiler*(theiler-1)/2
     distarray = zeros(round(Int, nd-ntheiler))
     pos = 0
-    for d = 1:n
+    for d in 1:n
         tmp = dm[d+theiler:n,d]
         distarray[pos .+ (1:length(tmp))] .= tmp
         pos += length(tmp)

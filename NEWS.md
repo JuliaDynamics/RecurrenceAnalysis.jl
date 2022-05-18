@@ -1,5 +1,8 @@
 # RecurrenceAnalysis.jl News
 
+## v1.8.1
+- Better support for iteration over `AbstractRecurrenceMatrix` with functions from `Base`.
+
 ## v1.8.0
 - Switch to Graphs.jl from LightGraphs.jl for RNA.
 
