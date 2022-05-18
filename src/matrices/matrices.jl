@@ -69,52 +69,52 @@ SparseArrays.SparseMatrixCSC{T}(R::ARM) where T = SparseMatrixCSC{T}(R.data)
 SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 
 """
-    RecurrenceMatrix(x, ε; kwargs...)
-    RecurrenceMatrix{FAN}(x, ε; kwargs...)
+    RecurrenceMatrix(x, ε::Real; kwargs...)
 
-Create a recurrence matrix from trajectory `x` (either a `Dataset` or a `Vector`).
+Create a recurrence matrix from trajectory `x` (either a `Dataset` or a `Vector`)
+and with distance threshold `ε`.
 Objects of type `<:AbstractRecurrenceMatrix` are displayed as a [`recurrenceplot`](@ref).
+See the description below for the behavior of the `FAN` version.
 
-## Description
-
-The recurrence matrix is a numeric representation of a "recurrence plot" [1, 2],
-in the form of a sparse square matrix of Boolean values.
-
-`x` must be a `Vector` or an `AbstractDataset`
-(possibly representing an embedded phase space; see [`embed`](@ref)).
-If `d(x[i], x[j]) ≤ ε` (with `d` the distance function),
-then the cell `(i, j)` of the matrix will have a `true`
-value. The criteria to evaluate distances between data points are defined
-by the following keyword arguments:
-
-* `scale=1` : a function of the distance matrix (see [`distancematrix`](@ref)),
+## Keyword Arguments
+* `metric = "euclidean"` : metric of the distances, either `Metric` or a string,
+   as in [`distancematrix`](@ref).
+* `scale = 1` : a function of the distance matrix (see [`distancematrix`](@ref)),
   or a fixed number, used to scale the value of `ε`. Typical choices are
   `maximum` or `mean`, such that the threshold `ε` is defined as a ratio of the
   maximum or the mean distance between data points, respectively (using
   `mean` or `maximum` calls specialized versions that are faster than the naive
   approach).  Use `1` to keep the distances unscaled (default).
-* `fixedrate::Bool=false` : a flag that indicates if `ε` should be
+* `fixedrate::Bool = false` : a flag that indicates if `ε` should be
   taken as a target fixed recurrence rate (see [`recurrencerate`](@ref)).
   If `fixedrate` is set to `true`, `ε` must be a value between 0 and 1,
   and `scale` is ignored.
-* `metric="euclidean"` : metric of the distances, either `Metric` or a string,
-   as in [`distancematrix`](@ref).
-* `parallel::Bool=false` : whether to parallelize the computation of the recurrence
-   matrix.  This will split the computation of the matrix across multiple threads.
+* `parallel::Bool = false` : whether to parallelize the computation of the recurrence
+   matrix. This will split the computation of the matrix across multiple threads.
 
-The parametrized constructor `RecurrenceMatrix{NeighborNumber}` creates the recurrence matrix
-with a fixed number of neighbors for each point in the phase space, i.e. the number
+## Description
+
+The recurrence matrix is a numeric representation of a "recurrence plot" [1, 2],
+in the form of a sparse square matrix of Boolean values.
+If `d(x[i], x[j]) ≤ ε` (with `d` the distance function),
+then the cell `(i, j)` of the matrix will have a `true`
+value. The criteria to evaluate distances between data points are defined
+based on the keyword arguments.
+
+    RecurrenceMatrix{FAN}(x, k::Int; kwargs...)
+
+The parametrized constructor `RecurrenceMatrix{FAN}` creates the recurrence matrix
+with a fixed number of `k` neighbors for each point in the phase space, i.e. the number
 of recurrences is the same for all columns of the recurrence matrix.
 In such case, `ε` is taken as the target fixed local recurrence rate,
 defined as a value between 0 and 1, and `scale` and `fixedrate` are ignored.
 This is often referred to in the literature as the method of "Fixed Amount of Nearest Neighbors"
-(or FAN for short); `RecurrenceMatrix{FAN}` can be used as a convenient alias
-for `RecurrenceMatrix{NeighborNumber}`.
+(or FAN for short). 
 
+`FAN` is nothing more than an alias of [`NeighborNumber`](@ref).
 If no parameter is specified, `RecurrenceMatrix` returns a
 `RecurrenceMatrix{WithinRange}` object, meaning that recurrences will be taken
-for pairs of data points whose distance is within the range determined by
-the input arguments. Note that while recurrence matrices
+for pairs of data points whose distance is \le  `ε`. Note that while recurrence matrices
 with neighbors defined within a given range are always symmetric, those defined
 by a fixed amount of neighbors can be non-symmetric.
 
