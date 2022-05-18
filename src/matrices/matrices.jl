@@ -114,7 +114,7 @@ This is often referred to in the literature as the method of "Fixed Amount of Ne
 `FAN` is nothing more than an alias of [`NeighborNumber`](@ref).
 If no parameter is specified, `RecurrenceMatrix` returns a
 `RecurrenceMatrix{WithinRange}` object, meaning that recurrences will be taken
-for pairs of data points whose distance is \le  `ε`. Note that while recurrence matrices
+for pairs of data points whose distance is ≤ `ε`. Note that while recurrence matrices
 with neighbors defined within a given range are always symmetric, those defined
 by a fixed amount of neighbors can be non-symmetric.
 
