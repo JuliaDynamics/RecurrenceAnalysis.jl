@@ -76,6 +76,9 @@ and with distance threshold `ε`.
 Objects of type `<:AbstractRecurrenceMatrix` are displayed as a [`recurrenceplot`](@ref).
 See the description below for the behavior of the `FAN` version.
 
+See also: [`CrossRecurrenceMatrix`](@ref), [`JointRecurrenceMatrix`](@ref) and
+use [`recurrenceplot`](@ref) to turn the result of these functions into a plottable format.
+
 ## Keyword Arguments
 * `metric = "euclidean"` : metric of the distances, either `Metric` or a string,
    as in [`distancematrix`](@ref).
@@ -94,10 +97,12 @@ See the description below for the behavior of the `FAN` version.
 
 ## Description
 
-The recurrence matrix is a numeric representation of a "recurrence plot" [1, 2],
-in the form of a sparse square matrix of Boolean values.
+The recurrence matrix is a numeric representation of a recurrence plot,
+described in detail in [^Marwan2007] and [^Marwan2015]. It represents a square
+a sparse square matrix of Boolean values that quantifies recurrences in the trajectory,
+i.e., points where the trajectory returns close to itself.
 If `d(x[i], x[j]) ≤ ε` (with `d` the distance function),
-then the cell `(i, j)` of the matrix will have a `true`
+then the entry `(i, j)` of the matrix will have a `true`
 value. The criteria to evaluate distances between data points are defined
 based on the keyword arguments.
 
@@ -108,27 +113,23 @@ with a fixed number of `k` neighbors for each point in the phase space, i.e. the
 of recurrences is the same for all columns of the recurrence matrix.
 In such case, `ε` is taken as the target fixed local recurrence rate,
 defined as a value between 0 and 1, and `scale` and `fixedrate` are ignored.
-This is often referred to in the literature as the method of "Fixed Amount of Nearest Neighbors"
-(or FAN for short). 
+This is often referred to in the literature as the method of
+"Fixed Amount of Nearest Neighbors" (or FAN for short).
 
 `FAN` is nothing more than an alias of [`NeighborNumber`](@ref).
-If no parameter is specified, `RecurrenceMatrix` returns a
+If it isn't specified, `RecurrenceMatrix` returns a
 `RecurrenceMatrix{WithinRange}` object, meaning that recurrences will be taken
-for pairs of data points whose distance is \le  `ε`. Note that while recurrence matrices
+for pairs of data points whose distance is ≤ `ε`. Note that while recurrence matrices
 with neighbors defined within a given range are always symmetric, those defined
 by a fixed amount of neighbors can be non-symmetric.
 
-See also: [`CrossRecurrenceMatrix`](@ref), [`JointRecurrenceMatrix`](@ref) and
-use [`recurrenceplot`](@ref) to turn the result of these functions into a plottable format.
+[^Marwan2007]:
+    N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
+    [Phys. Reports 438*(5-6), 237-329 (2007)](https://doi.org/10.1016/j.physrep.2006.11.001)
 
-## References
-[1] : N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
-*Phys. Reports 438*(5-6), 237-329 (2007).
-[DOI:10.1016/j.physrep.2006.11.001](https://doi.org/10.1016/j.physrep.2006.11.001)
-
-[2] : N. Marwan & C.L. Webber, "Mathematical and computational foundations of
-recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
-Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
+[^Marwan2015]:
+    N. Marwan & C.L. Webber, *Recurrence Quantification Analysis. Theory and Best Practices*
+    [Springer (2015)](https://link.springer.com/book/10.1007/978-3-319-07155-8)
 """
 function RecurrenceMatrix{WithinRange}(x, ε; metric = DEFAULT_METRIC,
     parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
