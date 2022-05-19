@@ -85,7 +85,7 @@ end
 export transitivity
 
 
-
+import Base.Meta.parse
 const METRICS = Dict(
     "euclidean"=>Euclidean(),
     "max"=>Chebyshev(),

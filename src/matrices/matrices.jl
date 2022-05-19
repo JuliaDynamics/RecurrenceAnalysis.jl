@@ -11,16 +11,16 @@ The low level interface is contained in the function
 const FAN = NeighborNumber
 export FAN
 
-abstract type AbstractRecurrenceMatrix{T} end
+abstract type AbstractRecurrenceMatrix{SearchType} end
 const ARM = AbstractRecurrenceMatrix
 
-struct RecurrenceMatrix{T} <: AbstractRecurrenceMatrix{T}
+struct RecurrenceMatrix{SearchType} <: AbstractRecurrenceMatrix{SearchType}
     data::SparseMatrixCSC{Bool,Int}
 end
-struct CrossRecurrenceMatrix{T} <: AbstractRecurrenceMatrix{T}
+struct CrossRecurrenceMatrix{SearchType} <: AbstractRecurrenceMatrix{SearchType}
     data::SparseMatrixCSC{Bool,Int}
 end
-struct JointRecurrenceMatrix{T} <: AbstractRecurrenceMatrix{T}
+struct JointRecurrenceMatrix{SearchType} <: AbstractRecurrenceMatrix{SearchType}
     data::SparseMatrixCSC{Bool,Int}
 end
 
@@ -64,11 +64,8 @@ end
 colvals(x::ARM) = colvals(x.data)
 
 # Convert to matrices
-Base.Array{T}(R::ARM) where T = Matrix{T}(R.data)
-Base.Matrix{T}(R::ARM) where T = Matrix{T}(R.data)
 Base.Array(R::ARM) = Matrix(R.data)
 Base.Matrix(R::ARM) = Matrix(R.data)
-SparseArrays.SparseMatrixCSC{T}(R::ARM) where T = SparseMatrixCSC{T}(R.data)
 SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 
 ################################################################################
@@ -210,16 +207,16 @@ length, the recurrences are only calculated until the length of the shortest one
 See [`RecurrenceMatrix`](@ref) for details, references and keywords.
 See also: [`CrossRecurrenceMatrix`](@ref).
 """
-function JointRecurrenceMatrix{T}(x, y, ε; kwargs...) where T
+function JointRecurrenceMatrix{SearchType}(x, y, ε; kwargs...) where SearchType
     n = min(size(x,1), size(y,1))
     if n == size(x,1) && n == size(y,1)
-        rm1 = RecurrenceMatrix{T}(x, ε; kwargs...)
-        rm2 = RecurrenceMatrix{T}(y, ε; kwargs...)
+        rm1 = RecurrenceMatrix{SearchType}(x, ε; kwargs...)
+        rm2 = RecurrenceMatrix{SearchType}(y, ε; kwargs...)
     else
-        rm1 = RecurrenceMatrix{T}(x[1:n,:], ε; kwargs...)
-        rm2 = RecurrenceMatrix{T}(y[1:n,:], ε; kwargs...)
+        rm1 = RecurrenceMatrix{SearchType}(x[1:n,:], ε; kwargs...)
+        rm2 = RecurrenceMatrix{SearchType}(y[1:n,:], ε; kwargs...)
     end
-    return JointRecurrenceMatrix{T}(rm1.data .* rm2.data)
+    return JointRecurrenceMatrix{SearchType}(rm1.data .* rm2.data)
 end
 
 JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{WithinRange}(args...; kwargs...)
@@ -230,10 +227,10 @@ JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{WithinRange}(a
 Create a joint recurrence matrix from given recurrence matrices `R1, R2`.
 """
 function JointRecurrenceMatrix(
-    R1::AbstractRecurrenceMatrix{T}, R2::AbstractRecurrenceMatrix{T}; kwargs...
+    R1::AbstractRecurrenceMatrix{SearchType}, R2::AbstractRecurrenceMatrix{SearchType}; kwargs...
     ) where T
     R3 = R1.data .* R2.data
-    return JointRecurrenceMatrix{T}(R3)
+    return JointRecurrenceMatrix{SearchType}(R3)
 end
 
 ################################################################################
