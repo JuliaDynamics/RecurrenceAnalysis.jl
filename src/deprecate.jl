@@ -83,3 +83,24 @@ function transitivity(R::AbstractRecurrenceMatrix)
 end
 
 export transitivity
+
+
+
+const METRICS = Dict(
+    "euclidean"=>Euclidean(),
+    "max"=>Chebyshev(),
+    "inf"=>Chebyshev(),
+    "cityblock"=>Cityblock(),
+    "manhattan"=>Cityblock(),
+    "taxicab"=>Cityblock(),
+    "min"=>Cityblock()
+)
+getmetric(m::Metric) = m
+function getmetric(normtype::AbstractString)
+    @warn "specifying metric with strings is deprecated! "*
+    "Use a formal instance of a `Metric` from Distances.jl, e.g., `Euclidean()`."
+    normtype = lowercase(normtype)
+    !haskey(METRICS,normtype) && error("incorrect norm type. Accepted values are \""
+        *join(keys(METRICS),"\", \"", "\" or \"") * "\".")
+    METRICS[normtype]
+end

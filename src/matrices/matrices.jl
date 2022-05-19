@@ -255,10 +255,7 @@ resolve_scale(x, metric, ε) = resolve_scale(x, x, metric, ε)
 # If `scale` is a function, compute the numeric value of the scale based on the
 # distance matrix; otherwise return the value of `scale` itself
 _computescale(scale::Real, args...) = scale
-_computescale(scale::Function, x, metric::Metric) =
-_computescale(scale, x, x, metric)
 
-# generic method that uses `distancematrix`
 function _computescale(scale::Function, x, y, metric)
     if x===y
         distances = zeros(Int(length(x)*(length(x)-1)/2), 1)
