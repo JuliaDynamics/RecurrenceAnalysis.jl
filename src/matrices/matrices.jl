@@ -322,7 +322,7 @@ get_fan_threshold(x, metric, ε) = get_fan_threshold(x, x, metric, ε)
 
 
 ################################################################################
-# recurrence_matrix - Low level interface
+# recurrence_matrix - Low level function
 ################################################################################
 # TODO: increase the efficiency here by not computing everything!
 

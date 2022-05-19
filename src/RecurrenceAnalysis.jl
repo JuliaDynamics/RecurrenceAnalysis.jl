@@ -5,7 +5,6 @@ import Base.Meta.parse
 
 const DEFAULT_METRIC = Euclidean()
 
-
 export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix,
        AbstractRecurrenceMatrix, WithinRange, NeighborNumber, FAN
 
@@ -31,7 +30,7 @@ export embed,
        sorteddistances,
        skeletonize,
        @windowed,
-       rna,
+       rna
 
 
 include("matrices/distance_matrix.jl")
