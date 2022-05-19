@@ -48,8 +48,7 @@ export embed,
        skeletonize,
        @windowed,
        rna,
-       # deprecated:
-       transitivity
+
 
 include("matrices/distance_matrix.jl")
 include("matrices/matrices.jl")

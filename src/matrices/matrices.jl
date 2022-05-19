@@ -6,7 +6,7 @@ The low level interface is contained in the function
 `recurrence_matrix`, and this is where any specialization should happen.
 =#
 ################################################################################
-# AbstractRecurrenceMatrix type definitions and documentation strings
+# AbstractRecurrenceMatrix type hierarchy and extensions of methods
 ################################################################################
 const FAN = NeighborNumber
 export FAN
@@ -33,7 +33,8 @@ Base.show(io::IO, R::AbstractRecurrenceMatrix) = println(io, summary(R))
 # Propagate used functions:
 begin
     extentions = [
-        (:Base, (:getindex, :size, :length, :view, :iterate, :eachindex, :axes, :CartesianIndices)),
+        (:Base, (:getindex, :size, :length, :view, :iterate,
+            :eachindex, :axes, :CartesianIndices)),
         (:LinearAlgebra, (:diag, :triu, :tril, :issymmetric)),
         (:SparseArrays, (:nnz, :rowvals, :nzrange, :nonzeros))
     ]
@@ -50,9 +51,11 @@ end
 
 LinearAlgebra.issymmetric(::RecurrenceMatrix{WithinRange}) = true
 LinearAlgebra.issymmetric(::JointRecurrenceMatrix{WithinRange}) = true
+LinearAlgebra.issymmetric(::ARM) = false
+
 # column values in sparse matrix (parallel to rowvals)
 function colvals(x::SparseMatrixCSC)
-    cv = zeros(Int,nnz(x))
+    cv = zeros(Int, nnz(x))
     @inbounds for c in axes(x,2)
         cv[nzrange(x,c)] .= c
     end
@@ -68,6 +71,9 @@ Base.Matrix(R::ARM) = Matrix(R.data)
 SparseArrays.SparseMatrixCSC{T}(R::ARM) where T = SparseMatrixCSC{T}(R.data)
 SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 
+################################################################################
+# Concrete Implementations & Documentation
+################################################################################
 """
     RecurrenceMatrix(x, ε::Real; kwargs...)
 
@@ -92,8 +98,8 @@ use [`recurrenceplot`](@ref) to turn the result of these functions into a plotta
   taken as a target fixed recurrence rate (see [`recurrencerate`](@ref)).
   If `fixedrate` is set to `true`, `ε` must be a value between 0 and 1,
   and `scale` is ignored.
-* `parallel::Bool = false` : whether to parallelize the computation of the recurrence
-   matrix. This will split the computation of the matrix across multiple threads.
+* `parallel::Bool` : whether to parallelize the computation of the recurrence
+   matrix using threads. Default depends on available threads and length of `x`.
 
 ## Description
 
@@ -105,23 +111,6 @@ If `d(x[i], x[j]) ≤ ε` (with `d` the distance function),
 then the entry `(i, j)` of the matrix will have a `true`
 value. The criteria to evaluate distances between data points are defined
 based on the keyword arguments.
-
-    RecurrenceMatrix{FAN}(x, k::Int; kwargs...)
-
-The parametrized constructor `RecurrenceMatrix{FAN}` creates the recurrence matrix
-with a fixed number of `k` neighbors for each point in the phase space, i.e. the number
-of recurrences is the same for all columns of the recurrence matrix.
-In such case, `ε` is taken as the target fixed local recurrence rate,
-defined as a value between 0 and 1, and `scale` and `fixedrate` are ignored.
-This is often referred to in the literature as the method of
-"Fixed Amount of Nearest Neighbors" (or FAN for short).
-
-`FAN` is nothing more than an alias of [`NeighborNumber`](@ref).
-If it isn't specified, `RecurrenceMatrix` returns a
-`RecurrenceMatrix{WithinRange}` object, meaning that recurrences will be taken
-for pairs of data points whose distance is ≤ `ε`. Note that while recurrence matrices
-with neighbors defined within a given range are always symmetric, those defined
-by a fixed amount of neighbors can be non-symmetric.
 
 [^Marwan2007]:
     N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
@@ -142,9 +131,27 @@ end
 
 RecurrenceMatrix(args...; kwargs...) = RecurrenceMatrix{WithinRange}(args...; kwargs...)
 
+"""
+    RecurrenceMatrix{FAN}(x, k::Int; metric = Euclidean(), parallel::Bool)
+
+The parametrized constructor `RecurrenceMatrix{FAN}` creates the recurrence matrix
+with a fixed number of `k` neighbors for each point in the phase space, i.e. the number
+of recurrences is the same for all columns of the recurrence matrix.
+In such case, `ε` is taken as the target fixed local recurrence rate,
+defined as a value between 0 and 1, and `scale` and `fixedrate` are ignored.
+This is often referred to in the literature as the method of
+"Fixed Amount of Nearest Neighbors" (or FAN for short).
+
+`FAN` is nothing more than an alias of [`NeighborNumber`](@ref).
+If it isn't specified, `RecurrenceMatrix` returns a
+`RecurrenceMatrix{WithinRange}` object, meaning that recurrences will be taken
+for pairs of data points whose distance is ≤ `ε`. Note that while recurrence matrices
+with neighbors defined within a given range are always symmetric, those defined
+by a fixed amount of neighbors can be non-symmetric.
+"""
 function RecurrenceMatrix{NeighborNumber}(x, ε; metric = DEFAULT_METRIC,
-    parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
-    kwargs...)
+        parallel::Bool = length(x) > 500 && Threads.nthreads() > 1
+    )
     m = getmetric(metric)
     s = get_fan_threshold(x, m, ε)
     m = recurrence_matrix(x, x, m, s, Val(parallel)) # to allow for non-symmetry
@@ -152,8 +159,8 @@ function RecurrenceMatrix{NeighborNumber}(x, ε; metric = DEFAULT_METRIC,
 end
 
 """
-    CrossRecurrenceMatrix(x, y, ε; kwargs...)
-    CrossRecurrenceMatrix{FAN}(x, y, ε; kwargs...)
+    CrossRecurrenceMatrix(x, y, ε::Real; kwargs...)
+    CrossRecurrenceMatrix{FAN}(x, y, k::Int; kwargs...)
 
 Create a cross recurrence matrix from trajectories `x` and `y`.
 

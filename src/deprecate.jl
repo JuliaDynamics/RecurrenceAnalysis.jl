@@ -9,7 +9,7 @@ for T in (:WithinRange, :NeighborNumber)
             @warn string("`", $call, "{", $T, "}(x::AbstractMatrix, y, ε; kwargs...)` is deprecated, use `", $call, "{", $T, "}(Dataset(x), y, ε; kwargs...)`")
             $call{$T}(Dataset(x), y, ε; kwargs...)
         end
-        
+
         @eval function $call{$T}(x, y::AbstractMatrix, ε; kwargs...)
             @warn string("`", $call, "{", $T, "}(x, y::AbstractMatrix, ε; kwargs...)` is deprecated, use `", $call, "{", $T, "}(x, Dataset(y), ε; kwargs...)`")
             $call{$T}(x, Dataset(y), ε; kwargs...)
@@ -81,3 +81,5 @@ function transitivity(R::AbstractRecurrenceMatrix)
     end
     trans = numerator / (sum(R²) - LinearAlgebra.tr(R²))
 end
+
+export transitivity
