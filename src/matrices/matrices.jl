@@ -240,17 +240,17 @@ end
 # Scaling / fixed rate / fixed amount of neighbors
 ################################################################################
 # here args... is (x, y, metric, ε) or just (x, metric, ε)
-function resolve_scale(args...; scale=1, fixedrate=false)
-    ε = args[end]
-    # Check fixed recurrence rate - ε must be within (0, 1)
+function resolve_scale(x, y, metric, ε; scale=1, fixedrate=false)
     if fixedrate
+        @assert 0 < ε < 1 "ε must be within (0, 1) for fixed rate"
         sfun = (m) -> quantile(vec(m), ε)
-        return resolve_scale(Base.front(args)..., 1.0; scale=sfun, fixedrate=false)
+        return resolve_scale(x, y, metric, 1.0; scale=sfun, fixedrate=false)
     else
-        scale_value = _computescale(scale, Base.front(args)...)
+        scale_value = _computescale(scale, x, y, metric)
         return ε*scale_value
     end
 end
+resolve_scale(x, metric, ε) = resolve_scale(x, x, metric, ε)
 
 # If `scale` is a function, compute the numeric value of the scale based on the
 # distance matrix; otherwise return the value of `scale` itself
