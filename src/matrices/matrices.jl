@@ -1,18 +1,22 @@
 #=
-In this file the core computations for creating a recurrence matrix
-are defined (via multiple dispatch).
+This file contains:
+- Definition of recurrence matrices types and Base functions extensions
+- Definition of types of recurrences
+- Core computations for creating a recurrence matrix
 
 The low level interface is contained in the function
 `recurrence_matrix`, and this is where any specialization should happen.
 =#
 ################################################################################
-# AbstractRecurrenceMatrix type hierarchy and extensions of methods
+# AbstractRecurrenceMatrix type hierarchy
 ################################################################################
 const FAN = NeighborNumber
 
 abstract type AbstractRecurrenceMatrix{RT} end
 const ARM = AbstractRecurrenceMatrix
 
+# The recurrence type is included as a field in all matrix types,
+# because we use it in the pretty printing.
 struct RecurrenceMatrix{RT} <: AbstractRecurrenceMatrix{RT}
     data::SparseMatrixCSC{Bool,Int}
     recurrence_type::RT
@@ -26,13 +30,69 @@ struct JointRecurrenceMatrix{RT} <: AbstractRecurrenceMatrix{RT}
     recurrence_type::RT
 end
 
+# Pretty printing:
 function Base.summary(R::AbstractRecurrenceMatrix)
     N = nnz(R.data)
-    return "$(nameof(typeof(R))) of size $(size(R.data)) with $N entries"
+    return """
+    $(nameof(typeof(R))), with $(nameof(typeof(R.recurrence_type)))-type recurrences,
+    of size $(size(R.data)), with $N entries
+    """
 end
 Base.show(io::IO, R::AbstractRecurrenceMatrix) = println(io, summary(R))
 
-# Propagate used functions:
+function Base.show(io::IO, ::MIME"text/plain", R::ARM)
+    # `recurrenceplot` comes from `plot.jl` file.
+    a = recurrenceplot(io, R)
+    show(io, a)
+end
+
+################################################################################
+# Definition of ways to find a recurrence
+################################################################################
+abstract type AbstractRecurrenceType end
+
+"""
+    RecurrenceThreshold(ε::Real)
+Recurrences are defined as any point with distance `< ε` from the referrence point.
+See [`RecurrenceMatrix`](@ref) for more.
+"""
+struct RecurrenceThreshold{T<:Real} <: AbstractRecurrenceType
+    ε::T
+end
+
+"""
+    RecurrenceThreshold(r::Real, scale)
+Recurrences are defined as any point with distance `< d` from the referrence point,
+where `d` is a scaled ratio (specified by `r, scale`) of the distance matrix.
+See [`RecurrenceMatrix`](@ref) for more.
+"""
+struct RecurrenceThresholdScaled{T<:Real, S} <: AbstractRecurrenceType
+    ε::T
+    scale::S
+end
+
+"""
+    GlobalRecurrenceRate(r::Real)
+Recurrences are defined as a constant global recurrence rate `r`.
+See [`RecurrenceMatrix`](@ref) for more.
+"""
+struct GlobalRecurrenceRate{T<:Real} <: AbstractRecurrenceType
+    r::T
+end
+
+
+"""
+    LocalRecurrenceRate(r::Real)
+Recurrences are defined as a constant local recurrence rate `r`.
+See [`RecurrenceMatrix`](@ref) for more.
+"""
+struct LocalRecurrenceRate{T<:Real} <: AbstractRecurrenceType
+    r::T
+end
+
+################################################################################
+# Extensions of standard library
+################################################################################
 begin
     extentions = [
         (:Base, (:getindex, :size, :length, :view, :iterate,
@@ -69,51 +129,6 @@ colvals(x::ARM) = colvals(x.data)
 Base.Array(R::ARM) = Matrix(R.data)
 Base.Matrix(R::ARM) = Matrix(R.data)
 SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
-
-################################################################################
-# Definition of ways to find a recurrence
-################################################################################
-abstract type AbstractRecurrenceType end
-
-"""
-    RecurrenceThreshold(ε::Real)
-Recurrences are defined as any point with distance `< ε` from the referrence point.
-See [`RecurrenceMatrix`](@ref) for more.
-"""
-struct RecurrenceThreshold{T<:Real} <: AbstractRecurrenceType
-    ε::T
-end
-
-"""
-    RecurrenceThreshold(r::Real, scale)
-Recurrences are defined as any point with distance `< d` from the referrence point,
-where `d` is a scaled ratio (specified by `scale`) of the distance matrix.
-See [`RecurrenceMatrix`](@ref) for more.
-"""
-struct RecurrenceThresholdScaled{T<:Real, S} <: AbstractRecurrenceType
-    ε::T
-    scale::S
-end
-
-"""
-    GlobalRecurrenceRate(r::Real)
-Recurrences are defined as a constant global recurrence rate `r`.
-See [`RecurrenceMatrix`](@ref) for more.
-"""
-struct GlobalRecurrenceRate{T<:Real} <: AbstractRecurrenceType
-    r::T
-end
-
-
-"""
-    LocalRecurrenceRate(r::Real)
-Recurrences are defined as a constant local recurrence rate `r`.
-See [`RecurrenceMatrix`](@ref) for more.
-"""
-struct LocalRecurrenceRate{T<:Real} <: AbstractRecurrenceType
-    r::T
-end
-
 
 ################################################################################
 # Concrete Implementations & Documentation
