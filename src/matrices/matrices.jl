@@ -6,21 +6,20 @@ The low level interface is contained in the function
 `recurrence_matrix`, and this is where any specialization should happen.
 =#
 ################################################################################
-# AbstractRecurrenceMatrix type definitions and documentation strings
+# AbstractRecurrenceMatrix type hierarchy and extensions of methods
 ################################################################################
 const FAN = NeighborNumber
-export FAN
 
-abstract type AbstractRecurrenceMatrix{T} end
+abstract type AbstractRecurrenceMatrix{SearchType} end
 const ARM = AbstractRecurrenceMatrix
 
-struct RecurrenceMatrix{T} <: AbstractRecurrenceMatrix{T}
+struct RecurrenceMatrix{SearchType} <: AbstractRecurrenceMatrix{SearchType}
     data::SparseMatrixCSC{Bool,Int}
 end
-struct CrossRecurrenceMatrix{T} <: AbstractRecurrenceMatrix{T}
+struct CrossRecurrenceMatrix{SearchType} <: AbstractRecurrenceMatrix{SearchType}
     data::SparseMatrixCSC{Bool,Int}
 end
-struct JointRecurrenceMatrix{T} <: AbstractRecurrenceMatrix{T}
+struct JointRecurrenceMatrix{SearchType} <: AbstractRecurrenceMatrix{SearchType}
     data::SparseMatrixCSC{Bool,Int}
 end
 
@@ -33,7 +32,8 @@ Base.show(io::IO, R::AbstractRecurrenceMatrix) = println(io, summary(R))
 # Propagate used functions:
 begin
     extentions = [
-        (:Base, (:getindex, :size, :length, :view, :iterate, :eachindex, :axes, :CartesianIndices)),
+        (:Base, (:getindex, :size, :length, :view, :iterate,
+            :eachindex, :axes, :CartesianIndices)),
         (:LinearAlgebra, (:diag, :triu, :tril, :issymmetric)),
         (:SparseArrays, (:nnz, :rowvals, :nzrange, :nonzeros))
     ]
@@ -50,9 +50,11 @@ end
 
 LinearAlgebra.issymmetric(::RecurrenceMatrix{WithinRange}) = true
 LinearAlgebra.issymmetric(::JointRecurrenceMatrix{WithinRange}) = true
+LinearAlgebra.issymmetric(::ARM) = false
+
 # column values in sparse matrix (parallel to rowvals)
 function colvals(x::SparseMatrixCSC)
-    cv = zeros(Int,nnz(x))
+    cv = zeros(Int, nnz(x))
     @inbounds for c in axes(x,2)
         cv[nzrange(x,c)] .= c
     end
@@ -61,74 +63,57 @@ end
 colvals(x::ARM) = colvals(x.data)
 
 # Convert to matrices
-Base.Array{T}(R::ARM) where T = Matrix{T}(R.data)
-Base.Matrix{T}(R::ARM) where T = Matrix{T}(R.data)
 Base.Array(R::ARM) = Matrix(R.data)
 Base.Matrix(R::ARM) = Matrix(R.data)
-SparseArrays.SparseMatrixCSC{T}(R::ARM) where T = SparseMatrixCSC{T}(R.data)
 SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 
+################################################################################
+# Concrete Implementations & Documentation
+################################################################################
 """
-    RecurrenceMatrix(x, ε; kwargs...)
-    RecurrenceMatrix{FAN}(x, ε; kwargs...)
+    RecurrenceMatrix(x, ε::Real; kwargs...)
 
-Create a recurrence matrix from trajectory `x` (either a `Dataset` or a `Vector`).
+Create a recurrence matrix from trajectory `x` (either a `Dataset` or a `Vector`)
+and with distance threshold `ε`.
 Objects of type `<:AbstractRecurrenceMatrix` are displayed as a [`recurrenceplot`](@ref).
 
-## Description
+See also: [`CrossRecurrenceMatrix`](@ref), [`JointRecurrenceMatrix`](@ref) and
+use [`recurrenceplot`](@ref) to turn the result of these functions into a plottable format.
 
-The recurrence matrix is a numeric representation of a "recurrence plot" [1, 2],
-in the form of a sparse square matrix of Boolean values.
-
-`x` must be a `Vector` or an `AbstractDataset`
-(possibly representing an embedded phase space; see [`embed`](@ref)).
-If `d(x[i], x[j]) ≤ ε` (with `d` the distance function),
-then the cell `(i, j)` of the matrix will have a `true`
-value. The criteria to evaluate distances between data points are defined
-by the following keyword arguments:
-
-* `scale=1` : a function of the distance matrix (see [`distancematrix`](@ref)),
+## Keyword Arguments
+* `metric = "euclidean"` : metric of the distances, either `Metric` or a string,
+   as in [`distancematrix`](@ref).
+* `scale = 1` : a function of the distance matrix (see [`distancematrix`](@ref)),
   or a fixed number, used to scale the value of `ε`. Typical choices are
   `maximum` or `mean`, such that the threshold `ε` is defined as a ratio of the
   maximum or the mean distance between data points, respectively (using
   `mean` or `maximum` calls specialized versions that are faster than the naive
   approach).  Use `1` to keep the distances unscaled (default).
-* `fixedrate::Bool=false` : a flag that indicates if `ε` should be
+* `fixedrate::Bool = false` : a flag that indicates if `ε` should be
   taken as a target fixed recurrence rate (see [`recurrencerate`](@ref)).
   If `fixedrate` is set to `true`, `ε` must be a value between 0 and 1,
   and `scale` is ignored.
-* `metric="euclidean"` : metric of the distances, either `Metric` or a string,
-   as in [`distancematrix`](@ref).
-* `parallel::Bool=false` : whether to parallelize the computation of the recurrence
-   matrix.  This will split the computation of the matrix across multiple threads.
+* `parallel::Bool` : whether to parallelize the computation of the recurrence
+   matrix using threads. Default depends on available threads and length of `x`.
 
-The parametrized constructor `RecurrenceMatrix{NeighborNumber}` creates the recurrence matrix
-with a fixed number of neighbors for each point in the phase space, i.e. the number
-of recurrences is the same for all columns of the recurrence matrix.
-In such case, `ε` is taken as the target fixed local recurrence rate,
-defined as a value between 0 and 1, and `scale` and `fixedrate` are ignored.
-This is often referred to in the literature as the method of "Fixed Amount of Nearest Neighbors"
-(or FAN for short); `RecurrenceMatrix{FAN}` can be used as a convenient alias
-for `RecurrenceMatrix{NeighborNumber}`.
+## Description
 
-If no parameter is specified, `RecurrenceMatrix` returns a
-`RecurrenceMatrix{WithinRange}` object, meaning that recurrences will be taken
-for pairs of data points whose distance is within the range determined by
-the input arguments. Note that while recurrence matrices
-with neighbors defined within a given range are always symmetric, those defined
-by a fixed amount of neighbors can be non-symmetric.
+The recurrence matrix is a numeric representation of a recurrence plot,
+described in detail in [^Marwan2007] and [^Marwan2015]. It represents a square
+a sparse square matrix of Boolean values that quantifies recurrences in the trajectory,
+i.e., points where the trajectory returns close to itself.
+If `d(x[i], x[j]) ≤ ε` (with `d` the distance function),
+then the entry `(i, j)` of the matrix will have a `true`
+value. The criteria to evaluate distances between data points are defined
+based on the keyword arguments.
 
-See also: [`CrossRecurrenceMatrix`](@ref), [`JointRecurrenceMatrix`](@ref) and
-use [`recurrenceplot`](@ref) to turn the result of these functions into a plottable format.
+[^Marwan2007]:
+    N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
+    [Phys. Reports 438*(5-6), 237-329 (2007)](https://doi.org/10.1016/j.physrep.2006.11.001)
 
-## References
-[1] : N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
-*Phys. Reports 438*(5-6), 237-329 (2007).
-[DOI:10.1016/j.physrep.2006.11.001](https://doi.org/10.1016/j.physrep.2006.11.001)
-
-[2] : N. Marwan & C.L. Webber, "Mathematical and computational foundations of
-recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
-Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
+[^Marwan2015]:
+    N. Marwan & C.L. Webber, *Recurrence Quantification Analysis. Theory and Best Practices*
+    [Springer (2015)](https://link.springer.com/book/10.1007/978-3-319-07155-8)
 """
 function RecurrenceMatrix{WithinRange}(x, ε; metric = DEFAULT_METRIC,
     parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
@@ -141,9 +126,25 @@ end
 
 RecurrenceMatrix(args...; kwargs...) = RecurrenceMatrix{WithinRange}(args...; kwargs...)
 
+"""
+    RecurrenceMatrix{FAN}(x, r::Real; metric = Euclidean(), parallel::Bool)
+
+The parametrized constructor `RecurrenceMatrix{FAN}` creates the recurrence matrix
+with a fixed number of neighbors for each point in the phase space, i.e. the number
+of recurrences is the same for all columns of the recurrence matrix.
+In such case, `r` is taken as the target fixed local recurrence rate,
+defined as a value between 0 and 1 which means that `k = round(Int, r*N)` recurrences
+for each point are identified with `N = length(x)`.
+This is often referred to in the literature as the method of
+"Fixed Amount of Nearest Neighbors" (or FAN for short).
+
+Note that while recurrence matrices
+with neighbors defined within a given range are always symmetric, those defined
+by a fixed amount of neighbors can be non-symmetric.
+"""
 function RecurrenceMatrix{NeighborNumber}(x, ε; metric = DEFAULT_METRIC,
-    parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
-    kwargs...)
+        parallel::Bool = length(x) > 500 && Threads.nthreads() > 1
+    )
     m = getmetric(metric)
     s = get_fan_threshold(x, m, ε)
     m = recurrence_matrix(x, x, m, s, Val(parallel)) # to allow for non-symmetry
@@ -151,8 +152,8 @@ function RecurrenceMatrix{NeighborNumber}(x, ε; metric = DEFAULT_METRIC,
 end
 
 """
-    CrossRecurrenceMatrix(x, y, ε; kwargs...)
-    CrossRecurrenceMatrix{FAN}(x, y, ε; kwargs...)
+    CrossRecurrenceMatrix(x, y, ε::Real; kwargs...)
+    CrossRecurrenceMatrix{FAN}(x, y, k::Int; kwargs...)
 
 Create a cross recurrence matrix from trajectories `x` and `y`.
 
@@ -202,16 +203,16 @@ length, the recurrences are only calculated until the length of the shortest one
 See [`RecurrenceMatrix`](@ref) for details, references and keywords.
 See also: [`CrossRecurrenceMatrix`](@ref).
 """
-function JointRecurrenceMatrix{T}(x, y, ε; kwargs...) where T
+function JointRecurrenceMatrix{SearchType}(x, y, ε; kwargs...) where SearchType
     n = min(size(x,1), size(y,1))
     if n == size(x,1) && n == size(y,1)
-        rm1 = RecurrenceMatrix{T}(x, ε; kwargs...)
-        rm2 = RecurrenceMatrix{T}(y, ε; kwargs...)
+        rm1 = RecurrenceMatrix{SearchType}(x, ε; kwargs...)
+        rm2 = RecurrenceMatrix{SearchType}(y, ε; kwargs...)
     else
-        rm1 = RecurrenceMatrix{T}(x[1:n,:], ε; kwargs...)
-        rm2 = RecurrenceMatrix{T}(y[1:n,:], ε; kwargs...)
+        rm1 = RecurrenceMatrix{SearchType}(x[1:n,:], ε; kwargs...)
+        rm2 = RecurrenceMatrix{SearchType}(y[1:n,:], ε; kwargs...)
     end
-    return JointRecurrenceMatrix{T}(rm1.data .* rm2.data)
+    return JointRecurrenceMatrix{SearchType}(rm1.data .* rm2.data)
 end
 
 JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{WithinRange}(args...; kwargs...)
@@ -222,35 +223,32 @@ JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{WithinRange}(a
 Create a joint recurrence matrix from given recurrence matrices `R1, R2`.
 """
 function JointRecurrenceMatrix(
-    R1::AbstractRecurrenceMatrix{T}, R2::AbstractRecurrenceMatrix{T}; kwargs...
-    ) where T
+    R1::AbstractRecurrenceMatrix{SearchType}, R2::AbstractRecurrenceMatrix{SearchType}; kwargs...
+    ) where SearchType
     R3 = R1.data .* R2.data
-    return JointRecurrenceMatrix{T}(R3)
+    return JointRecurrenceMatrix{SearchType}(R3)
 end
 
 ################################################################################
 # Scaling / fixed rate / fixed amount of neighbors
 ################################################################################
 # here args... is (x, y, metric, ε) or just (x, metric, ε)
-function resolve_scale(args...; scale=1, fixedrate=false)
-    ε = args[end]
-    # Check fixed recurrence rate - ε must be within (0, 1)
+function resolve_scale(x, y, metric, ε; scale=1, fixedrate=false)
     if fixedrate
+        @assert 0 < ε < 1 "ε must be within (0, 1) for fixed rate"
         sfun = (m) -> quantile(vec(m), ε)
-        return resolve_scale(Base.front(args)..., 1.0; scale=sfun, fixedrate=false)
+        return resolve_scale(x, y, metric, 1.0; scale=sfun, fixedrate=false)
     else
-        scale_value = _computescale(scale, Base.front(args)...)
+        scale_value = _computescale(scale, x, y, metric)
         return ε*scale_value
     end
 end
+resolve_scale(x, metric, ε) = resolve_scale(x, x, metric, ε)
 
 # If `scale` is a function, compute the numeric value of the scale based on the
 # distance matrix; otherwise return the value of `scale` itself
 _computescale(scale::Real, args...) = scale
-_computescale(scale::Function, x, metric::Metric) =
-_computescale(scale, x, x, metric)
 
-# generic method that uses `distancematrix`
 function _computescale(scale::Function, x, y, metric)
     if x===y
         distances = zeros(Int(length(x)*(length(x)-1)/2), 1)
@@ -317,7 +315,7 @@ get_fan_threshold(x, metric, ε) = get_fan_threshold(x, x, metric, ε)
 
 
 ################################################################################
-# recurrence_matrix - Low level interface
+# recurrence_matrix - Low level function
 ################################################################################
 # TODO: increase the efficiency here by not computing everything!
 
