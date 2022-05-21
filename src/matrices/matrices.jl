@@ -17,6 +17,8 @@ const ARM = AbstractRecurrenceMatrix
 
 # The recurrence type is included as a field in all matrix types,
 # because we use it in the pretty printing.
+# TODO: After the deprecation on FAN is removed, here `RT` should be properly
+# subtyped to `AbstractRecurrenceType`.
 struct RecurrenceMatrix{RT} <: AbstractRecurrenceMatrix{RT}
     data::SparseMatrixCSC{Bool,Int}
     recurrence_type::RT
@@ -131,7 +133,7 @@ Base.Matrix(R::ARM) = Matrix(R.data)
 SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 
 ################################################################################
-# Concrete Implementations & Documentation
+# Documentation strings
 ################################################################################
 """
     RecurrenceMatrix(x, ε::Real; kwargs...)
@@ -178,6 +180,62 @@ based on the keyword arguments.
     N. Marwan & C.L. Webber, *Recurrence Quantification Analysis. Theory and Best Practices*
     [Springer (2015)](https://link.springer.com/book/10.1007/978-3-319-07155-8)
 """
+function RecurrenceMatrix end
+
+"""
+    CrossRecurrenceMatrix(x, y, ε::Real; kwargs...)
+    CrossRecurrenceMatrix{FAN}(x, y, k::Int; kwargs...)
+
+Create a cross recurrence matrix from trajectories `x` and `y`.
+
+The cross recurrence matrix is a bivariate extension of the recurrence matrix.
+For the time series `x`, `y`, of length `n` and `m`, respectively, it is a
+sparse `n×m` matrix of Boolean values, such that if `d(x[i], y[j]) ≤ ε`,
+then the cell `(i, j)` of the matrix will have a `true` value.
+
+Note that, unlike univariate recurrence matrices, cross recurrence matrices
+are not generally symmetric, regardless of the method used to make them.
+
+See [`RecurrenceMatrix`](@ref) for details, references and keywords.
+See also: [`JointRecurrenceMatrix`](@ref).
+"""
+function CrossRecurrenceMatrix end
+
+"""
+    JointRecurrenceMatrix(x, y, ε; kwargs...)
+    JointRecurrenceMatrix{FAN}(x, y, ε; kwargs...)
+
+Create a joint recurrence matrix from `x` and `y`.
+
+The joint recurrence matrix considers the recurrences of the trajectories
+of `x` and `y` separately, and looks for points where both recur
+simultaneously. It is calculated by the element-wise multiplication
+of the recurrence matrices of `x` and `y`. If `x` and `y` are of different
+length, the recurrences are only calculated until the length of the shortest one.
+
+See [`RecurrenceMatrix`](@ref) for details, references and keywords.
+See also: [`CrossRecurrenceMatrix`](@ref).
+"""
+function JointRecurrenceMatrix end
+
+
+"""
+    JointRecurrenceMatrix(R1::AbstractRecurrenceMatrix, R2::AbstractRecurrenceMatrix)
+
+Literally equivalent with `R1 .* R2`.
+"""
+function JointRecurrenceMatrix(
+        R1::AbstractRecurrenceMatrix{RT}, R2::AbstractRecurrenceMatrix{RT}
+    ) where {RT}
+    R3 = R1.data .* R2.data
+    return JointRecurrenceMatrix{RT}(R3)
+end
+
+
+################################################################################
+# Concrete implementations
+################################################################################
+
 function RecurrenceMatrix{WithinRange}(x, ε; metric = DEFAULT_METRIC,
     parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
     kwargs...)
@@ -188,6 +246,7 @@ function RecurrenceMatrix{WithinRange}(x, ε; metric = DEFAULT_METRIC,
 end
 
 RecurrenceMatrix(args...; kwargs...) = RecurrenceMatrix{WithinRange}(args...; kwargs...)
+
 
 """
     RecurrenceMatrix{FAN}(x, r::Real; metric = Euclidean(), parallel::Bool)
@@ -214,23 +273,6 @@ function RecurrenceMatrix{NeighborNumber}(x, ε; metric = DEFAULT_METRIC,
     return RecurrenceMatrix{NeighborNumber}(m)
 end
 
-"""
-    CrossRecurrenceMatrix(x, y, ε::Real; kwargs...)
-    CrossRecurrenceMatrix{FAN}(x, y, k::Int; kwargs...)
-
-Create a cross recurrence matrix from trajectories `x` and `y`.
-
-The cross recurrence matrix is a bivariate extension of the recurrence matrix.
-For the time series `x`, `y`, of length `n` and `m`, respectively, it is a
-sparse `n×m` matrix of Boolean values, such that if `d(x[i], y[j]) ≤ ε`,
-then the cell `(i, j)` of the matrix will have a `true` value.
-
-Note that, unlike univariate recurrence matrices, cross recurrence matrices
-are not generally symmetric, regardless of the method used to make them.
-
-See [`RecurrenceMatrix`](@ref) for details, references and keywords.
-See also: [`JointRecurrenceMatrix`](@ref).
-"""
 function CrossRecurrenceMatrix{WithinRange}(x, y, ε; metric = DEFAULT_METRIC,
     parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
     kwargs...)
@@ -251,21 +293,6 @@ function CrossRecurrenceMatrix{NeighborNumber}(x, y, ε; metric = DEFAULT_METRIC
     return CrossRecurrenceMatrix{NeighborNumber}(m)
 end
 
-"""
-    JointRecurrenceMatrix(x, y, ε; kwargs...)
-    JointRecurrenceMatrix{FAN}(x, y, ε; kwargs...)
-
-Create a joint recurrence matrix from `x` and `y`.
-
-The joint recurrence matrix considers the recurrences of the trajectories
-of `x` and `y` separately, and looks for points where both recur
-simultaneously. It is calculated by the element-wise multiplication
-of the recurrence matrices of `x` and `y`. If `x` and `y` are of different
-length, the recurrences are only calculated until the length of the shortest one.
-
-See [`RecurrenceMatrix`](@ref) for details, references and keywords.
-See also: [`CrossRecurrenceMatrix`](@ref).
-"""
 function JointRecurrenceMatrix{RT}(x, y, ε; kwargs...) where RT
     n = min(size(x,1), size(y,1))
     if n == size(x,1) && n == size(y,1)
@@ -280,17 +307,7 @@ end
 
 JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{WithinRange}(args...; kwargs...)
 
-"""
-    JointRecurrenceMatrix(R1, R2; kwargs...)
 
-Create a joint recurrence matrix from given recurrence matrices `R1, R2`.
-"""
-function JointRecurrenceMatrix(
-    R1::AbstractRecurrenceMatrix{RT}, R2::AbstractRecurrenceMatrix{RT}; kwargs...
-    ) where RT
-    R3 = R1.data .* R2.data
-    return JointRecurrenceMatrix{RT}(R3)
-end
 
 ################################################################################
 # Scaling / fixed rate / fixed amount of neighbors
