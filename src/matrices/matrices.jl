@@ -10,17 +10,20 @@ The low level interface is contained in the function
 ################################################################################
 const FAN = NeighborNumber
 
-abstract type AbstractRecurrenceMatrix{SearchType} end
+abstract type AbstractRecurrenceMatrix{RT} end
 const ARM = AbstractRecurrenceMatrix
 
-struct RecurrenceMatrix{SearchType} <: AbstractRecurrenceMatrix{SearchType}
+struct RecurrenceMatrix{RT} <: AbstractRecurrenceMatrix{RT}
     data::SparseMatrixCSC{Bool,Int}
+    recurrence_type::RT
 end
-struct CrossRecurrenceMatrix{SearchType} <: AbstractRecurrenceMatrix{SearchType}
+struct CrossRecurrenceMatrix{RT} <: AbstractRecurrenceMatrix{RT}
     data::SparseMatrixCSC{Bool,Int}
+    recurrence_type::RT
 end
-struct JointRecurrenceMatrix{SearchType} <: AbstractRecurrenceMatrix{SearchType}
+struct JointRecurrenceMatrix{RT} <: AbstractRecurrenceMatrix{RT}
     data::SparseMatrixCSC{Bool,Int}
+    recurrence_type::RT
 end
 
 function Base.summary(R::AbstractRecurrenceMatrix)
@@ -66,6 +69,51 @@ colvals(x::ARM) = colvals(x.data)
 Base.Array(R::ARM) = Matrix(R.data)
 Base.Matrix(R::ARM) = Matrix(R.data)
 SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
+
+################################################################################
+# Definition of ways to find a recurrence
+################################################################################
+abstract type AbstractRecurrenceType end
+
+"""
+    RecurrenceThreshold(ε::Real)
+Recurrences are defined as any point with distance `< ε` from the referrence point.
+See [`RecurrenceMatrix`](@ref) for more.
+"""
+struct RecurrenceThreshold{T<:Real} <: AbstractRecurrenceType
+    ε::T
+end
+
+"""
+    RecurrenceThreshold(r::Real, scale)
+Recurrences are defined as any point with distance `< d` from the referrence point,
+where `d` is a scaled ratio (specified by `scale`) of the distance matrix.
+See [`RecurrenceMatrix`](@ref) for more.
+"""
+struct RecurrenceThresholdScaled{T<:Real, S} <: AbstractRecurrenceType
+    ε::T
+    scale::S
+end
+
+"""
+    GlobalRecurrenceRate(r::Real)
+Recurrences are defined as a constant global recurrence rate `r`.
+See [`RecurrenceMatrix`](@ref) for more.
+"""
+struct GlobalRecurrenceRate{T<:Real} <: AbstractRecurrenceType
+    r::T
+end
+
+
+"""
+    LocalRecurrenceRate(r::Real)
+Recurrences are defined as a constant local recurrence rate `r`.
+See [`RecurrenceMatrix`](@ref) for more.
+"""
+struct LocalRecurrenceRate{T<:Real} <: AbstractRecurrenceType
+    r::T
+end
+
 
 ################################################################################
 # Concrete Implementations & Documentation
@@ -203,16 +251,16 @@ length, the recurrences are only calculated until the length of the shortest one
 See [`RecurrenceMatrix`](@ref) for details, references and keywords.
 See also: [`CrossRecurrenceMatrix`](@ref).
 """
-function JointRecurrenceMatrix{SearchType}(x, y, ε; kwargs...) where SearchType
+function JointRecurrenceMatrix{RT}(x, y, ε; kwargs...) where RT
     n = min(size(x,1), size(y,1))
     if n == size(x,1) && n == size(y,1)
-        rm1 = RecurrenceMatrix{SearchType}(x, ε; kwargs...)
-        rm2 = RecurrenceMatrix{SearchType}(y, ε; kwargs...)
+        rm1 = RecurrenceMatrix{RT}(x, ε; kwargs...)
+        rm2 = RecurrenceMatrix{RT}(y, ε; kwargs...)
     else
-        rm1 = RecurrenceMatrix{SearchType}(x[1:n,:], ε; kwargs...)
-        rm2 = RecurrenceMatrix{SearchType}(y[1:n,:], ε; kwargs...)
+        rm1 = RecurrenceMatrix{RT}(x[1:n,:], ε; kwargs...)
+        rm2 = RecurrenceMatrix{RT}(y[1:n,:], ε; kwargs...)
     end
-    return JointRecurrenceMatrix{SearchType}(rm1.data .* rm2.data)
+    return JointRecurrenceMatrix{RT}(rm1.data .* rm2.data)
 end
 
 JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{WithinRange}(args...; kwargs...)
@@ -223,10 +271,10 @@ JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{WithinRange}(a
 Create a joint recurrence matrix from given recurrence matrices `R1, R2`.
 """
 function JointRecurrenceMatrix(
-    R1::AbstractRecurrenceMatrix{SearchType}, R2::AbstractRecurrenceMatrix{SearchType}; kwargs...
-    ) where SearchType
+    R1::AbstractRecurrenceMatrix{RT}, R2::AbstractRecurrenceMatrix{RT}; kwargs...
+    ) where RT
     R3 = R1.data .* R2.data
-    return JointRecurrenceMatrix{SearchType}(R3)
+    return JointRecurrenceMatrix{RT}(R3)
 end
 
 ################################################################################
