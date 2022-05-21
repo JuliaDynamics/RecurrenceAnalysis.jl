@@ -17,8 +17,6 @@ const ARM = AbstractRecurrenceMatrix
 
 # The recurrence type is included as a field in all matrix types,
 # because we use it in the pretty printing.
-# TODO: After the deprecation on FAN is removed, here `RT` should be properly
-# subtyped to `AbstractRecurrenceType`.
 struct RecurrenceMatrix{RT} <: AbstractRecurrenceMatrix{RT}
     data::SparseMatrixCSC{Bool,Int}
     recurrence_type::RT
@@ -55,7 +53,7 @@ abstract type AbstractRecurrenceType end
 
 """
     RecurrenceThreshold(ε::Real)
-Recurrences are defined as any point with distance `< ε` from the referrence point.
+Recurrences are defined as any point with distance `≤ ε` from the referrence point.
 See [`RecurrenceMatrix`](@ref) for more.
 """
 struct RecurrenceThreshold{T<:Real} <: AbstractRecurrenceType
@@ -63,13 +61,13 @@ struct RecurrenceThreshold{T<:Real} <: AbstractRecurrenceType
 end
 
 """
-    RecurrenceThreshold(r::Real, scale)
-Recurrences are defined as any point with distance `< d` from the referrence point,
-where `d` is a scaled ratio (specified by `r, scale`) of the distance matrix.
+    RecurrenceThresholdScaled(ratio::Real, scale::Function)
+Recurrences are defined as any point with distance `≤ d` from the referrence point,
+where `d` is a scaled ratio (specified by `ratio, scale`) of the distance matrix.
 See [`RecurrenceMatrix`](@ref) for more.
 """
 struct RecurrenceThresholdScaled{T<:Real, S} <: AbstractRecurrenceType
-    ε::T
+    ratio::T
     scale::S
 end
 
@@ -133,44 +131,46 @@ Base.Matrix(R::ARM) = Matrix(R.data)
 SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 
 ################################################################################
-# Documentation strings
+# Documentation strings and dispatch to `recurrence_matrix`
 ################################################################################
 """
-    RecurrenceMatrix(x, ε::Real; kwargs...)
+    RecurrenceMatrix(x, ε::Real; metric = Euclidean(),; parallel::Bool)
 
 Create a recurrence matrix from trajectory `x` (either a `Dataset` or a `Vector`)
-and with distance threshold `ε`.
+and with recurrence distance threshold `ε`.
+
+The keyword `metric`, if given, must be any subtype of `Metric` from
+[Distances.jl](https://github.com/JuliaStats/Distances.jl)
+and defines the metric used to calculate distances for recurrences.
+By default the Euclidean metric is used.
+
+The keyword `parallel` decides if the comptutation should be done in parallel using threads.
+Defaults to `length(x) > 500 && Threads.nthreads() > 1`.
+
+## Description
+A (cross-)recurrence matrix is a way to quantify *recurrences* that occur in a trajectory.
+A recurrence happens when a trajectory visits the same neighborhood on the state space that
+it was at some previous time.
+
+The recurrence matrix is a numeric representation of a recurrence plot,
+described in detail in [^Marwan2007] and [^Marwan2015]. It represents a
+a sparse square matrix of Boolean values that quantifies recurrences in the trajectory,
+i.e., points where the trajectory returns close to itself.
+Given trajectories ``x, y``, the matrix is defined as:
+```math
+R[i, j] = \\begin{cases}
+1 \\quad \\text{if}\\quad d(x[i], y[j]) \\le \\varepsilon\\
+0 \\quad \\text{else}
+\\end{cases}
+```
+with ``d`` is the distance function specified by the given `metric`.
+The difference between a `RecurrenceMatrix` and a [`CrossRecurrenceMatrix`](@ref)
+is that in the first case `x === y`.
+
 Objects of type `<:AbstractRecurrenceMatrix` are displayed as a [`recurrenceplot`](@ref).
 
 See also: [`CrossRecurrenceMatrix`](@ref), [`JointRecurrenceMatrix`](@ref) and
 use [`recurrenceplot`](@ref) to turn the result of these functions into a plottable format.
-
-## Keyword Arguments
-* `metric = "euclidean"` : metric of the distances, either `Metric` or a string,
-   as in [`distancematrix`](@ref).
-* `scale = 1` : a function of the distance matrix (see [`distancematrix`](@ref)),
-  or a fixed number, used to scale the value of `ε`. Typical choices are
-  `maximum` or `mean`, such that the threshold `ε` is defined as a ratio of the
-  maximum or the mean distance between data points, respectively (using
-  `mean` or `maximum` calls specialized versions that are faster than the naive
-  approach).  Use `1` to keep the distances unscaled (default).
-* `fixedrate::Bool = false` : a flag that indicates if `ε` should be
-  taken as a target fixed recurrence rate (see [`recurrencerate`](@ref)).
-  If `fixedrate` is set to `true`, `ε` must be a value between 0 and 1,
-  and `scale` is ignored.
-* `parallel::Bool` : whether to parallelize the computation of the recurrence
-   matrix using threads. Default depends on available threads and length of `x`.
-
-## Description
-
-The recurrence matrix is a numeric representation of a recurrence plot,
-described in detail in [^Marwan2007] and [^Marwan2015]. It represents a square
-a sparse square matrix of Boolean values that quantifies recurrences in the trajectory,
-i.e., points where the trajectory returns close to itself.
-If `d(x[i], x[j]) ≤ ε` (with `d` the distance function),
-then the entry `(i, j)` of the matrix will have a `true`
-value. The criteria to evaluate distances between data points are defined
-based on the keyword arguments.
 
 [^Marwan2007]:
     N. Marwan *et al.*, "Recurrence plots for the analysis of complex systems",
@@ -180,7 +180,63 @@ based on the keyword arguments.
     N. Marwan & C.L. Webber, *Recurrence Quantification Analysis. Theory and Best Practices*
     [Springer (2015)](https://link.springer.com/book/10.1007/978-3-319-07155-8)
 """
-function RecurrenceMatrix end
+function RecurrenceMatrix(x, ε::Real; kwargs...)
+    return RecurrenceMatrix(x, RecurrenceThreshold(ε); kwargs...)
+end
+
+"""
+    RecurrenceMarix(x, recurrence_type::AbstractRecurrenceType; metric, parallel)
+Use this method to specify with more options how recurrences are identified and counted.
+`metric, parallel` are as in the above method.
+
+The `recurrence_type` can be:
+* `RecurrenceThreshold(ε::Real)`: Recurrences are defined as any point with distance
+  `≤ ε` from the referrence point. This is identical to `RecurrenceMatrix(x, ε::Real)`.
+* `RecurrenceThresholdScaled(ratio::Real, scale::Function)`: Here `scale` is a function
+  of the distance matrix `dm` (see [`distancematrix`](@ref)) that is used
+  to scale the value of the recurrence threshold `ε` so that `ε = ratio*scale(dm)`,
+  with `ratio` ∈ (0, 1). After the new `ε` is obtained, the method works
+  just like the `RecurrenceThreshold`.
+* `GlobalRecurrenceRate(r::Real)`: Here the number of total recurrence rate over the whole
+  matrix (see [`recurrencerate`](@ref) is specified to be a ratio `r`. This means that
+  a distance threshold `ε` will be calculated such that there is a fixed ratio `r` of
+  recurrences, out of the total possible `N^2` (with `N = length(x)`).
+  After the new `ε` is obtained, the method works just like the `RecurrenceThreshold`.
+* `LocalRecurrenceRate(r::Real)`: The recurrence threhsold here is point-dependent. It is
+  defined so that each point of `x` has a fixed number of `k = r*N` neighbors, with ratio
+  `r` out of the total possible `N`. Equivalently, this means that each column of the
+  recurrence matrix will have exactly `k` true entries. Notice that `LocalRecurrenceRate`
+  does not guarantee that the resulting recurrence matrix will be symmetric.
+"""
+function RecurrenceMatrix(x, rt::AbstractRecurrenceType; metric::Metric = Euclidean(),
+    parallel::Bool = length(x) > 500 && Threads.nthreads() > 1)
+    ε = recurrence_threshold(rt, x, metric)
+    m = recurrence_matrix(x, metric, ε, Val(parallel))
+    return RecurrenceMatrix(m, rt)
+end
+
+"""
+    recurrence_threshold(rt::AbstractRecurrenceType, x [, y], metric)
+Return the calculated threshold `ε` for `rt`, if it applies.
+"""
+recurrence_threshold(rt::AbstractRecurrenceType, x, metric::Metric) =
+    recurrence_threshold(rt, x, x, metric)
+recurrence_threshold(rt::RecurrenceThreshold, x, y, metric) = rt.ε
+function recurrence_threshold(rt::RecurrenceThresholdScaled, x, y, metric)
+    scale_value = _computescale(rt.scale, x, y, metric)
+    return rt.ratio*scale_value
+end
+function recurrence_threshold(rt::GlobalRecurrenceRate, x, y, metric)
+    # We leverage the code of the scaled version to get the global recurrence rate
+    scale = (m) -> quantile(vec(m), rt.r)
+    scale_value = _computescale(scale, x, y, metric)
+    return rt.ratio*scale_value
+end
+function recurrence_threshold(rt::LocalRecurrenceRate, x, y, metric)
+    error("TODO.") # copy code from RecurrenceMatrix{FAN}
+end
+
+
 
 """
     CrossRecurrenceMatrix(x, y, ε::Real; kwargs...)
@@ -235,7 +291,23 @@ end
 ################################################################################
 # Concrete implementations
 ################################################################################
-
+#=
+OLD KEYWORD ARGUMENTS:
+* `metric = "euclidean"` : metric of the distances, either `Metric` or a string,
+   as in [`distancematrix`](@ref).
+* `scale = 1` : a function of the distance matrix (see [`distancematrix`](@ref)),
+  or a fixed number, used to scale the value of `ε`. Typical choices are
+  `maximum` or `mean`, such that the threshold `ε` is defined as a ratio of the
+  maximum or the mean distance between data points, respectively (using
+  `mean` or `maximum` calls specialized versions that are faster than the naive
+  approach).  Use `1` to keep the distances unscaled (default).
+* `fixedrate::Bool = false` : a flag that indicates if `ε` should be
+  taken as a target fixed recurrence rate (see [`recurrencerate`](@ref)).
+  If `fixedrate` is set to `true`, `ε` must be a value between 0 and 1,
+  and `scale` is ignored.
+* `parallel::Bool` : whether to parallelize the computation of the recurrence
+   matrix using threads. Default depends on available threads and length of `x`.
+=#
 function RecurrenceMatrix{WithinRange}(x, ε; metric = DEFAULT_METRIC,
     parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
     kwargs...)
@@ -327,8 +399,6 @@ resolve_scale(x, metric, ε) = resolve_scale(x, x, metric, ε)
 
 # If `scale` is a function, compute the numeric value of the scale based on the
 # distance matrix; otherwise return the value of `scale` itself
-_computescale(scale::Real, args...) = scale
-
 function _computescale(scale::Function, x, y, metric)
     if x===y
         distances = zeros(Int(length(x)*(length(x)-1)/2), 1)

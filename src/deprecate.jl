@@ -104,3 +104,9 @@ function getmetric(normtype::AbstractString)
         *join(keys(METRICS),"\", \"", "\" or \"") * "\".")
     METRICS[normtype]
 end
+
+function _computescale(scale::Real, args...)
+    @warn "specifying `scale` as a number is deprecated because its pointless. "*
+    "Use a modified `ε = ε*scale` instead..."
+    return scale
+end
