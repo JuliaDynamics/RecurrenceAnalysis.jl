@@ -9,7 +9,6 @@ The low level interface is contained in the function
 # AbstractRecurrenceMatrix type hierarchy and extensions of methods
 ################################################################################
 const FAN = NeighborNumber
-export FAN
 
 abstract type AbstractRecurrenceMatrix{SearchType} end
 const ARM = AbstractRecurrenceMatrix
@@ -77,7 +76,6 @@ SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 Create a recurrence matrix from trajectory `x` (either a `Dataset` or a `Vector`)
 and with distance threshold `ε`.
 Objects of type `<:AbstractRecurrenceMatrix` are displayed as a [`recurrenceplot`](@ref).
-See the description below for the behavior of the `FAN` version.
 
 See also: [`CrossRecurrenceMatrix`](@ref), [`JointRecurrenceMatrix`](@ref) and
 use [`recurrenceplot`](@ref) to turn the result of these functions into a plottable format.
@@ -129,20 +127,18 @@ end
 RecurrenceMatrix(args...; kwargs...) = RecurrenceMatrix{WithinRange}(args...; kwargs...)
 
 """
-    RecurrenceMatrix{FAN}(x, k::Int; metric = Euclidean(), parallel::Bool)
+    RecurrenceMatrix{FAN}(x, r::Real; metric = Euclidean(), parallel::Bool)
 
 The parametrized constructor `RecurrenceMatrix{FAN}` creates the recurrence matrix
-with a fixed number of `k` neighbors for each point in the phase space, i.e. the number
+with a fixed number of neighbors for each point in the phase space, i.e. the number
 of recurrences is the same for all columns of the recurrence matrix.
-In such case, `ε` is taken as the target fixed local recurrence rate,
-defined as a value between 0 and 1, and `scale` and `fixedrate` are ignored.
+In such case, `r` is taken as the target fixed local recurrence rate,
+defined as a value between 0 and 1 which means that `k = round(Int, r*N)` recurrences
+for each point are identified with `N = length(x)`.
 This is often referred to in the literature as the method of
 "Fixed Amount of Nearest Neighbors" (or FAN for short).
 
-`FAN` is nothing more than an alias of [`NeighborNumber`](@ref).
-If it isn't specified, `RecurrenceMatrix` returns a
-`RecurrenceMatrix{WithinRange}` object, meaning that recurrences will be taken
-for pairs of data points whose distance is ≤ `ε`. Note that while recurrence matrices
+Note that while recurrence matrices
 with neighbors defined within a given range are always symmetric, those defined
 by a fixed amount of neighbors can be non-symmetric.
 """
@@ -228,7 +224,7 @@ Create a joint recurrence matrix from given recurrence matrices `R1, R2`.
 """
 function JointRecurrenceMatrix(
     R1::AbstractRecurrenceMatrix{SearchType}, R2::AbstractRecurrenceMatrix{SearchType}; kwargs...
-    ) where T
+    ) where SearchType
     R3 = R1.data .* R2.data
     return JointRecurrenceMatrix{SearchType}(R3)
 end
