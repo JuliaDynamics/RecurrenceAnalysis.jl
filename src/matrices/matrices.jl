@@ -200,9 +200,9 @@ The `recurrence_type` can be:
   to scale the value of the recurrence threshold `ε` so that `ε = ratio*scale(dm)`,
   with `ratio` ∈ (0, 1). After the new `ε` is obtained, the method works
   just like the `RecurrenceThreshold`.
-* `GlobalRecurrenceRate(r::Real)`: Here the number of total recurrence rate over the whole
-  matrix (see [`recurrencerate`](@ref) is specified to be a ratio `r`. This means that
-  a distance threshold `ε` will be calculated such that there is a fixed ratio `r` of
+* `GlobalRecurrenceRate(ratio::Real)`: Here the number of total recurrence rate over the whole
+  matrix (see [`recurrencerate`](@ref) is specified to be a `ratio` ∈ (0,1). This means that
+  a distance threshold `ε` will be calculated such that there is a fixed `ratio` of
   recurrences, out of the total possible `N^2` (with `N = length(x)`).
   After the new `ε` is obtained, the method works just like the `RecurrenceThreshold`.
 * `LocalRecurrenceRate(r::Real)`: The recurrence threhsold here is point-dependent. It is
@@ -222,8 +222,9 @@ end
     recurrence_threshold(rt::AbstractRecurrenceType, x [, y], metric)
 Return the calculated threshold `ε` for `rt`, if it applies.
 """
-recurrence_threshold(rt::AbstractRecurrenceType, x, metric::Metric) =
+recurrence_threshold(rt, x, metric::Metric) =
     recurrence_threshold(rt, x, x, metric)
+recurrence_threshold(rt::Real, x, y, metric) = rt
 recurrence_threshold(rt::RecurrenceThreshold, x, y, metric) = rt.ε
 function recurrence_threshold(rt::RecurrenceThresholdScaled, x, y, metric)
     scale_value = _computescale(rt.scale, x, y, metric)
@@ -242,29 +243,34 @@ end
 
 
 """
-    CrossRecurrenceMatrix(x, y, ε::Real; kwargs...)
-    CrossRecurrenceMatrix{FAN}(x, y, k::Int; kwargs...)
+    CrossRecurrenceMatrix(x, y, ε; kwargs...)
 
 Create a cross recurrence matrix from trajectories `x` and `y`.
+See [`RecurrenceMatrix`](@ref) for possible value sfor `ε` and `kwargs`.
 
 The cross recurrence matrix is a bivariate extension of the recurrence matrix.
 For the time series `x`, `y`, of length `n` and `m`, respectively, it is a
 sparse `n×m` matrix of Boolean values, such that if `d(x[i], y[j]) ≤ ε`,
 then the cell `(i, j)` of the matrix will have a `true` value.
 
-Note that, unlike univariate recurrence matrices, cross recurrence matrices
-are not generally symmetric, regardless of the method used to make them.
-
-See [`RecurrenceMatrix`](@ref) for details, references and keywords.
-See also: [`JointRecurrenceMatrix`](@ref).
+Note that cross recurrence matrices are generally not symmetric irrespectively of `ε`.
 """
-function CrossRecurrenceMatrix end
+function CrossRecurrenceMatrix(x, y, rt;
+        metric::Metric = Euclidean(),
+        parallel::Bool = length(x) > 500 && Threads.nthreads() > 1
+    )
+    ε = recurrence_threshold(rt, x, y, metric)
+    m = recurrence_matrix(x, y, metric, ε, Val(parallel))
+    rt = rt isa Real ? RecurrenceThreshold(rt) : rt # to be sure we have recurrence type
+    return CrossRecurrenceMatrix(m, rt)
+end
+# TODO: FAN version
 
 """
     JointRecurrenceMatrix(x, y, ε; kwargs...)
-    JointRecurrenceMatrix{FAN}(x, y, ε; kwargs...)
 
-Create a joint recurrence matrix from `x` and `y`.
+Create a joint recurrence matrix from trajectories `x` and `y`.
+See [`RecurrenceMatrix`](@ref) for possible value sfor `ε` and `kwargs`.
 
 The joint recurrence matrix considers the recurrences of the trajectories
 of `x` and `y` separately, and looks for points where both recur
@@ -273,12 +279,11 @@ of the recurrence matrices of `x` and `y`. If `x` and `y` are of different
 length, the recurrences are only calculated until the length of the shortest one.
 
 See [`RecurrenceMatrix`](@ref) for details, references and keywords.
-See also: [`CrossRecurrenceMatrix`](@ref).
 """
-function JointRecurrenceMatrix(x, y, ε; kwargs...) where RT
-    @assert length(x) == length(y) "The lengths of the datasets must match!"
-    rm1 = RecurrenceMatrix(x, ε; kwargs...)
-    rm2 = RecurrenceMatrix(y, ε; kwargs...)
+function JointRecurrenceMatrix(x, y, ε; kwargs...)
+    n = min(length(x), length(y))
+    rm1 = RecurrenceMatrix(view(x, 1:n, :), ε; kwargs...)
+    rm2 = RecurrenceMatrix(view(y, 1:n, :), ε; kwargs...)
     ε = ε isa Real ? RecurrenceThreshold(ε) : ε # to be sure we have recurrence type
     return JointRecurrenceMatrix(rm1.data .* rm2.data, ε)
 end
@@ -297,7 +302,7 @@ end
 
 
 ################################################################################
-# Concrete implementations
+# TODO: Deprecations
 ################################################################################
 #=
 OLD KEYWORD ARGUMENTS:
