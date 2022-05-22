@@ -292,6 +292,23 @@ function JointRecurrenceMatrix(x, y, ε; kwargs...)
     return JointRecurrenceMatrix{typeof(ε)}(rm1.data .* rm2.data, ε)
 end
 
+for type in (:RecurrenceMatrix, :CrossRecurrenceMatrix)
+    @eval begin
+        """
+            $($(type))(m::AbstractMatrix)
+        In this method `m` is assumed to be a boolean matrix already containing the recurrences.
+        The method is provided only for a convenience constructor from
+        recurrences found via different means.
+        """
+        function $(type)(m::AbstractMatrix)
+            x = SparseMatrixCSC(m)
+            return $(type){RecurrenceThreshold}(x, RecurrenceThreshold(0))
+        end
+    end
+end
+
+
+
 """
     JointRecurrenceMatrix(R1::AbstractRecurrenceMatrix, R2::AbstractRecurrenceMatrix)
 

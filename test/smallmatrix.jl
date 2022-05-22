@@ -1,12 +1,12 @@
 using RecurrenceAnalysis, SparseArrays
-using Test, Statistics, LinearAlgebra, DelimitedFiles
+using Test, Statistics, LinearAlgebra
 
 cells = [(1,1),(2,2),(3,2),(6,2),(7,2),(8,2),(6,3),(7,3),(10,3),(2,4),(4,4),
     (1,5),(2,5),(3,5),(5,5),(9,5),(10,5),(2,6),(3,6),(6,6),(7,6),(10,6),
     (3,7),(8,7),(4,8),(1,9),(5,9),(7,9),(9,9),(9,10),(10,10),(3,11),(7,11)]
 i = [x[1] for x in cells]
 j = [x[2] for x in cells]
-rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
+rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))), RecurrenceThreshold(0))
 ### Graph of the recurrence matrix:
 ## · : non-recurrent (white) points
 ## x : recurrent (black) points

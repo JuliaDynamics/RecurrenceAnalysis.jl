@@ -5,6 +5,8 @@ using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, Stati
 const DEFAULT_METRIC = Euclidean()
 
 export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix
+export RecurrenceThreshold, RecurrenceThresholdScaled,
+    GlobalRecurrenceRate, LocalRecurrenceRate
 
 export embed,
        reconstruct,
