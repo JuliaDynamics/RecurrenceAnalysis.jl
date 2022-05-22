@@ -105,6 +105,22 @@ function getmetric(normtype::AbstractString)
     METRICS[normtype]
 end
 
+################################################################################
+# TODO: Deprecations of old recurrence matrix interface
+################################################################################
+# OLD KEYWORD ARGUMENTS in `RecurrenceMatrix`: scale, fixedrate.
+function RecurrenceMatrix{NeighborNumber}(x, ε; kwargs...)
+    @warn "Specifying `RecurrenceMatrix{FA}` is deprecated! Use `LocalRecurrenceRate`."
+    rt = LocalRecurrenceRate(ε)
+    return RecurrenceMatrix(x, rt; kwargs...)
+end
+
+function CrossRecurrenceMatrix{NeighborNumber}(x, y, ε; kwargs...)
+    @warn "Specifying `CrossRecurrenceMatrix{FA}` is deprecated! Use `LocalRecurrenceRate`."
+    rt = LocalRecurrenceRate(ε)
+    return CrossRecurrenceMatrix(x, y, rt; kwargs...)
+end
+
 function _computescale(scale::Real, args...)
     @warn "specifying `scale` as a number is deprecated because its pointless. "*
     "Use a modified `ε = ε*scale` instead..."

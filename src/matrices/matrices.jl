@@ -181,8 +181,20 @@ use [`recurrenceplot`](@ref) to turn the result of these functions into a plotta
     N. Marwan & C.L. Webber, *Recurrence Quantification Analysis. Theory and Best Practices*
     [Springer (2015)](https://link.springer.com/book/10.1007/978-3-319-07155-8)
 """
-function RecurrenceMatrix(x, ε::Real; kwargs...)
-    return RecurrenceMatrix(x, RecurrenceThreshold(ε); kwargs...)
+function RecurrenceMatrix(x, ε::Real;
+    # DEPRECATED keywords. TODO: Remove them in next stable release.
+    scale = nothing, fixedrate = nothing,
+    # VALID keywords (propagated)
+    kwargs...)
+    if !isnothing(scale)
+        @warn "Providing keyword `scale` is deprecated. Use `RecurrenceThresholdScaled`."
+    elseif !isnothing(fixedrate)
+        @warn "Providing keyword `fixedrate` is deprecated. Use `GlobalRecurrenceRate`."
+        rt = GlobalRecurrenceRate(ε)
+    else
+        rt = RecurrenceThreshold(ε)
+    end
+    return RecurrenceMatrix(x, rt; kwargs...)
 end
 
 """
@@ -273,111 +285,6 @@ function JointRecurrenceMatrix(
     R3 = R1.data .* R2.data
     return JointRecurrenceMatrix{RT}(R3, R1.rt)
 end
-
-
-################################################################################
-# TODO: Deprecations
-################################################################################
-#=
-OLD KEYWORD ARGUMENTS:
-* `metric = "euclidean"` : metric of the distances, either `Metric` or a string,
-   as in [`distancematrix`](@ref).
-* `scale = 1` : a function of the distance matrix (see [`distancematrix`](@ref)),
-  or a fixed number, used to scale the value of `ε`. Typical choices are
-  `maximum` or `mean`, such that the threshold `ε` is defined as a ratio of the
-  maximum or the mean distance between data points, respectively (using
-  `mean` or `maximum` calls specialized versions that are faster than the naive
-  approach).  Use `1` to keep the distances unscaled (default).
-* `fixedrate::Bool = false` : a flag that indicates if `ε` should be
-  taken as a target fixed recurrence rate (see [`recurrencerate`](@ref)).
-  If `fixedrate` is set to `true`, `ε` must be a value between 0 and 1,
-  and `scale` is ignored.
-* `parallel::Bool` : whether to parallelize the computation of the recurrence
-   matrix using threads. Default depends on available threads and length of `x`.
-=#
-function RecurrenceMatrix{WithinRange}(x, ε; metric = DEFAULT_METRIC,
-    parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
-    kwargs...)
-    m = getmetric(metric)
-    s = resolve_scale(x, m, ε; kwargs...)
-    m = recurrence_matrix(x, m, s, Val(parallel))
-    return RecurrenceMatrix{WithinRange}(m)
-end
-
-RecurrenceMatrix(args...; kwargs...) = RecurrenceMatrix{WithinRange}(args...; kwargs...)
-
-
-"""
-    RecurrenceMatrix{FAN}(x, r::Real; metric = Euclidean(), parallel::Bool)
-
-The parametrized constructor `RecurrenceMatrix{FAN}` creates the recurrence matrix
-with a fixed number of neighbors for each point in the phase space, i.e. the number
-of recurrences is the same for all columns of the recurrence matrix.
-In such case, `r` is taken as the target fixed local recurrence rate,
-defined as a value between 0 and 1 which means that `k = round(Int, r*N)` recurrences
-for each point are identified with `N = length(x)`.
-This is often referred to in the literature as the method of
-"Fixed Amount of Nearest Neighbors" (or FAN for short).
-
-Note that while recurrence matrices
-with neighbors defined within a given range are always symmetric, those defined
-by a fixed amount of neighbors can be non-symmetric.
-"""
-function RecurrenceMatrix{NeighborNumber}(x, ε; metric = DEFAULT_METRIC,
-        parallel::Bool = length(x) > 500 && Threads.nthreads() > 1
-    )
-    m = getmetric(metric)
-    s = get_fan_threshold(x, m, ε)
-    m = recurrence_matrix(x, x, m, s, Val(parallel)) # to allow for non-symmetry
-    return RecurrenceMatrix{NeighborNumber}(m)
-end
-
-function CrossRecurrenceMatrix{WithinRange}(x, y, ε; metric = DEFAULT_METRIC,
-    parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
-    kwargs...)
-    m = getmetric(metric)
-    s = resolve_scale(x, y, m, ε; kwargs...)
-    m = recurrence_matrix(x, y, m, s, Val(parallel))
-    return CrossRecurrenceMatrix{WithinRange}(m)
-end
-
-CrossRecurrenceMatrix(args...; kwargs...) = CrossRecurrenceMatrix{WithinRange}(args...; kwargs...)
-
-function CrossRecurrenceMatrix{NeighborNumber}(x, y, ε; metric = DEFAULT_METRIC,
-    parallel::Bool = length(x) > 500 && Threads.nthreads() > 1,
-    kwargs...)
-    m = getmetric(metric)
-    s = get_fan_threshold(x, y, m, ε)
-    m = recurrence_matrix(x, y, m, s, Val(parallel))
-    return CrossRecurrenceMatrix{NeighborNumber}(m)
-end
-
-function JointRecurrenceMatrix{RT}(x, y, ε; kwargs...) where RT
-    n = min(size(x,1), size(y,1))
-    if n == size(x,1) && n == size(y,1)
-        rm1 = RecurrenceMatrix{RT}(x, ε; kwargs...)
-        rm2 = RecurrenceMatrix{RT}(y, ε; kwargs...)
-    else
-        rm1 = RecurrenceMatrix{RT}(x[1:n,:], ε; kwargs...)
-        rm2 = RecurrenceMatrix{RT}(y[1:n,:], ε; kwargs...)
-    end
-    return JointRecurrenceMatrix{RT}(rm1.data .* rm2.data)
-end
-
-JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{WithinRange}(args...; kwargs...)
-
-function resolve_scale(x, y, metric, ε; scale=1, fixedrate=false)
-    if fixedrate
-        @assert 0 < ε < 1 "ε must be within (0, 1) for fixed rate"
-        sfun = (m) -> quantile(vec(m), ε)
-        return resolve_scale(x, y, metric, 1.0; scale=sfun, fixedrate=false)
-    else
-        scale_value = _computescale(scale, x, y, metric)
-        return ε*scale_value
-    end
-end
-resolve_scale(x, metric, ε) = resolve_scale(x, x, metric, ε)
-
 
 ################################################################################
 # Resolving the recurrence threshold and/or scaling
