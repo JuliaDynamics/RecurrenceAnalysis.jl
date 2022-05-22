@@ -111,9 +111,12 @@ for operator in [:(==), :(!=)]
     @eval Base.$operator(x::ARM, y::ARM) = $operator(x.data, y.data)
 end
 
-LinearAlgebra.issymmetric(::RecurrenceMatrix{WithinRange}) = true
-LinearAlgebra.issymmetric(::JointRecurrenceMatrix{WithinRange}) = true
-LinearAlgebra.issymmetric(::ARM) = false
+LinearAlgebra.issymmetric(R::ARM) = issymmetric(R.data)
+LinearAlgebra.issymmetric(::RecurrenceMatrix{X}) where
+    {X <: Union{RecurrenceThreshold,RecurrenceThresholdScaled,GlobalRecurrenceRate}} = true
+LinearAlgebra.issymmetric(::JointRecurrenceMatrix{X}) where
+    {X <: Union{RecurrenceThreshold,RecurrenceThresholdScaled,GlobalRecurrenceRate}} = true
+
 
 # column values in sparse matrix (parallel to rowvals)
 function colvals(x::SparseMatrixCSC)
