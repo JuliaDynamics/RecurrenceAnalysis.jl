@@ -253,7 +253,9 @@ function CrossRecurrenceMatrix(x, y, ε;
         # Normal keywords
         metric = Euclidean(), parallel::Bool = length(x) > 500 && Threads.nthreads() > 1
     )
-    if !isnothing(scale)
+    if ε isa AbstractRecurrenceType
+        rt = ε
+    elseif !isnothing(scale)
         @warn "Providing keyword `scale` is deprecated. Use `RecurrenceThresholdScaled`."
         rt = RecurrenceThresholdScaled(ε, scale)
     elseif !isnothing(fixedrate)
@@ -262,7 +264,7 @@ function CrossRecurrenceMatrix(x, y, ε;
     elseif ε isa Real
         rt = RecurrenceThreshold(ε)
     else
-        rt = ε
+        throw(ArgumentError("Unknown specification of recurrence type."))
     end
     metric = getmetric(metric) # TODO: Remove this in major update.
     ε = recurrence_threshold(rt, x, y, metric)
@@ -292,23 +294,6 @@ function JointRecurrenceMatrix(x, y, ε; kwargs...)
     return JointRecurrenceMatrix{typeof(ε)}(rm1.data .* rm2.data, ε)
 end
 
-for type in (:RecurrenceMatrix, :CrossRecurrenceMatrix)
-    @eval begin
-        """
-            $($(type))(m::AbstractMatrix)
-        In this method `m` is assumed to be a boolean matrix already containing the recurrences.
-        The method is provided only for a convenience constructor from
-        recurrences found via different means.
-        """
-        function $(type)(m::AbstractMatrix)
-            x = SparseMatrixCSC(m)
-            return $(type){RecurrenceThreshold}(x, RecurrenceThreshold(0))
-        end
-    end
-end
-
-
-
 """
     JointRecurrenceMatrix(R1::AbstractRecurrenceMatrix, R2::AbstractRecurrenceMatrix)
 
@@ -319,6 +304,16 @@ function JointRecurrenceMatrix(
     ) where {RT}
     R3 = R1.data .* R2.data
     return JointRecurrenceMatrix{RT}(R3, R1.rt)
+end
+
+# Extend methods that just take in directly a boolean matrix
+for type in (:RecurrenceMatrix, :CrossRecurrenceMatrix, :JointRecurrenceMatrix)
+    @eval begin
+        function $(type)(m::AbstractMatrix{Bool})
+            x = SparseMatrixCSC(m)
+            return $(type){RecurrenceThreshold}(x, RecurrenceThreshold(0))
+        end
+    end
 end
 
 ################################################################################
@@ -349,7 +344,7 @@ function recurrence_threshold(rt::LocalRecurrenceRate, x, y, metric)
     thresholds = zeros(length(y))
     d = distancematrix(x, y, metric)
     if x === y
-        ε += 1/length(x) # because of recurrences guaranteed in the diagonal
+        rate += 1/length(x) # because of recurrences guaranteed in the diagonal
     end
     for i in axes(d, 2)
         thresholds[i] = quantile(view(d, : ,i), rate)

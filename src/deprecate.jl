@@ -109,16 +109,16 @@ end
 # TODO: Deprecations of old recurrence matrix interface
 ################################################################################
 # OLD KEYWORD ARGUMENTS in `RecurrenceMatrix`: scale, fixedrate.
-function RecurrenceMatrix{NeighborNumber}(x, ε; kwargs...)
+function RecurrenceMatrix{NeighborNumber}(x, ε; fixedrate = true, metric = Euclidean(), parallel = false)
     @warn "Specifying `RecurrenceMatrix{FA}` is deprecated! Use `LocalRecurrenceRate`."
     rt = LocalRecurrenceRate(ε)
-    return RecurrenceMatrix(x, rt; kwargs...)
+    return RecurrenceMatrix(x, rt; metric, parallel)
 end
 
-function CrossRecurrenceMatrix{NeighborNumber}(x, y, ε; kwargs...)
+function CrossRecurrenceMatrix{NeighborNumber}(x, y, ε; fixedrate = true, metric = Euclidean(), parallel = false)
     @warn "Specifying `CrossRecurrenceMatrix{FA}` is deprecated! Use `LocalRecurrenceRate`."
     rt = LocalRecurrenceRate(ε)
-    return CrossRecurrenceMatrix(x, y, rt; kwargs...)
+    return CrossRecurrenceMatrix(x, y, rt; metric, parallel)
 end
 
 function _computescale(scale::Real, args...)
