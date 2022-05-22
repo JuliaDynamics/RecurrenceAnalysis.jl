@@ -110,3 +110,6 @@ function _computescale(scale::Real, args...)
     "Use a modified `ε = ε*scale` instead..."
     return scale
 end
+
+const FAN = NeighborNumber
+export WithinRange, NeighborNumber, FAN

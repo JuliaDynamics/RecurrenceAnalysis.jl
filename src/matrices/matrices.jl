@@ -10,8 +10,6 @@ The low level interface is contained in the function
 ################################################################################
 # AbstractRecurrenceMatrix type hierarchy
 ################################################################################
-const FAN = NeighborNumber
-
 abstract type AbstractRecurrenceMatrix{RT} end
 const ARM = AbstractRecurrenceMatrix
 
@@ -72,22 +70,22 @@ struct RecurrenceThresholdScaled{T<:Real, S<:Function} <: AbstractRecurrenceType
 end
 
 """
-    GlobalRecurrenceRate(r::Real)
-Recurrences are defined as a constant global recurrence rate `r`.
+    GlobalRecurrenceRate(rate::Real)
+Recurrences are defined as a constant global recurrence rate.
 See [`RecurrenceMatrix`](@ref) for more.
 """
 struct GlobalRecurrenceRate{T<:Real} <: AbstractRecurrenceType
-    r::T
+    rate::T
 end
 
 
 """
-    LocalRecurrenceRate(r::Real)
-Recurrences are defined as a constant local recurrence rate `r`.
+    LocalRecurrenceRate(rate::Real)
+Recurrences are defined as a constant local recurrence rate.
 See [`RecurrenceMatrix`](@ref) for more.
 """
 struct LocalRecurrenceRate{T<:Real} <: AbstractRecurrenceType
-    r::T
+    rate::T
 end
 
 ################################################################################
@@ -137,7 +135,7 @@ SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 # Documentation strings and dispatch to `recurrence_matrix`
 ################################################################################
 """
-    RecurrenceMatrix(x, ε::Real; metric = Euclidean(),; parallel::Bool)
+    RecurrenceMatrix(x, ε::Real; metric = Euclidean(), parallel::Bool)
 
 Create a recurrence matrix from trajectory `x` (either a `Dataset` or a `Vector`)
 and with recurrence distance threshold `ε`.
@@ -145,7 +143,7 @@ and with recurrence distance threshold `ε`.
 The keyword `metric`, if given, must be any subtype of `Metric` from
 [Distances.jl](https://github.com/JuliaStats/Distances.jl)
 and defines the metric used to calculate distances for recurrences.
-By default the Euclidean metric is used.
+By default the Euclidean metric is used, typical alternatives are `Chebyshev(), Cityblock()`.
 
 The keyword `parallel` decides if the comptutation should be done in parallel using threads.
 Defaults to `length(x) > 500 && Threads.nthreads() > 1`.
@@ -218,29 +216,6 @@ function RecurrenceMatrix(x, rt::AbstractRecurrenceType; metric::Metric = Euclid
     return RecurrenceMatrix(m, rt)
 end
 
-"""
-    recurrence_threshold(rt::AbstractRecurrenceType, x [, y], metric)
-Return the calculated threshold `ε` for `rt`, if it applies.
-"""
-recurrence_threshold(rt, x, metric::Metric) =
-    recurrence_threshold(rt, x, x, metric)
-recurrence_threshold(rt::Real, x, y, metric) = rt
-recurrence_threshold(rt::RecurrenceThreshold, x, y, metric) = rt.ε
-function recurrence_threshold(rt::RecurrenceThresholdScaled, x, y, metric)
-    scale_value = _computescale(rt.scale, x, y, metric)
-    return rt.ratio*scale_value
-end
-function recurrence_threshold(rt::GlobalRecurrenceRate, x, y, metric)
-    # We leverage the code of the scaled version to get the global recurrence rate
-    scale = (m) -> quantile(vec(m), rt.r)
-    scale_value = _computescale(scale, x, y, metric)
-    return rt.ratio*scale_value
-end
-function recurrence_threshold(rt::LocalRecurrenceRate, x, y, metric)
-    error("TODO.") # copy code from RecurrenceMatrix{FAN}
-end
-
-
 
 """
     CrossRecurrenceMatrix(x, y, ε; kwargs...)
@@ -264,7 +239,6 @@ function CrossRecurrenceMatrix(x, y, rt;
     rt = rt isa Real ? RecurrenceThreshold(rt) : rt # to be sure we have recurrence type
     return CrossRecurrenceMatrix(m, rt)
 end
-# TODO: FAN version
 
 """
     JointRecurrenceMatrix(x, y, ε; kwargs...)
@@ -392,12 +366,6 @@ end
 
 JointRecurrenceMatrix(args...; kwargs...) = JointRecurrenceMatrix{WithinRange}(args...; kwargs...)
 
-
-
-################################################################################
-# Scaling / fixed rate / fixed amount of neighbors
-################################################################################
-# here args... is (x, y, metric, ε) or just (x, metric, ε)
 function resolve_scale(x, y, metric, ε; scale=1, fixedrate=false)
     if fixedrate
         @assert 0 < ε < 1 "ε must be within (0, 1) for fixed rate"
@@ -410,8 +378,44 @@ function resolve_scale(x, y, metric, ε; scale=1, fixedrate=false)
 end
 resolve_scale(x, metric, ε) = resolve_scale(x, x, metric, ε)
 
-# If `scale` is a function, compute the numeric value of the scale based on the
-# distance matrix; otherwise return the value of `scale` itself
+
+################################################################################
+# Resolving the recurrence threshold and/or scaling
+################################################################################
+"""
+    recurrence_threshold(rt::AbstractRecurrenceType, x [, y], metric) → ε
+Return the calculated threshold `ε` for `rt`. The output is real, unless
+`rt isa LocalRecurrenceRate`, where `ε isa Vector`.
+"""
+recurrence_threshold(rt, x, metric::Metric) =
+    recurrence_threshold(rt, x, x, metric)
+recurrence_threshold(rt::Real, x, y, metric) = rt
+recurrence_threshold(rt::RecurrenceThreshold, x, y, metric) = rt.ε
+function recurrence_threshold(rt::RecurrenceThresholdScaled, x, y, metric)
+    scale_value = _computescale(rt.scale, x, y, metric)
+    return rt.ratio*scale_value
+end
+function recurrence_threshold(rt::GlobalRecurrenceRate, x, y, metric)
+    # We leverage the code of the scaled version to get the global recurrence rate
+    scale = (m) -> quantile(vec(m), rt.r)
+    scale_value = _computescale(scale, x, y, metric)
+    return rt.ratio*scale_value
+end
+function recurrence_threshold(rt::LocalRecurrenceRate, x, y, metric)
+    rate = rt.rate
+    @assert 0 < rate < 1 "Recurrence rate must be ∈ (0, 1)."
+    thresholds = zeros(length(y))
+    d = distancematrix(x, y, metric)
+    if x === y
+        ε += 1/length(x) # because of recurrences guaranteed in the diagonal
+    end
+    for i in axes(d, 2)
+        thresholds[i] = quantile(view(d, : ,i), ε)
+    end
+    return thresholds
+end
+
+
 function _computescale(scale::Function, x, y, metric)
     if x===y
         distances = zeros(Int(length(x)*(length(x)-1)/2), 1)
@@ -456,26 +460,6 @@ function _computescale(scale::typeof(mean), x, y, metric::Metric)
     return meanvalue/denominator
 end
 
-"""
-    get_fan_threshold(args) → ε_fan
-Compute the adaptive Fixed Amount of Neibours (FAN) `ε_fan`
-Here args... is (x, y, metric, ε) or just (x, metric, ε)
-"""
-function get_fan_threshold(x, y, metric, ε)
-    @assert 0 < ε < 1 "Global recurrence rate must be ∈ (0, 1)"
-    fan_threshold = zeros(length(y))
-    d = distancematrix(x, y, metric)
-    if x === y
-        ε += 1/length(x)
-    end
-    for i in axes(d, 2)
-        fan_threshold[i] = quantile(view(d, : ,i), ε)
-    end
-    return fan_threshold
-end
-
-get_fan_threshold(x, metric, ε) = get_fan_threshold(x, x, metric, ε)
-
 
 ################################################################################
 # recurrence_matrix - Low level function
@@ -492,8 +476,9 @@ get_fan_threshold(x, metric, ε) = get_fan_threshold(x, x, metric, ε)
     recurrence_matrix(x, y, metric::Metric, ε, parallel::Val)
 
 Return a sparse matrix which encodes recurrence points.
+`ε` is the `recurrence_threhsold`, which is a vector for `LocalRecurrenceRate`.
 
-Note that `parallel` may be either `Val(true)` or `Val(false)`.
+`parallel` may be either `Val(true)` or `Val(false)`.
 """
 function recurrence_matrix(xx::AbstractDataset, yy::AbstractDataset, metric::Metric, ε, ::Val{false})
     x = xx.data

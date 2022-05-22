@@ -4,11 +4,11 @@ using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, Stati
 
 const DEFAULT_METRIC = Euclidean()
 
-export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix,
-       AbstractRecurrenceMatrix, WithinRange, NeighborNumber, FAN
+export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix
 
 export embed,
        reconstruct,
+       recurrence_threshold,
        Dataset,
        distancematrix,
        textrecurrenceplot,
