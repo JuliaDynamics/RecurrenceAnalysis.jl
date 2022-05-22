@@ -188,11 +188,14 @@ function RecurrenceMatrix(x, ε::Real;
     kwargs...)
     if !isnothing(scale)
         @warn "Providing keyword `scale` is deprecated. Use `RecurrenceThresholdScaled`."
+        rt = RecurrenceThresholdScaled(ε, scale)
     elseif !isnothing(fixedrate)
         @warn "Providing keyword `fixedrate` is deprecated. Use `GlobalRecurrenceRate`."
         rt = GlobalRecurrenceRate(ε)
-    else
+    elseif ε isa Real
         rt = RecurrenceThreshold(ε)
+    else
+        rt = ε
     end
     return RecurrenceMatrix(x, rt; kwargs...)
 end
@@ -221,9 +224,10 @@ The `recurrence_type` can be:
   recurrence matrix will have exactly `k` true entries. Notice that `LocalRecurrenceRate`
   does not guarantee that the resulting recurrence matrix will be symmetric.
 """
-function RecurrenceMatrix(x, rt::AbstractRecurrenceType; metric::Metric = Euclidean(),
+function RecurrenceMatrix(x, rt::AbstractRecurrenceType; metric = Euclidean(),
         parallel::Bool = length(x) > 500 && Threads.nthreads() > 1
     )
+    metric = getmetric(metric) # TODO: Remove this in major update.
     ε = recurrence_threshold(rt, x, metric)
     m = recurrence_matrix(x, metric, ε, Val(parallel))
     return RecurrenceMatrix{typeof(rt)}(m, rt)
@@ -243,13 +247,26 @@ then the cell `(i, j)` of the matrix will have a `true` value.
 
 Note that cross recurrence matrices are generally not symmetric irrespectively of `ε`.
 """
-function CrossRecurrenceMatrix(x, y, rt;
-        metric::Metric = Euclidean(),
-        parallel::Bool = length(x) > 500 && Threads.nthreads() > 1
+function CrossRecurrenceMatrix(x, y, ε;
+        # DEPRECATED keywords. TODO: Remove them in next stable release.
+        scale = nothing, fixedrate = nothing,
+        # Normal keywords
+        metric = Euclidean(), parallel::Bool = length(x) > 500 && Threads.nthreads() > 1
     )
+    if !isnothing(scale)
+        @warn "Providing keyword `scale` is deprecated. Use `RecurrenceThresholdScaled`."
+        rt = RecurrenceThresholdScaled(ε, scale)
+    elseif !isnothing(fixedrate)
+        @warn "Providing keyword `fixedrate` is deprecated. Use `GlobalRecurrenceRate`."
+        rt = GlobalRecurrenceRate(ε)
+    elseif ε isa Real
+        rt = RecurrenceThreshold(ε)
+    else
+        rt = ε
+    end
+    metric = getmetric(metric) # TODO: Remove this in major update.
     ε = recurrence_threshold(rt, x, y, metric)
     m = recurrence_matrix(x, y, metric, ε, Val(parallel))
-    rt = rt isa Real ? RecurrenceThreshold(rt) : rt # to be sure we have recurrence type
     return CrossRecurrenceMatrix{typeof(rt)}(m, rt)
 end
 
@@ -269,8 +286,8 @@ See [`RecurrenceMatrix`](@ref) for details, references and keywords.
 """
 function JointRecurrenceMatrix(x, y, ε; kwargs...)
     n = min(length(x), length(y))
-    rm1 = RecurrenceMatrix(view(x, 1:n, :), ε; kwargs...)
-    rm2 = RecurrenceMatrix(view(y, 1:n, :), ε; kwargs...)
+    rm1 = RecurrenceMatrix(x[1:n], ε; kwargs...)
+    rm2 = RecurrenceMatrix(y[1:n], ε; kwargs...)
     ε = ε isa Real ? RecurrenceThreshold(ε) : ε # to be sure we have recurrence type
     return JointRecurrenceMatrix{typeof(ε)}(rm1.data .* rm2.data, ε)
 end
@@ -305,9 +322,9 @@ function recurrence_threshold(rt::RecurrenceThresholdScaled, x, y, metric)
 end
 function recurrence_threshold(rt::GlobalRecurrenceRate, x, y, metric)
     # We leverage the code of the scaled version to get the global recurrence rate
-    scale = (m) -> quantile(vec(m), rt.r)
+    scale = (m) -> quantile(vec(m), rt.rate)
     scale_value = _computescale(scale, x, y, metric)
-    return rt.ratio*scale_value
+    return rt.rate*scale_value
 end
 function recurrence_threshold(rt::LocalRecurrenceRate, x, y, metric)
     rate = rt.rate
@@ -318,7 +335,7 @@ function recurrence_threshold(rt::LocalRecurrenceRate, x, y, metric)
         ε += 1/length(x) # because of recurrences guaranteed in the diagonal
     end
     for i in axes(d, 2)
-        thresholds[i] = quantile(view(d, : ,i), ε)
+        thresholds[i] = quantile(view(d, : ,i), rate)
     end
     return thresholds
 end
@@ -383,7 +400,7 @@ end
 recurrence_matrix(x, metric, ε, parallel) = recurrence_matrix(x, x, metric, ε, parallel)
 
 """
-    recurrence_matrix(x, y, metric::Metric, ε, parallel::Val)
+    recurrence_matrix(x [, y], metric::Metric, ε, parallel::Val)
 
 Return a sparse matrix which encodes recurrence points.
 `ε` is the `recurrence_threhsold`, which is a vector for `LocalRecurrenceRate`.

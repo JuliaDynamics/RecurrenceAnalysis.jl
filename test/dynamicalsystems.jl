@@ -14,21 +14,21 @@ rng = Random.seed!(194)
 #     https://www.nsf.gov/pubs/2005/nsf05057/nmbs/nmbs.pdf
 #
 trajectories = Dict(
-    "Sine wave" => Dataset(map(x->[sin.(x) cos.(x)], StepRangeLen(0.0,0.2,200))),
+    # "Sine wave" => Dataset(map(x -> [sin.(x) cos.(x)], range(0.0, 0.2; length = 200))),
     "White noise" => Dataset(randn!(zeros(200,2))),
-    "Hénon (chaotic)" => trajectory(Systems.henon(a=1.4, b=0.3), 199, Ttr=1000),
+    # "Hénon (chaotic)" => trajectory(Systems.henon(a=1.4, b=0.3), 199, Ttr=1000),
     "Hénon (periodic)" => trajectory(Systems.henon(a=1.054, b=0.3), 199, Ttr=1000)
 )
 embed_params = Dict( # (d, τ)
-    "Sine wave"   => (9, 7),
+    # "Sine wave"   => (9, 7),
     "White noise" => (1, 1),
-    "Hénon (chaotic)" => (3, 1),
+    # "Hénon (chaotic)" => (3, 1),
     "Hénon (periodic)" => (3, 1)
 )
 rqa_threshold = Dict(
-    "Sine wave"   => 0.15,
+    # "Sine wave"   => 0.15,
     "White noise" => 0.15,
-    "Hénon (chaotic)" => 0.15,
+    # "Hénon (chaotic)" => 0.15,
     "Hénon (periodic)" => 0.15
 )
 
@@ -108,10 +108,10 @@ dict_keys = sort!(collect(keys(trajectories)))
     end
     @testset "rqa" begin
         # TODO: These tests are really bad. They test practical nothing from RQA
-        rqapar = rqa(rmat, theiler=1, lmin=3, border=20)
-        @test rqapar isa Dict
-        @test isa(rqa(OrderedDict,rmat.data),OrderedDict)
-        rqadiag = rqa(rmat, theiler=1, lmin=3, border=20, onlydiagonal=true)
+        rqapar = rqa(rmat; theiler=1, lmin=3, border=20)
+        @test rqapar.data isa Dict
+        @test isa(rqa(OrderedDict, rmat.data), OrderedDict)
+        rqadiag = rqa(rmat; theiler=1, lmin=3, border=20, onlydiagonal=true)
         for p in keys(rqadiag)
             @test rqapar[p] == rqadiag[p]
         end
@@ -119,7 +119,7 @@ dict_keys = sort!(collect(keys(trajectories)))
     @testset "windowed RQA" begin
         rmatw = @windowed RecurrenceMatrix(xe, ε, metric=RecurrenceAnalysis.Chebyshev()) 50
         @windowed RecurrenceMatrix{FAN}(xe, ε) 50 # not meaningful, only to check that it does not error
-        crmatw = @windowed(CrossRecurrenceMatrix(xe, ye, ε),30)
+        crmatw = @windowed(CrossRecurrenceMatrix(xe, ye, ε), 30)
         @windowed jrmatw = JointRecurrenceMatrix(xe, ye, ε) 30
         @test jrmatw[3 .+ (1:30), 3 .+ (1:30)] == jrmat[3 .+ (1:30), 3 .+ (1:30)]
         @windowed(rrw = recurrencerate(rmatw), width=50, step=40)
