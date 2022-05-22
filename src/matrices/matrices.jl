@@ -222,10 +222,11 @@ The `recurrence_type` can be:
   does not guarantee that the resulting recurrence matrix will be symmetric.
 """
 function RecurrenceMatrix(x, rt::AbstractRecurrenceType; metric::Metric = Euclidean(),
-    parallel::Bool = length(x) > 500 && Threads.nthreads() > 1)
+        parallel::Bool = length(x) > 500 && Threads.nthreads() > 1
+    )
     ε = recurrence_threshold(rt, x, metric)
     m = recurrence_matrix(x, metric, ε, Val(parallel))
-    return RecurrenceMatrix(m, rt)
+    return RecurrenceMatrix{typeof(rt)}(m, rt)
 end
 
 
@@ -249,7 +250,7 @@ function CrossRecurrenceMatrix(x, y, rt;
     ε = recurrence_threshold(rt, x, y, metric)
     m = recurrence_matrix(x, y, metric, ε, Val(parallel))
     rt = rt isa Real ? RecurrenceThreshold(rt) : rt # to be sure we have recurrence type
-    return CrossRecurrenceMatrix(m, rt)
+    return CrossRecurrenceMatrix{typeof(rt)}(m, rt)
 end
 
 """
@@ -271,7 +272,7 @@ function JointRecurrenceMatrix(x, y, ε; kwargs...)
     rm1 = RecurrenceMatrix(view(x, 1:n, :), ε; kwargs...)
     rm2 = RecurrenceMatrix(view(y, 1:n, :), ε; kwargs...)
     ε = ε isa Real ? RecurrenceThreshold(ε) : ε # to be sure we have recurrence type
-    return JointRecurrenceMatrix(rm1.data .* rm2.data, ε)
+    return JointRecurrenceMatrix{typeof(ε)}(rm1.data .* rm2.data, ε)
 end
 
 """
@@ -378,6 +379,8 @@ end
 # First, we define the non-parallel versions.
 
 # For two datasets
+
+recurrence_matrix(x, metric, ε, parallel) = recurrence_matrix(x, x, metric, ε, parallel)
 
 """
     recurrence_matrix(x, y, metric::Metric, ε, parallel::Val)

@@ -1,7 +1,8 @@
 # RecurrenceAnalysis.jl News
 ## v1.9.0
-- Specifying metrics with strings in `RecurrenceMatrix` and co is deprecated and will be removed in the next version. Use proper `Metric` instances like `Euclidean()`.
-- Giving a number as `scale` in `RecurrenceMatrix` is deprecated (because its pointless, just give `ε = ε*scale` instead).
+- [**BREAKING** but deprecated] The way of specifying how recurrences are counted in `RecurrenceMatrix` has been completely overhauled and is now based on specifying the type by using actual type instances instead of keywords. See the new docstring of `RecurrenceMatrix`.
+- [**BREAKING** but deprecated] Specifying metrics with strings in `RecurrenceMatrix` and co is deprecated and will be removed in the next version. Use proper `Metric` instances like `Euclidean()`.
+- [**BREAKING** but deprecated] Giving a number as `scale` in `RecurrenceMatrix` is deprecated (because its pointless, just give `ε = ε*scale` instead).
 - New exported function `recurrence_threshold` that calculates the recurrence threshold for a given recurrence specification type.
 
 ## v1.8.1
