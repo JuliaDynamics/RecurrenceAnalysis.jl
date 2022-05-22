@@ -34,8 +34,8 @@ end
 function Base.summary(R::AbstractRecurrenceMatrix)
     N = nnz(R.data)
     return """
-    $(nameof(typeof(R))), with $(nameof(typeof(R.recurrence_type)))-type recurrences,
-    of size $(size(R.data)), with $N entries
+    $(nameof(typeof(R))) of size $(size(R.data)),
+    with $(nameof(typeof(R.recurrence_type)))-type recurrences and $N entries.
     """
 end
 Base.show(io::IO, R::AbstractRecurrenceMatrix) = println(io, summary(R))
@@ -66,7 +66,7 @@ Recurrences are defined as any point with distance `≤ d` from the referrence p
 where `d` is a scaled ratio (specified by `ratio, scale`) of the distance matrix.
 See [`RecurrenceMatrix`](@ref) for more.
 """
-struct RecurrenceThresholdScaled{T<:Real, S} <: AbstractRecurrenceType
+struct RecurrenceThresholdScaled{T<:Real, S<:Function} <: AbstractRecurrenceType
     ratio::T
     scale::S
 end
@@ -272,19 +272,24 @@ length, the recurrences are only calculated until the length of the shortest one
 See [`RecurrenceMatrix`](@ref) for details, references and keywords.
 See also: [`CrossRecurrenceMatrix`](@ref).
 """
-function JointRecurrenceMatrix end
-
+function JointRecurrenceMatrix(x, y, ε; kwargs...) where RT
+    @assert length(x) == length(y) "The lengths of the datasets must match!"
+    rm1 = RecurrenceMatrix(x, ε; kwargs...)
+    rm2 = RecurrenceMatrix(y, ε; kwargs...)
+    ε = ε isa Real ? RecurrenceThreshold(ε) : ε # to be sure we have recurrence type
+    return JointRecurrenceMatrix(rm1.data .* rm2.data, ε)
+end
 
 """
     JointRecurrenceMatrix(R1::AbstractRecurrenceMatrix, R2::AbstractRecurrenceMatrix)
 
-Literally equivalent with `R1 .* R2`.
+Equivalent with `R1 .* R2`.
 """
 function JointRecurrenceMatrix(
         R1::AbstractRecurrenceMatrix{RT}, R2::AbstractRecurrenceMatrix{RT}
     ) where {RT}
     R3 = R1.data .* R2.data
-    return JointRecurrenceMatrix{RT}(R3)
+    return JointRecurrenceMatrix{RT}(R3, R1.rt)
 end
 
 

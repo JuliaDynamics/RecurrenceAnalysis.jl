@@ -2,6 +2,7 @@
 ## v1.9.0
 - Specifying metrics with strings in `RecurrenceMatrix` and co is deprecated and will be removed in the next version. Use proper `Metric` instances like `Euclidean()`.
 - Giving a number as `scale` in `RecurrenceMatrix` is deprecated (because its pointless, just give `ε = ε*scale` instead).
+- Creating a `JointRecurrenceMatrix` from datasets of unequal length will now error, as it should have done from the start.
 
 ## v1.8.1
 - Better support for iteration over `AbstractRecurrenceMatrix` with functions from `Base`.
