@@ -20,7 +20,7 @@ DelayEmbeddings = "2"
 Distances = "0.8, 0.9, 0.10"
 Graphs = "1.6"
 StaticArrays = "0.8,0.9,0.10,0.11,0.12, 1.0"
-UnicodePlots = "0.3, 1, 2"
+UnicodePlots = "0.3, 1, 2, 3"
 julia = "1.5"
 
 [extras]
