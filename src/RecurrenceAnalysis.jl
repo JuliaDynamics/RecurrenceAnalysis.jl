@@ -1,6 +1,9 @@
 module RecurrenceAnalysis
 
-using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, StaticArrays
+using Reexport
+@reexport using StateSpaceSets
+
+using Distances, Statistics, LinearAlgebra, SparseArrays
 
 const DEFAULT_METRIC = Euclidean()
 
