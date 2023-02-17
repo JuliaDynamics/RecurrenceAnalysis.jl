@@ -139,6 +139,7 @@ SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 
 Create a recurrence matrix from trajectory `x` (either a `Dataset` or a `Vector`)
 and with recurrence distance threshold `ε`.
+Instead of `ε::Real`, you can specify an `AbstractRecurrenceType`, see the method below.
 
 The keyword `metric`, if given, must be any subtype of `Metric` from
 [Distances.jl](https://github.com/JuliaStats/Distances.jl)
