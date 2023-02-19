@@ -24,7 +24,7 @@ end
 ti = time()
 
 @testset "RecurrenceAnalysis tests" begin
-    include("dynamicalsystems.jl")
+    include("rmatrix_analytic.jl")
     include("rqa_rna_analytic.jl")
     include("skeletontest.jl")
     include("deprecations.jl")

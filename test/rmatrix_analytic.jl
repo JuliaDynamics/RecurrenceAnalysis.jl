@@ -1,9 +1,61 @@
-using RecurrenceAnalysis, RecurrenceAnalysis.DelayEmbeddings
-using DynamicalSystemsBase, Random, Statistics, SparseArrays
-using Graphs, LinearAlgebra
-using Test
-using DataStructures
-RA = RecurrenceAnalysis
+# This file tests that the construction of recurrence matrices
+# is correct using as many recurrence types as possible
+# Analytic tests with points on the circle with fixed distance
+
+using RecurrenceAnalysis
+
+t = range(0, 2π; length = 20) # length is crucial and decides distance and thresholds
+c = cos.(t)
+s = sin.(t)
+X = Dataset(c, s)
+Y = X[1:10]
+
+dmat = distancematrix(X)
+ε = threshold = dmat[1, 2] + 0.01 # distance between two points
+maxthres = maximum(dmat) + 0.01
+neighbors = count(<(ε), dmat)
+
+@testset "fixed RR" begin
+    rmat = RecurrenceMatrix(X, ε; parallel = false)
+    rmat_p = RecurrenceMatrix(X, ε; parallel = true)
+    crmat = CrossRecurrenceMatrix(X, Y, ε; parallel = false)
+    jrmat = JointRecurrenceMatrix(X, X, ε; parallel = false)
+
+    @test size(rmat) == size(rmat_p) == size(jrmat) == (20, 20)
+    @test size(crmat) == (20, 10)
+    @test count(rmat) == count(rmat_p) == neighbors
+    @test count(jrmat) == neighbors
+    @test count(crmat) == neighbors÷2
+
+    @test rmat == RecurrenceMatrix(X, RecurrenceThreshold(ε))
+
+end
+
+@testset "Scaled fixed RR" begin
+    # We use as scale to get the second number...
+    scale(dm) = dm[2, 1] # cheating but analytic ;)
+    rt = RecurrenceThresholdScaled(1.0, )
+    rmat = RecurrenceMatrix(X, ε; parallel = false)
+    rmat_p = RecurrenceMatrix(X, ε; parallel = true)
+    crmat = CrossRecurrenceMatrix(X, Y, ε; parallel = false)
+    jrmat = JointRecurrenceMatrix(X, X, ε; parallel = false)
+
+    @test size(rmat) == size(rmat_p) == size(jrmat) == (20, 20)
+    @test size(crmat) == (20, 10)
+    @test count(rmat) == count(rmat_p) == neighbors
+    @test count(jrmat) == neighbors
+    @test count(crmat) == neighbors÷2
+
+end
+
+
+
+
+sz = size(jrmat)
+
+@testset "Creation"
+
+
 
 rng = Random.seed!(194)
 # Trajectories of 200 points
@@ -12,6 +64,7 @@ rng = Random.seed!(194)
 #     Dynamical Systems", in: Riley MA & Van Orden GC, Tutorials in Contemporary
 #     Nonlinear Methods for the Behavioral Sciences, 2005, 26-94.
 #     https://www.nsf.gov/pubs/2005/nsf05057/nmbs/nmbs.pdf
+
 
 trajectories = Dict(
     "Sine wave" => Dataset(map(x -> [sin.(x) cos.(x)], range(0.0, 0.2; length = 200))),
