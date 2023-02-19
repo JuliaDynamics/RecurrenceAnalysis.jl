@@ -1,7 +1,8 @@
 # Recurrence Plots
+
 ## Recurrence Matrices
 
-A [Recurrence plot](https://en.wikipedia.org/wiki/Recurrence_plot) (which refers to the plot of a matrix) is a way to quantify *recurrences* that occur in a trajectory. A recurrence happens when a trajectory visits the same neighborhood on the phase space that it was at some previous time.
+A [Recurrence plot](https://en.wikipedia.org/wiki/Recurrence_plot) (which refers to the plot of a recurrence matrix) is a way to quantify *recurrences* that occur in a trajectory. A recurrence happens when a trajectory visits the same neighborhood on the phase space that it was at some previous time.
 
 The central structure used in these recurrences is the (cross-) recurrence matrix:
 ```math
@@ -20,17 +21,33 @@ CrossRecurrenceMatrix
 JointRecurrenceMatrix
 ```
 
+```@docs
+RecurrenceMatrix(::Any, ::AbstractRecurrenceType)
+```
+
+
 ## Simple Recurrence Plots
 The recurrence matrices are internally stored as sparse matrices with boolean values. Typically in the literature one does not "see" the matrices themselves but instead a plot of them (hence "Recurrence Plots"). By default, when a Recurrence Matrix is created we "show" a mini plot of it which is a text-based scatterplot.
 
 Here is an example recurrence plot/matrix of a full trajectory of the Roessler system:
 ```@example MAIN
-using DynamicalSystems
-ro = Systems.roessler(ones(3), a=0.15, b=0.20, c=10.0)
-N = 2000; Δt = 0.05
-tr = trajectory(ro, N*Δt; Δt, Ttr = 10.0)
+using RecurrenceAnalysis, DynamicalSystemsBase
 
-R = RecurrenceMatrix(tr, 5.0; metric = "euclidean")
+@inbounds function roessler_rule(u, p, t)
+    a, b, c = p
+    du1 = -u[2]-u[3]
+    du2 = u[1] + a*u[2]
+    du3 = b + u[3]*(u[1] - c)
+    return SVector(du1, du2, du3)
+end
+
+p0 = [0.15, 0.2, 10.0]
+u0 = ones[3]
+ro = CoupledODEs(roessler_rule, u0, p0)
+N = 2000; Δt = 0.05
+X, t = trajectory(ro, N*Δt; Δt, Ttr = 10.0)
+
+R = RecurrenceMatrix(X, 5.0)
 recurrenceplot(R; ascii = true)
 ```
 ```@example MAIN
@@ -122,7 +139,7 @@ skeletonize
 
 Consider, e.g. a skeletonized version of a simple sinusoidal:
 ```@example MAIN
-using DynamicalSystems, CairoMakie
+using RecurrenceAnalysis, DynamicalSystemsBase, CairoMakie
 
 data = sin.(2*π .* (0:400)./ 60)
 Y = embed(data, 3, 15)
@@ -147,7 +164,7 @@ would otherwise effect the quantification based on these lines.
 In the following we will plot recurrence plots of the Lorenz system for a periodic and chaotic regime (using scatter plot).
 
 ```@example MAIN
-using DynamicalSystems, CairoMakie
+using RecurrenceAnalysis, DynamicalSystemsBase, CairoMakie
 lor = Systems.lorenz()
 fig = Figure(resolution = (1000,600))
 

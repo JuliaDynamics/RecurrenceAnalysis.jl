@@ -22,7 +22,7 @@ More details about the theoretical framework of RNA can be found in the followin
 The [JuliaGraphs](https://github.com/JuliaGraphs) organization provides multiple packages for Julia to create, visualize and analyze complex networks. In particular, the package [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) defines the type `SimpleGraph` that can be used to represent undirected networks. Such graphs can be created from symmetric recurrence matrices, as in the following example with a Hénon map:
 
 ```@example MAIN
-using DynamicalSystems
+using RecurrenceAnalysis, DynamicalSystemsBase
 using Graphs: SimpleGraph
 
 he = Systems.henon([0.75, 0.15])

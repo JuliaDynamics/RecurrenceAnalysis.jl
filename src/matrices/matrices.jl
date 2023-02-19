@@ -158,14 +158,12 @@ The recurrence matrix is a numeric representation of a recurrence plot,
 described in detail in [^Marwan2007] and [^Marwan2015]. It represents a
 a sparse square matrix of Boolean values that quantifies recurrences in the trajectory,
 i.e., points where the trajectory returns close to itself.
-Given trajectories ``x, y``, the matrix is defined as:
-```math
-R[i, j] = \\begin{cases}
-1 \\quad \\text{if}\\quad d(x[i], y[j]) \\le \\varepsilon\\
-0 \\quad \\text{else}
-\\end{cases}
+Given trajectories `x, y`, the matrix is defined as:
+
+```julia
+R[i,j] = metric(x[i], y[i]) ≤ ε ? true : false
 ```
-with ``d`` is the distance function specified by the given `metric`.
+with the `metric` being the distance function.
 The difference between a `RecurrenceMatrix` and a [`CrossRecurrenceMatrix`](@ref)
 is that in the first case `x === y`.
 
@@ -207,6 +205,7 @@ Use this method to specify with more options how recurrences are identified and 
 `metric, parallel` are as in the above method.
 
 The `recurrence_type` can be:
+
 * `RecurrenceThreshold(ε::Real)`: Recurrences are defined as any point with distance
   `≤ ε` from the referrence point. This is identical to `RecurrenceMatrix(x, ε::Real)`.
 * `RecurrenceThresholdScaled(ratio::Real, scale::Function)`: Here `scale` is a function
@@ -239,12 +238,11 @@ end
     CrossRecurrenceMatrix(x, y, ε; kwargs...)
 
 Create a cross recurrence matrix from trajectories `x` and `y`.
-See [`RecurrenceMatrix`](@ref) for possible value sfor `ε` and `kwargs`.
+See [`RecurrenceMatrix`](@ref) for possible value for `ε` and `kwargs`.
 
 The cross recurrence matrix is a bivariate extension of the recurrence matrix.
 For the time series `x`, `y`, of length `n` and `m`, respectively, it is a
-sparse `n×m` matrix of Boolean values, such that if `d(x[i], y[j]) ≤ ε`,
-then the cell `(i, j)` of the matrix will have a `true` value.
+sparse `n×m` matrix of Boolean values.
 
 Note that cross recurrence matrices are generally not symmetric irrespectively of `ε`.
 """
@@ -288,11 +286,16 @@ length, the recurrences are only calculated until the length of the shortest one
 See [`RecurrenceMatrix`](@ref) for details, references and keywords.
 """
 function JointRecurrenceMatrix(x, y, ε; kwargs...)
-    n = min(length(x), length(y))
-    rm1 = RecurrenceMatrix(x[1:n], ε; kwargs...)
-    rm2 = RecurrenceMatrix(y[1:n], ε; kwargs...)
-    ε = ε isa Real ? RecurrenceThreshold(ε) : ε # to be sure we have recurrence type
-    return JointRecurrenceMatrix{typeof(ε)}(rm1.data .* rm2.data, ε)
+    m, n = length(x), length(y)
+    if m > n
+        x = x[1:n]
+    elseif n > m
+        y = y[1:m]
+    end
+    rm1 = RecurrenceMatrix(x, ε; kwargs...)
+    rm2 = RecurrenceMatrix(y, ε; kwargs...)
+    r = ε isa Real ? RecurrenceThreshold(ε) : ε # to be sure we have recurrence type
+    return JointRecurrenceMatrix{typeof(r)}(rm1.data .* rm2.data, r)
 end
 
 """
