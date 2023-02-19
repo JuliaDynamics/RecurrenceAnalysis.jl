@@ -29,6 +29,33 @@ rqa
 
 See also the [`@windowed`](@ref) macro for a windowed version of `rqa`.
 
+## Example
+
+For example, here are the RQA measures for the same example trajectory we used to make [Simple Recurrence Plots](@ref)
+```@example MAIN
+using RecurrenceAnalysis, DynamicalSystemsBase
+
+# Create trajectory of Roessler system
+@inbounds function roessler_rule(u, p, t)
+    a, b, c = p
+    du1 = -u[2]-u[3]
+    du2 = u[1] + a*u[2]
+    du3 = b + u[3]*(u[1] - c)
+    return SVector(du1, du2, du3)
+end
+p0 = [0.15, 0.2, 10.0]
+u0 = ones(3)
+ro = CoupledODEs(roessler_rule, u0, p0)
+N = 2000; Δt = 0.05
+X, t = trajectory(ro, N*Δt; Δt, Ttr = 10.0)
+
+# Make a recurrence matrix with fixed threshold
+R = RecurrenceMatrix(X, 5.0)
+
+# Compute RQA measures
+rqa(R)
+```
+
 ### Classical RQA Measures
 ```@docs
 recurrencerate
@@ -63,8 +90,8 @@ Since most of the above functions can be fined tuned with keyword arguments, her
 
 | Argument  | Default   | Functions | Description |
 | --------  | --------  | --------- | -----------
-| `theiler` | 0 for `CrossRecurrenceMatrix`, 1 otherwise.  | `recurrencerate`<br/>`determinism`<br/>`*_average`<br/>`*_max`<br/>`*_entropy`<br/>`divergence`<br/>`trend`<br/>`laminarity`<br/>`trappingtime`<br/> `meanrecurrencetime`<br/>`nmprt` | Theiler window: number of diagonals around the LOI **excluded** from the analysis. The value `0` means that the LOI is _included_ in the analysis. Use `1` to exclude the LOI. |
-| `lmin`    | 2         | `determinism`<br/>`*_average`<br/>`*_max`<br/>`*_entropy`<br/>`divergence`<br/>`laminarity`<br/>`trappingtime`<br/> `meanrecurrencetime`<br/>`nmprt` | Minimum length of the recurrent structures (diagonal or vertical) considered in the analysis. |
+| `theiler` | 0 for `CrossRecurrenceMatrix`, 1 otherwise.  | `recurrencerate`, `determinism`, `*_average`, `*_max`, `*_entropy`, `divergence`, `trend`, `laminarity`, `trappingtime`,  `meanrecurrencetime`, `nmprt` | Theiler window: number of diagonals around the LOI **excluded** from the analysis. The value `0` means that the LOI is _included_ in the analysis. Use `1` to exclude the LOI. |
+| `lmin`    | 2         | `determinism`, `*_average`, `*_max`, `*_entropy`, `divergence`, `laminarity`, `trappingtime`,  `meanrecurrencetime`, `nmprt` | Minimum length of the recurrent structures (diagonal or vertical) considered in the analysis. |
 | `border`  | 10        | `trend`  | Number of diagonals excluded from the analysis near the border of the matrix. |
 
 ## Recurrence Structures Histograms
