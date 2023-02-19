@@ -1,3 +1,5 @@
+# This file tests the results of the RQA and RNA functions **analytically**
+
 using RecurrenceAnalysis, SparseArrays
 using Test, Statistics, LinearAlgebra
 

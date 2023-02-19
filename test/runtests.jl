@@ -1,8 +1,16 @@
 using RecurrenceAnalysis
 using Test
-using Downloads
+
+function testfile(file, testname=defaultname(file))
+    println("running test file $(file)")
+    @testset "$testname" begin; include(file); end
+    return
+end
+defaultname(file) = uppercasefirst(replace(splitext(basename(file))[1], '_' => ' '))
+
 
 # Download some test timeseries
+using Downloads
 tsfolder = joinpath(@__DIR__, "timeseries")
 todownload1 = ["$n.csv" for n in 1:4]
 todownload = ["test_time_series_lorenz_standard_N_10000_multivariate.csv", "test_time_series_roessler_N_10000_multivariate.csv"]
@@ -17,7 +25,7 @@ ti = time()
 
 @testset "RecurrenceAnalysis tests" begin
     include("dynamicalsystems.jl")
-    include("smallmatrix.jl")
+    include("rqa_rna_analytic.jl")
     include("skeletontest.jl")
     include("deprecations.jl")
 end
