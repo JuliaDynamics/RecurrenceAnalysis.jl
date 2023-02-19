@@ -1,4 +1,4 @@
-# RecurrenceAnalysis.jl News
+# RecurrenceAnalysis.jl changelog
 
 ## v2.0.0
 
