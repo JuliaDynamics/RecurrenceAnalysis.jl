@@ -6,7 +6,6 @@
 Supertype of all recurrence specification types. Instances of subtypes are given to
 [`RecurrenceMatrix`](@ref) and similar constructors to specify recurrences.
 
-
 Possible subtypes are:
 
 * `RecurrenceThreshold(ε::Real)`: Recurrences are defined as any point with distance

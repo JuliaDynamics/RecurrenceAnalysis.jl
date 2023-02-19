@@ -33,12 +33,13 @@ LocalRecurrenceRate
 
 
 ## Simple Recurrence Plots
-The recurrence matrices are internally stored as sparse matrices with boolean values. Typically in the literature one does not "see" the matrices themselves but instead a plot of them (hence "Recurrence Plots"). By default, when a Recurrence Matrix is created we "show" a mini plot of it which is a text-based scatterplot.
+The recurrence matrices are internally stored as sparse matrices with Boolean values. Typically in the literature one does not sees the plots of the matrices  (hence "Recurrence Plots"). By default, when a Recurrence Matrix is created we "show" a mini plot of it which is a text-based scatterplot.
 
 Here is an example recurrence plot/matrix of a full trajectory of the Roessler system:
 ```@example MAIN
 using RecurrenceAnalysis, DynamicalSystemsBase
 
+# Create trajectory of Roessler system
 @inbounds function roessler_rule(u, p, t)
     a, b, c = p
     du1 = -u[2]-u[3]
@@ -46,13 +47,13 @@ using RecurrenceAnalysis, DynamicalSystemsBase
     du3 = b + u[3]*(u[1] - c)
     return SVector(du1, du2, du3)
 end
-
 p0 = [0.15, 0.2, 10.0]
-u0 = ones[3]
+u0 = ones(3)
 ro = CoupledODEs(roessler_rule, u0, p0)
 N = 2000; Δt = 0.05
 X, t = trajectory(ro, N*Δt; Δt, Ttr = 10.0)
 
+# Make a recurrence matrix with fixed threshold
 R = RecurrenceMatrix(X, 5.0)
 recurrenceplot(R; ascii = true)
 ```
@@ -75,9 +76,7 @@ Here is the same plot but using Unicode Braille characters
 recurrenceplot(R; ascii = false)
 ```
 
-As you can see, the Unicode based plotting doesn't display nicely everywhere. It does display perfectly in e.g. VSCode, which is where it is the default printing type. Here is how it looks like in a dark background:
-
-![](rqaplot in Juno.PNG)
+As you can see, the Unicode based plotting doesn't display nicely everywhere. It does display perfectly in e.g. VSCode, which is where it is the default printing type.
 
 ## Advanced Recurrence Plots
 A text-based plot is cool, fast and simple. But often one needs the full resolution offered by the data of a recurrence matrix.
@@ -107,14 +106,16 @@ heatmap!(ax2, Rg; colormap = :grays)
 fig
 ```
 
-and here is exactly the same process, but using the embedded trajectory instead
+and here is exactly the same process, but using a delay embedded trajectory instead
 ```@example MAIN
-y = tr[:, 2]
+using DelayEmbeddings
+
+y = X[:, 2]
 τ = estimate_delay(y, "mi_min")
 m = embed(y, 3, τ)
-R = RecurrenceMatrix(m, 5.0; metric = "euclidean")
+E = RecurrenceMatrix(m, 5.0; metric = "euclidean")
 
-xs, ys = coordinates(R)
+xs, ys = coordinates(E)
 fig, ax = scatter(xs, ys; markersize = 1)
 ax.aspect = 1
 fig
@@ -145,7 +146,7 @@ skeletonize
 
 Consider, e.g. a skeletonized version of a simple sinusoidal:
 ```@example MAIN
-using RecurrenceAnalysis, DynamicalSystemsBase, CairoMakie
+using RecurrenceAnalysis, DelayEmbeddings, CairoMakie
 
 data = sin.(2*π .* (0:400)./ 60)
 Y = embed(data, 3, 15)
@@ -165,45 +166,9 @@ fig
 This way spurious diagonal lines get removed from the recurrence matrix, which
 would otherwise effect the quantification based on these lines.
 
-## Example
-
-In the following we will plot recurrence plots of the Lorenz system for a periodic and chaotic regime (using scatter plot).
-
-```@example MAIN
-using RecurrenceAnalysis, DynamicalSystemsBase, CairoMakie
-lor = Systems.lorenz()
-fig = Figure(resolution = (1000,600))
-
-for (i, ρ) in enumerate((69.75, 28.0))
-    set_parameter!(lor, 2, ρ)
-    t, Δt = 20.0, 0.01
-    tr = trajectory(lor, t; Δt, Ttr = 2000.0)
-    tvec = 0:Δt:t
-
-    ax = Axis(fig[1, i]; title = "ρ = $ρ, " * (i != 1 ? "not periodic" : "periodic"))
-    lines!(ax, tr[:, 1], tr[:, 3]; color = Cycled(i), label = "X vs Z")
-    axislegend(ax)
-
-    ε = i == 1 ? 5.0 : 3.0
-    R = RecurrenceMatrix(tr, ε)
-
-    ax = Axis(fig[2, i])
-    ax.xlabel = "t"
-    i == 1 && (ax.ylabel = "t")
-    x, y = coordinates(R)
-    scatter!(ax, tvec[x], tvec[y]; markersize = 1, color = Cycled(i))
-    ax.limits = ((0, t), (0, t))
-    ax.aspect = 1
-end
-fig
-```
-
-On the left we see long (infinite) diagonals repeated over and over for different times. This is the case for periodic systems as they visit exactly the same area on the phase space again and again. The distance between the offset diagonals also coincides with the periodicity of the system, which is around `t ≈ 4`.
-
-On the right we see a structure typical of chaotic motion on a strange attractor such as the one of the Lorenz system: the orbit visits neighborhoods of previous points but then quickly diverges again. This results in many small diagonal lines.
-
-## Distances
+## Distance matrix
 The distance function used in [`RecurrenceMatrix`](@ref) and co. can be specified either as any `Metric` instance from [`Distances`](https://github.com/JuliaStats/Distances.jl). In addition, the following function returns a matrix with the cross-distances across all points in one or two trajectories:
+
 ```@docs
 distancematrix
 ```

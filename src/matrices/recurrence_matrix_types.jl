@@ -1,7 +1,8 @@
 ################################################################################
 # AbstractRecurrenceMatrix type hierarchy
 ################################################################################
-abstract type AbstractRecurrenceMatrix{RT <: AbstractRecurrenceType} end
+# TODO: `RT` is `AbstractRecurrenceType`, but due to deprecations, it is allowed
+abstract type AbstractRecurrenceMatrix{RT} end
 const ARM = AbstractRecurrenceMatrix
 
 # The recurrence type is included as a field in all matrix types,
