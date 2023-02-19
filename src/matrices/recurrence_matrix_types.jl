@@ -83,11 +83,13 @@ SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 # Documentation strings and dispatch to `recurrence_matrix`
 ################################################################################
 """
-    RecurrenceMatrix(x, ε::Real; metric = Euclidean(), parallel::Bool)
+    RecurrenceMatrix(x, ε; metric = Euclidean(), parallel::Bool)
 
 Create a recurrence matrix from trajectory `x` (either a `Dataset` or a `Vector`)
-and with recurrence distance threshold `ε`.
-Instead of `ε::Real`, you can specify an `AbstractRecurrenceType`, see the method below.
+and with recurrence threshold specification `ε`.
+
+If `ε::Real` is given, a [`RecurrenceThreshold`](@ref) is used to specify recurrences.
+Otherwise, any subtype of [`AbstractRecurrenceType`](@ref) may be given as `ε` instead.
 
 The keyword `metric`, if given, must be any subtype of `Metric` from
 [Distances.jl](https://github.com/JuliaStats/Distances.jl)
@@ -98,6 +100,7 @@ The keyword `parallel` decides if the comptutation should be done in parallel us
 Defaults to `length(x) > 500 && Threads.nthreads() > 1`.
 
 ## Description
+
 A (cross-)recurrence matrix is a way to quantify *recurrences* that occur in a trajectory.
 A recurrence happens when a trajectory visits the same neighborhood on the state space that
 it was at some previous time.
@@ -106,7 +109,7 @@ The recurrence matrix is a numeric representation of a recurrence plot,
 described in detail in [^Marwan2007] and [^Marwan2015]. It represents a
 a sparse square matrix of Boolean values that quantifies recurrences in the trajectory,
 i.e., points where the trajectory returns close to itself.
-Given trajectories `x, y`, the matrix is defined as:
+Given trajectories `x, y`, and asumming `ε isa Real`, the matrix is defined as:
 
 ```julia
 R[i,j] = metric(x[i], y[i]) ≤ ε ? true : false
@@ -147,13 +150,6 @@ function RecurrenceMatrix(x, ε::Real;
     return RecurrenceMatrix(x, rt; kwargs...)
 end
 
-"""
-    RecurrenceMarix(x, recurrence_type::AbstractRecurrenceType; metric, parallel)
-Use this method to specify with more options how recurrences are identified and counted.
-`metric, parallel` are as in the above method.
-
-See [`AbstractRecurrenceType`](@ref) for the possible subtypes.
-"""
 function RecurrenceMatrix(x, rt::AbstractRecurrenceType; metric = Euclidean(),
         parallel::Bool = length(x) > 500 && Threads.nthreads() > 1
     )

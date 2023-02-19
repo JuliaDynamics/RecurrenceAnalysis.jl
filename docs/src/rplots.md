@@ -21,8 +21,14 @@ CrossRecurrenceMatrix
 JointRecurrenceMatrix
 ```
 
+## Advanced recurrences specification
+
 ```@docs
-RecurrenceMatrix(::Any, ::AbstractRecurrenceType)
+AbstractRecurrenceType
+RecurrenceThreshold
+RecurrenceThresholdScaled
+GlobalRecurrenceRate
+LocalRecurrenceRate
 ```
 
 
