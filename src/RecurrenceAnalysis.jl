@@ -14,9 +14,12 @@ using Distances, Statistics, LinearAlgebra, SparseArrays
 
 const DEFAULT_METRIC = Euclidean()
 
+# recurrence_specification.jl
+export AbstractRecurrenceType, RecurrenceThreshold, RecurrenceThresholdScaled,
+    GlobalRecurrenceRate, LocalRecurrenceRate, recurrence_threshold
+
+
 export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix
-export RecurrenceThreshold, RecurrenceThresholdScaled,
-    GlobalRecurrenceRate, LocalRecurrenceRate
 
 export embed,
        reconstruct,
@@ -45,7 +48,9 @@ export embed,
 
 
 include("matrices/distance_matrix.jl")
-include("matrices/matrices.jl")
+include("matrices/recurrence_specification.jl")
+include("matrices/recurrence_matrix_types.jl")
+include("matrices/recurrence_matrix_low.jl")
 include("matrices/plot.jl")
 include("matrices/skeletonization.jl")
 include("rqa/histograms.jl")
