@@ -12,9 +12,9 @@ Possible subtypes are:
   `≤ ε` from the referrence point.
 * `RecurrenceThresholdScaled(ratio::Real, scale::Function)`: Here `scale` is a function
   of the distance matrix `dm` (see [`distancematrix`](@ref)) that is used
-  to scale the value of the recurrence threshold `ε` so that `ε = ratio*scale(dm)`,
-  with `ratio` ∈ (0, 1). After the new `ε` is obtained, the method works
-  just like the `RecurrenceThreshold`.
+  to scale the value of the recurrence threshold `ε` so that `ε = ratio*scale(dm)`.
+  After the new `ε` is obtained, the method works just like the `RecurrenceThreshold`.
+  Specialized versions are employed if `scale` is `mean` or `maximum`.
 * `GlobalRecurrenceRate(ratio::Real)`: Here the number of total recurrence rate over the whole
   matrix (see [`recurrencerate`](@ref) is specified to be a `ratio` ∈ (0,1). This means that
   a distance threshold `ε` will be calculated such that there is a fixed `ratio` of
@@ -118,7 +118,7 @@ function _computescale(scale::Function, x, y, metric)
     return scale(distances)
 end
 # specific methods to avoid `distancematrix`
-function _computescale(scale::typeof(maximum), x, y, metric::Metric)
+function _computescale(::typeof(maximum), x, y, metric::Metric)
     maxvalue = zero(eltype(x))
     if x===y
         @inbounds for i in 1:length(x)-1, j=(i+1):length(x)
@@ -133,7 +133,7 @@ function _computescale(scale::typeof(maximum), x, y, metric::Metric)
     end
     return maxvalue
 end
-function _computescale(scale::typeof(mean), x, y, metric::Metric)
+function _computescale(::typeof(mean), x, y, metric::Metric)
     meanvalue = 0.0
     if x===y
         @inbounds for i in 1:length(x)-1, j=(i+1):length(x)
