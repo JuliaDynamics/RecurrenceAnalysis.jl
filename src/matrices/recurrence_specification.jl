@@ -5,6 +5,7 @@
     AbstractRecurrenceType
 Supertype of all recurrence specification types. Instances of subtypes are given to
 [`RecurrenceMatrix`](@ref) and similar constructors to specify recurrences.
+Use [`recurrence_threshold`](@ref) to extract the numeric distance threshold.
 
 Possible subtypes are:
 
@@ -72,12 +73,17 @@ end
 # Resolving the recurrence threshold and/or scaling
 ################################################################################
 """
-    recurrence_threshold(rt::AbstractRecurrenceType, x [, y], metric) → ε
-Return the calculated threshold `ε` for `rt`. The output is real, unless
+    recurrence_threshold(rt::AbstractRecurrenceType, x [, y] [, metric]) → ε
+Return the calculated distance threshold `ε` for `rt`. The output is real, unless
 `rt isa LocalRecurrenceRate`, where `ε isa Vector`.
 """
-recurrence_threshold(rt, x, metric::Metric) =
+recurrence_threshold(rt, x::Array_or_SSSet, metric::Metric) =
     recurrence_threshold(rt, x, x, metric)
+recurrence_threshold(rt, x::Array_or_SSSet, y::Array_or_SSSet) =
+    recurrence_threshold(rt, x, y, Euclidean())
+recurrence_threshold(rt, x::Array_or_SSSet) =
+    recurrence_threshold(rt, x, x, Euclidean())
+
 recurrence_threshold(rt::Real, x, y, metric) = rt
 recurrence_threshold(rt::RecurrenceThreshold, x, y, metric) = rt.ε
 function recurrence_threshold(rt::RecurrenceThresholdScaled, x, y, metric)
@@ -106,16 +112,7 @@ end
 
 
 function _computescale(scale::Function, x, y, metric)
-    if x===y
-        distances = zeros(Int(length(x)*(length(x)-1)/2), 1)
-        c = 0
-        @inbounds for i in 1:length(x)-1, j=(i+1):length(x)
-            distances[c+=1] = evaluate(metric, x[i], y[j])
-        end
-    else
-        distances = distancematrix(x, y, metric)
-    end
-    return scale(distances)
+    return scale(distancematrix(x, y, metric))
 end
 # specific methods to avoid `distancematrix`
 function _computescale(::typeof(maximum), x, y, metric::Metric)

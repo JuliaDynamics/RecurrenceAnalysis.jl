@@ -10,6 +10,8 @@ end RecurrenceAnalysis
 using Reexport
 @reexport using StateSpaceSets
 
+Array_or_SSSet = Union{AbstractArray{<:Real}, AbstractStateSpaceSet}
+
 using Distances, Statistics, LinearAlgebra, SparseArrays
 
 const DEFAULT_METRIC = Euclidean()
