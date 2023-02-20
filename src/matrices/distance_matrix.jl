@@ -13,21 +13,14 @@ The data point dimensions (or number of columns) must be the same for `x` and `y
 The returned value is a `n×m` matrix, with `n` being the length (or number of rows)
 of `x`, and `m` the length of `y`.
 
-The metric can be identified by a string, or any of the `Metric`s defined in
-the [`Distances` package](https://github.com/JuliaStats/Distances.jl).
-The list of strings available to define the metric are:
-
-* `"max"` or `"inf"` for the maximum or L∞ norm
-  (`Chebyshev()` in the `Distances` package).
-* `"euclidean"` for the L2 or Euclidean norm, used by default
-  (`Euclidean()` in `Distances`).
-* `"manhattan"`, `"cityblock"`, `"taxicab"` or `"min"` for the Manhattan or L1 norm
-  (`Cityblock()` in `Distances`).
+The metric can be any of the `Metric`s defined in
+the [`Distances` package](https://github.com/JuliaStats/Distances.jl)
+and defaults to `Euclidean()`.
 """
 distancematrix(x, metric::Union{Metric,String}=DEFAULT_METRIC, parallel = size(x)[1] > 500) = _distancematrix(x, getmetric(metric), Val(parallel))
 
 # For 1-dimensional arrays (vectors), the distance does not depend on the metric
-distancematrix(x::Vector, y::Vector, metric=DEFAULT_METRIC, parallel = size(x)[1] > 500) = abs.(x .- y')
+distancematrix(x::AbstractVector{<:Real}, y::AbstractVector{<:Real}, metric=DEFAULT_METRIC, parallel = size(x)[1] > 500) = abs.(x .- y')
 
 # If the metric is supplied as a string, get the corresponding Metric from Distances
 distancematrix(x, y, metric::String, parallel = size(x)[1] > 500) = distancematrix(x, y, getmetric(metric), parallel)
@@ -106,8 +99,8 @@ end
 function _distancematrix(x::Vector{T}, metric::Metric, ::Val{false}) where T
     d = zeros(T, length(x), length(x))
 
-    for j in eachindex(x)
-        for i in 1:j
+    for j in 2:length(x)
+        for i in 1:j-1
             @inbounds d[i, j] = abs(x[i] - x[j])
         end
     end
@@ -119,8 +112,8 @@ end
 function _distancematrix(x::AbstractDataset{S, T}, metric::Metric, ::Val{false}) where T where S
     d = zeros(T, length(x), length(x))
 
-    for j in eachindex(x)
-        for i in 1:j
+    for j in 2:length(x)
+        for i in 1:j-1 # all else is zero
             @inbounds d[i, j] = evaluate(metric, x[i], x[j])
         end
     end
