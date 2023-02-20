@@ -78,16 +78,10 @@ function recurrenceplot(io::IO, R::Union{ARM,SparseMatrixCSC}; minh = 25, maxh =
         end
     end
 
-    # TODO: Change limits to tuples instead of arrays
     UnicodePlots.scatterplot(
         is, js; xlim = [1, n], ylim = [1, m], title = summary(R), labels = false,
         color = :cyan, width = w, height = h, asciidef..., kwargs...
     )
-end
-
-function Base.show(io::IO, ::MIME"text/plain", R::ARM)
-    a = recurrenceplot(io, R)
-    show(io, a)
 end
 
 #########################################

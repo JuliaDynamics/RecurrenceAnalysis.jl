@@ -1,9 +1,13 @@
-# RecurrenceAnalysis.jl
+[![](https://img.shields.io/badge/docs-dev-lightblue.svg)](https://JuliaDynamics.github.io/RecurrenceAnalysis.jl/dev)
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaDynamics.github.io/RecurrenceAnalysis.jl/stable)
+[![CI](https://github.com/JuliaDynamics/RecurrenceAnalysis.jl/workflows/CI/badge.svg)](https://github.com/JuliaDynamics/RecurrenceAnalysis.jl/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/JuliaDynamics/RecurrenceAnalysis.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaDynamics/RecurrenceAnalysis.jl)
+[![Package Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/RecurrenceAnalysis)](https://pkgs.genieframework.com?packages=RecurrenceAnalysis)
 
-![DynamicalSystems.jl logo: The Double Pendulum](https://i.imgur.com/nFQFdB0.gif)
+A Julia module that offers tools for computing Recurrence Plots and exploring them within the framework of Recurrence Quantification Analysis and Recurrence Network Analysis.
+It can be used as a standalone package, or as part of
+[DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.jl/dev/).
 
-[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://JuliaDynamics.github.io/DynamicalSystems.jl/dev) [![CI](https://github.com/JuliaDynamics/Agents.jl/workflows/CI/badge.svg)](https://github.com/JuliaDynamics/Agents.jl/actions?query=workflow%3ACI) [![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/JuliaDynamics/Lobby)
+To install it, run `import Pkg; Pkg.add("RecurrenceAnalysis")`.
 
-`RecurrenceAnalysis`, which is one of the packages composing **DynamicalSystems.jl** (but can well be used as a stand-alone), offers tools for computing Recurrence Plots and exploring them within the framework of Recurrence Quantification Analysis.
-
-For more details please see our detailed [documentation pages](https://juliadynamics.github.io/DynamicalSystems.jl/dev/contents/#Recurrence-Analysis).
+All further information is provided in the documentation, which you can either find [online](https://juliadynamics.github.io/RecurrenceAnalysis.jl/dev/) or build locally by running the `docs/make.jl` file.

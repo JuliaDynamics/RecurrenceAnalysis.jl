@@ -3,6 +3,10 @@
 *.jl.*.cov
 *.jl.mem
 Manifest.toml
+*docs/build
+*.scss
+*.css
+*style.jl
 
 RP_gross.csv
 

@@ -1,12 +1,15 @@
+# This file tests the results of the RQA and RNA functions **analytically**
+
 using RecurrenceAnalysis, SparseArrays
-using Test, Statistics, LinearAlgebra, DelimitedFiles
+using Test, Statistics, LinearAlgebra
 
 cells = [(1,1),(2,2),(3,2),(6,2),(7,2),(8,2),(6,3),(7,3),(10,3),(2,4),(4,4),
     (1,5),(2,5),(3,5),(5,5),(9,5),(10,5),(2,6),(3,6),(6,6),(7,6),(10,6),
     (3,7),(8,7),(4,8),(1,9),(5,9),(7,9),(9,9),(9,10),(10,10),(3,11),(7,11)]
 i = [x[1] for x in cells]
 j = [x[2] for x in cells]
-rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))))
+rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))), RecurrenceThreshold(0))
+
 ### Graph of the recurrence matrix:
 ## · : non-recurrent (white) points
 ## x : recurrent (black) points
@@ -124,15 +127,18 @@ end
 ## Recurrence network
 @testset "Recurrence networks" begin
     # 7 edges, 12 linked triples, 1 triangle (1-2-4)
-    adjmat7 =  [0 1 0 1 0 0
+    adjmat7 =  sparse(Bool[0 1 0 1 0 0
                 1 0 1 1 1 0
                 0 1 0 0 0 0
                 1 1 0 0 0 1
                 0 1 0 0 0 1
-                0 0 0 1 1 0]
-    rna_dict = rna(RecurrenceMatrix(adjmat7))
+                0 0 0 1 1 0])
+
+    rmat = RecurrenceMatrix{RecurrenceThreshold}(adjmat7, RecurrenceThreshold(0))
+    rna_dict = rna(rmat)
     @test rna_dict[:density] == 7/15
     @test rna_dict[:transitivity] == 0.25 # (3/12)
+
     # taken from Donner et al. https://doi.org/10.1088/1367-2630/12/3/033025
     adjmat10 = [0 0 0 1 0 0 0 1 0 0
                 0 0 0 0 1 0 0 0 1 0
@@ -154,11 +160,13 @@ end
                 1 2 5 2 1 4 3 0 3 4
                 4 1 2 5 2 1 4 3 0 3
                 3 4 1 2 5 2 1 4 3 0]
-    rna_dict = rna(RecurrenceMatrix(adjmat10))
+    rmat = RecurrenceMatrix{RecurrenceThreshold}(adjmat10, RecurrenceThreshold(0))
+    rna_dict = rna(rmat)
     @test rna_dict[:density] == 2/9
     @test rna_dict[:transitivity] == 0
     @test rna_dict[:averagepath] ≈ sum(dismat10) / (10*9)
     @test rna_dict[:diameter] == maximum(dismat10)
+
     adjmat9 =  [0 0 0 0 1 0 0 1 1
                 0 0 0 0 0 1 0 0 1
                 0 0 0 1 0 0 1 0 0
@@ -177,13 +185,16 @@ end
                 3 2 1 5 2 1 0 4 3
                 1 2 3 1 2 3 4 0 2
                 1 1 2 3 1 2 3 2 0]
-    rna_dict = rna(RecurrenceMatrix(adjmat9))
+
+    rmat = RecurrenceMatrix{RecurrenceThreshold}(adjmat9, RecurrenceThreshold(0))
+    rna_dict = rna(rmat)
     triples = [3, 1, 1, 6, 10, 0, 3, 6, 6]
     triangles = [3, 0, 1, 3, 5, 0, 2, 4, 3]
     @test rna_dict[:density] == 7/18
     @test rna_dict[:transitivity] ≈ sum(triangles) / sum(triples)
     @test rna_dict[:averagepath] ≈ sum(dismat9) / (9*8)
     @test rna_dict[:diameter] == maximum(dismat9)
+
     adjmat11 = [0 0 0 1 0 0 0 1 0 0
                 0 0 0 0 1 0 0 0 1 0
                 0 0 0 0 0 1 0 0 0 0
@@ -204,7 +215,9 @@ end
                  1 2 5 2 1 4 3 0 3 Inf
                  4 1 2 5 2 1 6 3 0 Inf
                  Inf Inf Inf Inf Inf Inf Inf Inf Inf 0]
-    rna_dict = rna(RecurrenceMatrix(adjmat11))
+
+    rmat = RecurrenceMatrix{RecurrenceThreshold}(adjmat11, RecurrenceThreshold(0))
+    rna_dict = rna(rmat)
     @test !isinf(rna_dict[:averagepath])
     @test rna_dict[:averagepath] ≈ sum(dismat11[1:9,1:9]) / (9*10)
 end

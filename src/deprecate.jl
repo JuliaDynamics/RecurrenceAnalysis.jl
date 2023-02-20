@@ -1,3 +1,26 @@
+export @windowed
+macro windowed(ex, options...)
+    error("""
+    The `@windowed` macro is removed. It was some incredibly complicated 250 lines of code
+    that offer little to no benefit. Instead of using this macro, write a trivial loop over
+    a view of a recurrence matrix. E.g., replace
+    ```julia
+    rmat = RecurrenceMatrix(...)
+    @windowed determinism(rmat, theiler=2, lmin=3) width=1000 step=100
+    ```
+    with
+    ```julia
+    width = 1000
+    step = 100
+    windows = 1:step:(size(rmat, 1)-width)
+    map(1:length(windows)) do i
+        rmat_view = view(rmat, windows[i]:(windows[i]+width), windows[i]:(windows[i]+width))
+        determinism(rmat_view; theiler=2, lmin=3)
+    end
+    ```
+    """)
+end
+
 for T in (:WithinRange, :NeighborNumber)
     @eval function RecurrenceMatrix{$T}(x::AbstractMatrix, ε; kwargs...)
         @warn string("`RecurrenceMatrix{", $T, "}(x::AbstractMatrix, ε; kwargs...)` is deprecated, use `RecurrenceMatrix{", $T, "}(Dataset(x), ε; kwargs...)`")
@@ -93,14 +116,39 @@ const METRICS = Dict(
     "cityblock"=>Cityblock(),
     "manhattan"=>Cityblock(),
     "taxicab"=>Cityblock(),
-    "min"=>Cityblock()
+    "min"=>Cityblock(),
 )
 getmetric(m::Metric) = m
 function getmetric(normtype::AbstractString)
-    @warn "specifying metric with strings is deprecated! "*
+    @warn "Specifying metric with strings is deprecated! "*
     "Use a formal instance of a `Metric` from Distances.jl, e.g., `Euclidean()`."
     normtype = lowercase(normtype)
-    !haskey(METRICS,normtype) && error("incorrect norm type. Accepted values are \""
+    !haskey(METRICS, normtype) && error("incorrect norm type. Accepted values are \""
         *join(keys(METRICS),"\", \"", "\" or \"") * "\".")
     METRICS[normtype]
+end
+
+################################################################################
+# TODO: Deprecations of old recurrence matrix interface
+################################################################################
+const FAN = NeighborNumber
+export WithinRange, NeighborNumber, FAN
+
+# OLD KEYWORD ARGUMENTS in `RecurrenceMatrix`: scale, fixedrate.
+function RecurrenceMatrix{FAN}(x, ε; fixedrate = true, metric = Euclidean(), parallel = false)
+    @warn "Specifying `RecurrenceMatrix{FAN}` is deprecated! Use `LocalRecurrenceRate`."
+    rt = LocalRecurrenceRate(ε)
+    return RecurrenceMatrix(x, rt; metric, parallel)
+end
+
+function CrossRecurrenceMatrix{FAN}(x, y, ε; fixedrate = true, metric = Euclidean(), parallel = false)
+    @warn "Specifying `CrossRecurrenceMatrix{FA}` is deprecated! Use `LocalRecurrenceRate`."
+    rt = LocalRecurrenceRate(ε)
+    return CrossRecurrenceMatrix(x, y, rt; metric, parallel)
+end
+
+function _computescale(scale::Real, args...)
+    @warn "specifying `scale` as a number is deprecated because its pointless. "*
+    "Use a modified `ε = ε*scale` instead..."
+    return scale
 end

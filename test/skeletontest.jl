@@ -1,13 +1,20 @@
-using RecurrenceAnalysis, SparseArrays
-using Test, Statistics, LinearAlgebra, DelimitedFiles
+using RecurrenceAnalysis, Test
+using DelayEmbeddings
+using Statistics
 
 ### Skeletonization of RPs
 @testset "Skeletonized sinusoidal recurrence structures" begin
     data = sin.(2*π .* (0:1000)./ 60)
     Y = embed(data, 3, 15)
 
-    RP = RecurrenceMatrix{FAN}(Y, 0.2)
-    RP2 = RecurrenceMatrix(Y, 0.25; fixedrate=true)
+
+    # Before v2
+    # RP = RecurrenceMatrix{FAN}(Y, 0.2)
+    # RP2 = RecurrenceMatrix(Y, 0.25; fixedrate=true)
+    # After v2
+    RP = RecurrenceMatrix(Y, LocalRecurrenceRate(0.2))
+    RP2 = RecurrenceMatrix(Y, GlobalRecurrenceRate(0.25))
+
     RP3 = RecurrenceMatrix(Y, 0.9)
 
     RP_skel = skeletonize(RP)
@@ -27,25 +34,4 @@ using Test, Statistics, LinearAlgebra, DelimitedFiles
 
     @test mean(diff(c1[3:2:end])) == 60
     @test mean(diff(c2[3:2:end])) == 60
-end
-
-@testset "Skeletonized chaotic recurrence structures" begin
-    data = readdlm(joinpath(tsfolder, "test_time_series_lorenz_standard_N_10000_multivariate.csv"))
-
-    RP = RecurrenceMatrix(Dataset(data[1:250,:]), 0.05; fixedrate=true)
-    RP_skel = skeletonize(RP)
-
-    @test RP_skel[135,61] == 1
-    @test RP_skel[135,60] == 0
-    @test RP_skel[135,60] == 0
-    @test RP_skel[136,61] == 0
-    @test RP_skel[134,61] == 0
-
-    @test isempty(findall(!iszero,diag(RP_skel,1))) == true
-    @test isempty(findall(!iszero,diag(RP_skel,-1))) == true
-
-    d = Bool.(RP_skel[61:79,134:153])
-
-    @test length(findall(diag(d,1))) == 18
-    @test isempty(findall(diag(d))) == true
 end

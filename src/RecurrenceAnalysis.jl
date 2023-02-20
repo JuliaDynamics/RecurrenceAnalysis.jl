@@ -1,14 +1,32 @@
 module RecurrenceAnalysis
 
-using Distances, Statistics, LinearAlgebra, SparseArrays, DelayEmbeddings, StaticArrays
+# Use the README as the module docs
+@doc let
+    path = joinpath(dirname(@__DIR__), "README.md")
+    include_dependency(path)
+    read(path, String)
+end RecurrenceAnalysis
+
+using Reexport
+@reexport using StateSpaceSets
+
+Array_or_SSSet = Union{AbstractArray{<:Real}, AbstractStateSpaceSet}
+Vector_or_SSSet = Union{AbstractVector{<:Real}, AbstractStateSpaceSet}
+
+using Distances, Statistics, LinearAlgebra, SparseArrays
 
 const DEFAULT_METRIC = Euclidean()
 
-export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix,
-       AbstractRecurrenceMatrix, WithinRange, NeighborNumber, FAN
+# recurrence_specification.jl
+export AbstractRecurrenceType, RecurrenceThreshold, RecurrenceThresholdScaled,
+    GlobalRecurrenceRate, LocalRecurrenceRate, recurrence_threshold
+
+
+export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix
 
 export embed,
        reconstruct,
+       recurrence_threshold,
        Dataset,
        distancematrix,
        textrecurrenceplot,
@@ -28,20 +46,22 @@ export embed,
        rqa,
        sorteddistances,
        skeletonize,
-       @windowed,
+       windowed,
        rna
 
-
 include("matrices/distance_matrix.jl")
-include("matrices/matrices.jl")
+include("matrices/recurrence_specification.jl")
+include("matrices/recurrence_matrix_types.jl")
+include("matrices/recurrence_matrix_low.jl")
 include("matrices/plot.jl")
 include("matrices/skeletonization.jl")
 include("rqa/histograms.jl")
 include("rqa/rqa.jl")
 include("rqa/radius.jl")
+include("rqa/windowed_function.jl")
 include("rna/graphs.jl")
 include("rna/rna.jl")
-include("rqa/windowed.jl")
+# include("rqa/windowed.jl") # this is removed!!!
 include("deprecate.jl")
 
 end
