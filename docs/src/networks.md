@@ -30,13 +30,13 @@ henon_rule(x, p, n) = SVector(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
 u0 = zeros(2)
 p0 = [1.4, 0.3]
 henon = DeterministicIteratedMap(henon_rule, u0, p0)
-X, t = trajectory(he, 200)
+X, t = trajectory(henon, 200)
 # Cast it into a recurrence network
 R = RecurrenceMatrix(X, 0.25; metric = Chebyshev())
 network = SimpleGraph(R)
 ```
 
-There are various plotting tools that can be used to visualize such graphs. For instance, the following plot made with the package [GraphMakie.jl](https://github.com/JuliaPlots/GraphMakie.jl).
+There are various plotting tools that can be used to visualize such graphs. For instance, the following plot made with the package [GraphMakie.jl](https://github.com/MakieOrg/GraphMakie.jl).
 
 ```@example MAIN
 using GraphMakie, CairoMakie
