@@ -19,7 +19,7 @@ Return a sparse matrix which encodes recurrence points.
 
 This is the low-level method that makes the matrices, and it is not part of the public API.
 """
-function recurrence_matrix(xx::AbstractDataset, yy::AbstractDataset, metric::Metric, ε, ::Val{false})
+function recurrence_matrix(xx::Vector_or_SSSet, yy::Vector_or_SSSet, metric::Metric, ε, ::Val{false})
     x = xx.data
     y = yy.data
     @assert ε isa Real || length(ε) == length(y)
@@ -39,45 +39,8 @@ function recurrence_matrix(xx::AbstractDataset, yy::AbstractDataset, metric::Met
     return sparse(rowvals, colvals, nzvals, length(x), length(y))
 end
 
-# Vector version can be more specialized (and metric is irrelevant)
-function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric::Metric, ε, ::Val{false})
-    @assert ε isa Real || length(ε) == length(y)
-    rowvals = Vector{Int}()
-    colvals = Vector{Int}()
-    for j in eachindex(y)
-        nzcol = 0
-        for i in eachindex(x)
-            if @inbounds abs(x[i] - y[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
-                push!(rowvals, i)
-                nzcol += 1
-            end
-        end
-        append!(colvals, fill(j, (nzcol,)))
-    end
-    nzvals = fill(true, (length(rowvals),))
-    return sparse(rowvals, colvals, nzvals, length(x), length(y))
-end
-
 # For one dataset
-function recurrence_matrix(x::AbstractVector, metric::Metric, ε, ::Val{false})
-    @assert ε isa Real || length(ε) == length(y)
-    rowvals = Vector{Int}()
-    colvals = Vector{Int}()
-    for j in eachindex(x)
-        nzcol = 0
-        for i in 1:j
-            if @inbounds abs(x[i] - x[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
-                push!(rowvals, i)
-                nzcol += 1
-            end
-        end
-        append!(colvals, fill(j, (nzcol,)))
-    end
-    nzvals = fill(true, (length(rowvals),))
-    return Symmetric(sparse(rowvals, colvals, nzvals, length(x), length(x)), :U)
-end
-
-function recurrence_matrix(xx::AbstractDataset, metric::Metric, ε, ::Val{false})
+function recurrence_matrix(xx::Vector_or_SSSet, metric::Metric, ε, ::Val{false})
     x = xx.data
     @assert ε isa Real || length(ε) == length(y)
     rowvals = Vector{Int}()
