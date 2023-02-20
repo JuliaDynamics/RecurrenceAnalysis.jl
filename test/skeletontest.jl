@@ -1,5 +1,4 @@
-using RecurrenceAnalysis, SparseArrays
-using Test, Statistics, LinearAlgebra, DelimitedFiles
+using RecurrenceAnalysis, Test
 
 ### Skeletonization of RPs
 @testset "Skeletonized sinusoidal recurrence structures" begin
