@@ -5,6 +5,7 @@
 # This file DOES NOT need to test RQA measures. This happens elsewhere!
 
 using RecurrenceAnalysis, Test
+using Distances: Chebyshev
 
 t = range(0, 2π; length = 20) # length is crucial and decides distance and thresholds
 c = cos.(t)
@@ -32,6 +33,21 @@ neighbors = count(<(threshold), dmat)
 
     @test rmat == RecurrenceMatrix(X, RecurrenceThreshold(ε))
 
+end
+
+@testset "more fixed RR" begin
+    # max radius
+    ε = maxthres
+    rmat = RecurrenceMatrix(X, ε; parallel = false)
+    @test count(rmat) == length(X)*length(X)
+
+    # Different metric
+    metric = Chebyshev()
+    # due to the symmetry of the circle, the chebysven metric can only slightly
+    # increase the recurrences, but really not much!
+    ε = threshold
+    rmat = RecurrenceMatrix(X, ε; metric)
+    @test neighbors ≤ count(rmat) ≤ 1.05neighbors
 end
 
 @testset "Scaled fixed RR" begin
