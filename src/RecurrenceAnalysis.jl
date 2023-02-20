@@ -46,8 +46,8 @@ export embed,
        rqa,
        sorteddistances,
        skeletonize,
+       windowed,
        rna
-
 
 include("matrices/distance_matrix.jl")
 include("matrices/recurrence_specification.jl")
@@ -58,6 +58,7 @@ include("matrices/skeletonization.jl")
 include("rqa/histograms.jl")
 include("rqa/rqa.jl")
 include("rqa/radius.jl")
+include("rqa/windowed_function.jl")
 include("rna/graphs.jl")
 include("rna/rna.jl")
 # include("rqa/windowed.jl") # this is removed!!!

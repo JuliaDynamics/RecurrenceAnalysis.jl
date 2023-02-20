@@ -2,7 +2,7 @@
 
 ## v2.0.0
 
-- [**BREAKING**] The `@windowed` macro is removed. It was some incredibly complicated 250 lines of code that offer little to no benefit. Instead of using this macro, write a trivial loop over a view of a recurrence matrix. E.g., replace
+- [**BREAKING**] The `@windowed` macro is removed. It was some incredibly complicated 250 lines of code that offer little benefit. Instead of using this macro, use the new `windowed` function. It does something simple: replaces
   ```julia
   rmat = RecurrenceMatrix(...)
   @windowed determinism(rmat, theiler=2, lmin=3) width=1000 step=100

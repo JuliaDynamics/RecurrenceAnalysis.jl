@@ -100,3 +100,8 @@ You can access these values directly with the following function:
 ```@docs
 recurrencestructures
 ```
+
+## Windowed application
+```@docs
+windowed
+```
