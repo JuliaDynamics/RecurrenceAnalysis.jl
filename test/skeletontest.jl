@@ -1,12 +1,20 @@
 using RecurrenceAnalysis, Test
+using DelayEmbeddings
+using Statistics
 
 ### Skeletonization of RPs
 @testset "Skeletonized sinusoidal recurrence structures" begin
     data = sin.(2*π .* (0:1000)./ 60)
     Y = embed(data, 3, 15)
 
-    RP = RecurrenceMatrix{FAN}(Y, 0.2)
-    RP2 = RecurrenceMatrix(Y, 0.25; fixedrate=true)
+
+    # Before v2
+    # RP = RecurrenceMatrix{FAN}(Y, 0.2)
+    # RP2 = RecurrenceMatrix(Y, 0.25; fixedrate=true)
+    # After v2
+    RP = RecurrenceMatrix(Y, LocalRecurrenceRate(0.2))
+    RP2 = RecurrenceMatrix(Y, GlobalRecurrenceRate(0.25))
+
     RP3 = RecurrenceMatrix(Y, 0.9)
 
     RP_skel = skeletonize(RP)

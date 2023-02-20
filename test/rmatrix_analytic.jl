@@ -105,7 +105,7 @@ end
         # TODO: It doesn't work
         # @test all(i -> d[i] ≈ d[i+1], 1:length(d) - 1)
         rmat = RecurrenceMatrix(X, ε; parallel = false)
-        @test size(rmat) == size(rmat_p) == (20, 20)
+        @test size(rmat) == (20, 20)
 
         # And each column of the matrix must have same count by definition
         # TODO: This also doesn't work...

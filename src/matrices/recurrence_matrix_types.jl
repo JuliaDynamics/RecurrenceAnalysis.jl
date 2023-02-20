@@ -56,6 +56,9 @@ for operator in [:(==), :(!=)]
     @eval Base.$operator(x::ARM, y::ARM) = $operator(x.data, y.data)
 end
 
+# Ambiguity resolution
+LinearAlgebra.diag(X::ARM, k::Integer) = diag(X.data, k)
+
 # Special symmetry cases
 LinearAlgebra.issymmetric(::RecurrenceMatrix{X}) where
     {X <: Union{RecurrenceThreshold,RecurrenceThresholdScaled,GlobalRecurrenceRate}} = true

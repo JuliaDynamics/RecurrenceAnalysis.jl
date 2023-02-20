@@ -131,14 +131,17 @@ end
 ################################################################################
 # TODO: Deprecations of old recurrence matrix interface
 ################################################################################
+const FAN = NeighborNumber
+export WithinRange, NeighborNumber, FAN
+
 # OLD KEYWORD ARGUMENTS in `RecurrenceMatrix`: scale, fixedrate.
-function RecurrenceMatrix{NeighborNumber}(x, ε; fixedrate = true, metric = Euclidean(), parallel = false)
-    @warn "Specifying `RecurrenceMatrix{FA}` is deprecated! Use `LocalRecurrenceRate`."
+function RecurrenceMatrix{FAN}(x, ε; fixedrate = true, metric = Euclidean(), parallel = false)
+    @warn "Specifying `RecurrenceMatrix{FAN}` is deprecated! Use `LocalRecurrenceRate`."
     rt = LocalRecurrenceRate(ε)
     return RecurrenceMatrix(x, rt; metric, parallel)
 end
 
-function CrossRecurrenceMatrix{NeighborNumber}(x, y, ε; fixedrate = true, metric = Euclidean(), parallel = false)
+function CrossRecurrenceMatrix{FAN}(x, y, ε; fixedrate = true, metric = Euclidean(), parallel = false)
     @warn "Specifying `CrossRecurrenceMatrix{FA}` is deprecated! Use `LocalRecurrenceRate`."
     rt = LocalRecurrenceRate(ε)
     return CrossRecurrenceMatrix(x, y, rt; metric, parallel)
@@ -149,6 +152,3 @@ function _computescale(scale::Real, args...)
     "Use a modified `ε = ε*scale` instead..."
     return scale
 end
-
-const FAN = NeighborNumber
-export WithinRange, NeighborNumber, FAN
