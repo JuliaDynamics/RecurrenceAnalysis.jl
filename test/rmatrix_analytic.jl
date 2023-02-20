@@ -41,6 +41,10 @@ end
     rmat = RecurrenceMatrix(X, ε; parallel = false)
     @test count(rmat) == length(X)*length(X)
 
+    # min radius
+    rmat = RecurrenceMatrix(X, 0; parallel = false)
+    count(rmat) == length(X) # only diagonal entry
+
     # Different metric
     metric = Chebyshev()
     # due to the symmetry of the circle, the chebysven metric can only slightly
@@ -63,7 +67,6 @@ end
     @test count(rmat) == count(rmat_p) == neighbors
     @test count(crmat) == neighbors÷2
 end
-
 
 @testset "GlobalRecurrenceRate" begin
 

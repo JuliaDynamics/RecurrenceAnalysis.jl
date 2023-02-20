@@ -29,6 +29,7 @@ RecurrenceThreshold
 RecurrenceThresholdScaled
 GlobalRecurrenceRate
 LocalRecurrenceRate
+recurrence_threshold
 ```
 
 

@@ -2,7 +2,7 @@
 # AbstractRecurrenceMatrix type hierarchy
 ################################################################################
 # TODO: `RT` is `AbstractRecurrenceType`, but due to deprecations, it is allowed
-abstract type AbstractRecurrenceMatrix{RT} end
+abstract type AbstractRecurrenceMatrix{RT} <: AbstractMatrix{Bool} end
 const ARM = AbstractRecurrenceMatrix
 
 # The recurrence type is included as a field in all matrix types,
@@ -56,7 +56,7 @@ for operator in [:(==), :(!=)]
     @eval Base.$operator(x::ARM, y::ARM) = $operator(x.data, y.data)
 end
 
-LinearAlgebra.issymmetric(R::ARM) = issymmetric(R.data)
+# Special symmetry cases
 LinearAlgebra.issymmetric(::RecurrenceMatrix{X}) where
     {X <: Union{RecurrenceThreshold,RecurrenceThresholdScaled,GlobalRecurrenceRate}} = true
 LinearAlgebra.issymmetric(::JointRecurrenceMatrix{X}) where
@@ -200,7 +200,7 @@ end
     JointRecurrenceMatrix(x, y, ε; kwargs...)
 
 Create a joint recurrence matrix from trajectories `x` and `y`.
-See [`RecurrenceMatrix`](@ref) for possible value sfor `ε` and `kwargs`.
+See [`RecurrenceMatrix`](@ref) for possible values for `ε` and `kwargs`.
 
 The joint recurrence matrix considers the recurrences of the trajectories
 of `x` and `y` separately, and looks for points where both recur
