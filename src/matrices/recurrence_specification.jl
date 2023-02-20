@@ -16,11 +16,10 @@ Possible subtypes are:
   to scale the value of the recurrence threshold `ε` so that `ε = ratio*scale(dm)`.
   After the new `ε` is obtained, the method works just like the `RecurrenceThreshold`.
   Specialized versions are employed if `scale` is `mean` or `maximum`.
-* `GlobalRecurrenceRate(ratio::Real)`: Here the number of total recurrence rate over the whole
-  matrix (see [`recurrencerate`](@ref) is specified to be a `ratio` ∈ (0,1). This means that
-  a distance threshold `ε` will be calculated such that there is a fixed `ratio` of
-  recurrences, out of the total possible `N^2` (with `N = length(x)`).
-  After the new `ε` is obtained, the method works just like the `RecurrenceThreshold`.
+* `GlobalRecurrenceRate(q::Real)`: Here the number of total recurrence rate over the whole
+  matrix is specified to be a quantile `q ∈ (0,1)` of the [`distancematrix`](@ref).
+  In practice this yields (approximately) a ratio `q` of recurrences out of the total
+  `Nx * Ny` for input trajectories `x, y`.
 * `LocalRecurrenceRate(r::Real)`: The recurrence threhsold here is point-dependent. It is
   defined so that each point of `x` has a fixed number of `k = r*N` neighbors, with ratio
   `r` out of the total possible `N`. Equivalently, this means that each column of the
@@ -72,6 +71,10 @@ end
 ################################################################################
 # Resolving the recurrence threshold and/or scaling
 ################################################################################
+# TODO: We can optimize stuff here; for methods that compute the distance matrix,
+# we don't have to compute distances again when creating the actual recurrence
+# matrices........
+
 """
     recurrence_threshold(rt::AbstractRecurrenceType, x [, y] [, metric]) → ε
 Return the calculated distance threshold `ε` for `rt`. The output is real, unless
@@ -86,16 +89,19 @@ recurrence_threshold(rt, x::Array_or_SSSet) =
 
 recurrence_threshold(rt::Real, x, y, metric) = rt
 recurrence_threshold(rt::RecurrenceThreshold, x, y, metric) = rt.ε
+
 function recurrence_threshold(rt::RecurrenceThresholdScaled, x, y, metric)
-    scale_value = _computescale(rt.scale, x, y, metric)
+    scale_value = scale_of_distmatrix(rt.scale, x, y, metric)
     return rt.ratio*scale_value
 end
+
 function recurrence_threshold(rt::GlobalRecurrenceRate, x, y, metric)
     # We leverage the code of the scaled version to get the global recurrence rate
     scale = (m) -> quantile(vec(m), rt.rate)
-    scale_value = _computescale(scale, x, y, metric)
-    return rt.rate*scale_value
+    scale_value = scale_of_distmatrix(scale, x, y, metric)
+    return scale_value
 end
+
 function recurrence_threshold(rt::LocalRecurrenceRate, x, y, metric)
     rate = rt.rate
     @assert 0 < rate < 1 "Recurrence rate must be ∈ (0, 1)."
@@ -105,17 +111,17 @@ function recurrence_threshold(rt::LocalRecurrenceRate, x, y, metric)
         rate += 1/length(x) # because of recurrences guaranteed in the diagonal
     end
     for i in axes(d, 2)
-        thresholds[i] = quantile(view(d, : ,i), rate)
+        thresholds[i] = quantile(view(d, :, i), rate)
     end
     return thresholds
 end
 
-
-function _computescale(scale::Function, x, y, metric)
+function scale_of_distmatrix(scale::Function, x, y, metric)
     return scale(distancematrix(x, y, metric))
 end
-# specific methods to avoid `distancematrix`
-function _computescale(::typeof(maximum), x, y, metric::Metric)
+
+# specific methods to avoid making a `distancematrix`
+function scale_of_distmatrix(::typeof(maximum), x, y, metric::Metric)
     maxvalue = zero(eltype(x))
     if x===y
         @inbounds for i in 1:length(x)-1, j=(i+1):length(x)
@@ -130,7 +136,7 @@ function _computescale(::typeof(maximum), x, y, metric::Metric)
     end
     return maxvalue
 end
-function _computescale(::typeof(mean), x, y, metric::Metric)
+function scale_of_distmatrix(::typeof(mean), x, y, metric::Metric)
     meanvalue = 0.0
     if x===y
         @inbounds for i in 1:length(x)-1, j=(i+1):length(x)

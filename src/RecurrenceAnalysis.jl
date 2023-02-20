@@ -11,6 +11,7 @@ using Reexport
 @reexport using StateSpaceSets
 
 Array_or_SSSet = Union{AbstractArray{<:Real}, AbstractStateSpaceSet}
+Vector_or_SSSet = Union{AbstractVector{<:Real}, AbstractStateSpaceSet}
 
 using Distances, Statistics, LinearAlgebra, SparseArrays
 

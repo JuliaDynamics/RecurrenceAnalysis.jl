@@ -93,7 +93,7 @@ const METRICS = Dict(
     "cityblock"=>Cityblock(),
     "manhattan"=>Cityblock(),
     "taxicab"=>Cityblock(),
-    "min"=>Cityblock()
+    "min"=>Cityblock(),
 )
 getmetric(m::Metric) = m
 function getmetric(normtype::AbstractString)
