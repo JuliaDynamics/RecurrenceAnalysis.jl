@@ -155,7 +155,7 @@ recurrent points contained in it. The levels of gray are coded as numbers of the
 same type as the black and white codes.
 
 It is advised to use `width, height` arguments for large matrices otherwise
-plots using functions like e.g. `imshow` could be misleading.
+plots using functions like e.g. `heatmap` could be misleading.
 """
 function grayscale(R, bwcode::Tuple{TT,T}=(0.0,1.0);
     exactsize=false, kwargs...) where {TT<:Real, T<:Real}
@@ -193,4 +193,6 @@ function grayscale(R, bwcode::Tuple{TT,T}=(0.0,1.0);
     # Change to color scale
     p .=  bwcode[1].*p .+ bwcode[2].*(1 .- p)
     pt = (T<:Integer) ? round.(T, p) : T.(p)
+    # need to flip `y` so that diagonal is in the correct way...
+    return reverse(pt; dims = 2)
 end
