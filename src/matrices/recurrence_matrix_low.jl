@@ -60,9 +60,7 @@ end
 # Now, we define the parallel versions of these functions.
 
 # Core function
-function recurrence_matrix(xx::AbstractDataset, yy::AbstractDataset, metric::Metric, ε, ::Val{true})
-    x = xx.data
-    y = yy.data
+function recurrence_matrix(x::Vector_or_SSSet, y::Vector_or_SSSet, metric::Metric, ε, ::Val{true})
     @assert ε isa Real || length(ε) == length(y)
     # We create an `Array` of `Array`s, for each thread to have its
     # own array to push to.  This avoids race conditions with
@@ -88,65 +86,8 @@ function recurrence_matrix(xx::AbstractDataset, yy::AbstractDataset, metric::Met
     return sparse(finalrows, finalcols, nzvals, length(x), length(y))
 end
 
-# Vector version can be more specialized (and metric is irrelevant)
-function recurrence_matrix(x::AbstractVector, y::AbstractVector, metric::Metric, ε, ::Val{true})
-    ε isa Real || length(ε) == length(x)
-    # We create an `Array` of `Array`s, for each thread to have its
-    # own array to push to.  This avoids race conditions with
-    # multiple threads pushing to the same `Array` (`Array`s are not atomic).
-    rowvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
-    colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
-
-    # This is the same logic as the serial function, but parallelized.
-    Threads.@threads for j in eachindex(y)
-        threadn = Threads.threadid()
-        nzcol = 0
-        for i in eachindex(x)
-            @inbounds if abs(x[i] - y[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
-                push!(rowvals[threadn], i) # push to the thread-specific row array
-                nzcol += 1
-            end
-        end
-        append!(colvals[threadn], fill(j, (nzcol,)))
-    end
-    finalrows = vcat(rowvals...) # merge into one array
-    finalcols = vcat(colvals...) # merge into one array
-    nzvals = fill(true, (length(finalrows),))
-    return sparse(finalrows, finalcols, nzvals, length(x), length(y))
-end
-
-
-function recurrence_matrix(x::AbstractVector, metric::Metric, ε, ::Val{true})
-    @assert ε isa Real || length(ε) == length(y)
-    # We create an `Array` of `Array`s, for each thread to have its
-    # own array to push to.  This avoids race conditions with
-    # multiple threads pushing to the same `Array` (`Array`s are not atomic).
-    rowvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
-    colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
-
-    # This is the same logic as the serial function, but parallelized.
-    Threads.@threads for k in partition_indices(length(x))
-        threadn = Threads.threadid()
-        for j in k
-            nzcol = 0
-            for i in 1:j
-                @inbounds if abs(x[i] - x[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
-                    push!(rowvals[threadn], i) # push to the thread-specific row array
-                    nzcol += 1
-                end
-            end
-            append!(colvals[threadn], fill(j, (nzcol,)))
-        end
-    end
-    finalrows = vcat(rowvals...) # merge into one array
-    finalcols = vcat(colvals...) # merge into one array
-    nzvals = fill(true, (length(finalrows),))
-    return Symmetric(sparse(finalrows, finalcols, nzvals, length(x), length(x)), :U)
-end
-
-function recurrence_matrix(xx::AbstractDataset, metric::Metric, ε, ::Val{true})
-    x = xx.data
-    @assert ε isa Real || length(ε) == length(y)
+function recurrence_matrix(x::Vector_or_SSSet, metric::Metric, ε, ::Val{true})
+    @assert ε isa Real || length(ε) == length(x)
     # We create an `Array` of `Array`s, for each thread to have its
     # own array to push to.  This avoids race conditions with
     # multiple threads pushing to the same `Array` (`Array`s are not atomic).
