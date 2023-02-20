@@ -1,3 +1,26 @@
+export @windowed
+macro windowed(ex, options...)
+    error("""
+    The `@windowed` macro is removed. It was some incredibly complicated 250 lines of code
+    that offer little to no benefit. Instead of using this macro, write a trivial loop over
+    a view of a recurrence matrix. E.g., replace
+    ```julia
+    rmat = RecurrenceMatrix(...)
+    @windowed determinism(rmat, theiler=2, lmin=3) width=1000 step=100
+    ```
+    with
+    ```julia
+    width = 1000
+    step = 100
+    windows = 1:step:(size(rmat, 1)-width)
+    map(1:length(windows)) do i
+        rmat_view = view(rmat, windows[i]:(windows[i]+width), windows[i]:(windows[i]+width))
+        determinism(rmat_view; theiler=2, lmin=3)
+    end
+    ```
+    """)
+end
+
 for T in (:WithinRange, :NeighborNumber)
     @eval function RecurrenceMatrix{$T}(x::AbstractMatrix, ε; kwargs...)
         @warn string("`RecurrenceMatrix{", $T, "}(x::AbstractMatrix, ε; kwargs...)` is deprecated, use `RecurrenceMatrix{", $T, "}(Dataset(x), ε; kwargs...)`")

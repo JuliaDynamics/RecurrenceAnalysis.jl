@@ -46,7 +46,6 @@ export embed,
        rqa,
        sorteddistances,
        skeletonize,
-       @windowed,
        rna
 
 
@@ -61,7 +60,7 @@ include("rqa/rqa.jl")
 include("rqa/radius.jl")
 include("rna/graphs.jl")
 include("rna/rna.jl")
-include("rqa/windowed.jl")
+# include("rqa/windowed.jl") # this is removed!!!
 include("deprecate.jl")
 
 end

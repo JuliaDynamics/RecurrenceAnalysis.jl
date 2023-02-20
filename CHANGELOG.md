@@ -2,11 +2,30 @@
 
 ## v2.0.0
 
-- [**BREAKING** but deprecated] The way of specifying how recurrences are counted in `RecurrenceMatrix` has been completely overhauled and is now based on specifying the type by using actual type instances instead of keywords. See the new docstring of `RecurrenceMatrix`.
-- [**BREAKING** but deprecated] Specifying metrics with strings in `RecurrenceMatrix` and co is deprecated and will be removed in the next version. Use proper `Metric` instances like `Euclidean()`.
-- [**BREAKING** but deprecated] Giving a number as `scale` in `RecurrenceMatrix` is deprecated (because its pointless, just give `ε = ε*scale` instead).
+- [**BREAKING**] The `@windowed` macro is removed. It was some incredibly complicated 250 lines of code that offer little to no benefit. Instead of using this macro, write a trivial loop over a view of a recurrence matrix. E.g., replace
+  ```julia
+  rmat = RecurrenceMatrix(...)
+  @windowed determinism(rmat, theiler=2, lmin=3) width=1000 step=100
+  ```
+  with
+  ```julia
+  width = 1000
+  step = 100
+  windows = 1:step:(size(rmat, 1)-width)
+  map(1:length(windows)) do i
+      rmat_view = view(
+        rmat,
+        windows[i]:(windows[i]+width),
+        windows[i]:(windows[i]+width)
+      )
+      determinism(rmat_view; theiler=2, lmin=3)
+  end
+  ```
+- [**BREAKING but deprecated**] The way of specifying how recurrences are counted in `RecurrenceMatrix` has been completely overhauled and is now based on specifying the type by using actual type instances instead of keywords. See the new docstring of `RecurrenceMatrix`.
+- [**BREAKING but deprecated**] Specifying metrics with strings in `RecurrenceMatrix` and co is deprecated and will be removed in the next version. Use proper `Metric` instances like `Euclidean()`.
+- [**BREAKING but deprecated**] Giving a number as `scale` in `RecurrenceMatrix` is deprecated (because its pointless, just give `ε = ε*scale` instead).
 - New exported function `recurrence_threshold` that calculates the recurrence threshold for a given recurrence specification type.
-- RecurrenceAnalysis.jl has been updated to DynamicalSystems.jl (using StateSpaceSets.jl) and hosts its own docs.
+- RecurrenceAnalysis.jl has been updated to DynamicalSystems.jl v3 (using StateSpaceSets.jl) and hosts its own docs.
 
 ## v1.8.1
 - Better support for iteration over `AbstractRecurrenceMatrix` with functions from `Base`.
