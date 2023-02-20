@@ -19,9 +19,7 @@ Return a sparse matrix which encodes recurrence points.
 
 This is the low-level method that makes the matrices, and it is not part of the public API.
 """
-function recurrence_matrix(xx::Vector_or_SSSet, yy::Vector_or_SSSet, metric::Metric, ε, ::Val{false})
-    x = xx.data
-    y = yy.data
+function recurrence_matrix(x::Vector_or_SSSet, y::Vector_or_SSSet, metric::Metric, ε, ::Val{false})
     @assert ε isa Real || length(ε) == length(y)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
@@ -40,9 +38,8 @@ function recurrence_matrix(xx::Vector_or_SSSet, yy::Vector_or_SSSet, metric::Met
 end
 
 # For one dataset
-function recurrence_matrix(xx::Vector_or_SSSet, metric::Metric, ε, ::Val{false})
-    x = xx.data
-    @assert ε isa Real || length(ε) == length(y)
+function recurrence_matrix(x::Vector_or_SSSet, metric::Metric, ε, ::Val{false})
+    @assert ε isa Real || length(ε) == length(x)
     rowvals = Vector{Int}()
     colvals = Vector{Int}()
     for j in eachindex(x)
