@@ -96,30 +96,14 @@ end
 # which halves the number of computations needed.
 
 # Again, we'll define the serial version first:
-function _distancematrix(x::Vector{T}, metric::Metric, ::Val{false}) where T
-    d = zeros(T, length(x), length(x))
-
-    for j in 2:length(x)
-        for i in 1:j-1
-            @inbounds d[i, j] = abs(x[i] - x[j])
-        end
-    end
-
-    return Symmetric(d, :U)
-
-end
-
-function _distancematrix(x::AbstractDataset{S, T}, metric::Metric, ::Val{false}) where T where S
-    d = zeros(T, length(x), length(x))
-
+function _distancematrix(x::Array_or_SSSet, metric::Metric, ::Val{false})
+    d = zeros(eltype(x), length(x), length(x))
     for j in 2:length(x)
         for i in 1:j-1 # all else is zero
             @inbounds d[i, j] = evaluate(metric, x[i], x[j])
         end
     end
-
     return Symmetric(d, :U)
-
 end
 
 # Now, we define the parallel version.  There's a twist, though.
