@@ -1,5 +1,5 @@
 # Comparison of RQA software
-There are several software packages that can be used to perform Recurrence Quantification Analysis (RQA), in different programming languages. Many of them can be found at <http://www.recurrence-plot.tk/programmes.php>. This document compares the features of the package [**RecurrenceAnalysis**](https://www.github.com/JuliaDynamics/RecurrenceAnalysis.jl) (version 1.0-alpha) for Julia with other packages that have been developed for popular cross-platform programming languages, namely:
+There are several software packages that can be used to perform Recurrence Quantification Analysis (RQA), in different programming languages. Many of them can be found at <http://www.recurrence-plot.tk/programmes.php>. This document compares the features of the package [**RecurrenceAnalysis**](https://www.github.com/JuliaDynamics/RecurrenceAnalysis.jl) (version 2.0) for Julia with other packages that have been developed for popular cross-platform programming languages, namely:
 
 * [**crqa**](https://cran.r-project.org/package=crqa) version 1.0.7 for R (Coco & Dale, 2014).
 * [**CRP toolbox**](http://tocsy.pik-potsdam.de/CRPtoolbox/) version 5.22 for Matlab (Marwan et al., 2007)
