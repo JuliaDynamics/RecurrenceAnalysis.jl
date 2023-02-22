@@ -1,3 +1,5 @@
+# RecurrenceAnalysis.jl
+
 [![](https://img.shields.io/badge/docs-dev-lightblue.svg)](https://JuliaDynamics.github.io/RecurrenceAnalysis.jl/dev)
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaDynamics.github.io/RecurrenceAnalysis.jl/stable)
 [![CI](https://github.com/JuliaDynamics/RecurrenceAnalysis.jl/workflows/CI/badge.svg)](https://github.com/JuliaDynamics/RecurrenceAnalysis.jl/actions?query=workflow%3ACI)
