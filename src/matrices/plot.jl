@@ -158,28 +158,23 @@ It is advised to use `width, height` arguments for large matrices otherwise
 plots using functions like e.g. `heatmap` could be misleading.
 """
 function grayscale(R, bwcode::Tuple{TT,T}=(0.0,1.0);
-    exactsize=false, kwargs...) where {TT<:Real, T<:Real}
+        width = nothing, height = nothing, exactsize=false
+    ) where {TT<:Real, T<:Real}
 
     dims = size(R)
-    kwargs = Dict(kwargs)
-    if haskey(kwargs, :width) && !haskey(kwargs, :height)
-        width = Int(kwargs[:width])
+    if !isnothing(width) && isnothing(height)
         height = round(Int, width*dims[2]/dims[1])
         return grayscale(R, bwcode; width=width, height=height)
-    elseif haskey(kwargs, :height) && !haskey(kwargs, :width)
-        height = Int(kwargs[:height])
+    elseif isnothing(width) && !isnothing(height)
         width = round(Int, height*dims[1]/dims[2])
-        return grayscale(R, bwcode; width=width, height=height)
-    elseif !haskey(kwargs, :width) || !haskey(kwargs, :height)
-        width, height = Int.(dims)
-        return grayscale(R, bwcode; width=width, height=height)
+    elseif isnothing(width) && isnothing(height)
+        width, height = dims
     end
-    if exactsize
-        width, height = Int(kwargs[:width]), Int(kwargs[:height])
-    else
-        width, height = checkgridsize(Int(kwargs[:width]),
-        Int(kwargs[:height]), dims)
+
+    if !exactsize
+        width, height = checkgridsize(width, height, dims)
     end
+
     # initial and final values of the horizontal and vertical blocks
     rows = overlapgrid(width, dims[1])
     cols = overlapgrid(height, dims[2])
@@ -194,5 +189,5 @@ function grayscale(R, bwcode::Tuple{TT,T}=(0.0,1.0);
     p .=  bwcode[1].*p .+ bwcode[2].*(1 .- p)
     pt = (T<:Integer) ? round.(T, p) : T.(p)
     # need to flip `y` so that diagonal is in the correct way...
-    return reverse(pt; dims = 2)
+    return reverse(pt; dims = 1)
 end
