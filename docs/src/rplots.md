@@ -173,3 +173,8 @@ The distance function used in [`RecurrenceMatrix`](@ref) and co. can be specifie
 ```@docs
 distancematrix
 ```
+
+## `StateSpaceSet` reference
+```@docs
+StateSpaceSet
+```

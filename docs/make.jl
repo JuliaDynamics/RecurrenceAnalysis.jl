@@ -16,4 +16,4 @@ Downloads.download(
 )
 include("build_docs_with_style.jl")
 
-build_docs_with_style(pages, RecurrenceAnalysis)
+build_docs_with_style(pages, RecurrenceAnalysis, StateSpaceSets)

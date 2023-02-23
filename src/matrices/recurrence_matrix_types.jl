@@ -2,6 +2,7 @@
 # AbstractRecurrenceMatrix type hierarchy
 ################################################################################
 # TODO: `RT` is `AbstractRecurrenceType`, but due to deprecations, it is allowed
+# to be anything at the moment
 abstract type AbstractRecurrenceMatrix{RT} <: AbstractMatrix{Bool} end
 const ARM = AbstractRecurrenceMatrix
 
@@ -87,8 +88,10 @@ SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 """
     RecurrenceMatrix(x, ε; metric = Euclidean(), parallel::Bool)
 
-Create a recurrence matrix from trajectory `x` (either a `Dataset` or a `Vector`)
+Create a recurrence matrix from trajectory `x`
 and with recurrence threshold specification `ε`.
+`x` is either a [`StateSpaceSet`](@ref) for multivariate data
+or an `AbstractVector{<:Real}` for timeseries.
 
 If `ε::Real` is given, a [`RecurrenceThreshold`](@ref) is used to specify recurrences.
 Otherwise, any subtype of [`AbstractRecurrenceType`](@ref) may be given as `ε` instead.
