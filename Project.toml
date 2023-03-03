@@ -1,7 +1,7 @@
 name = "RecurrenceAnalysis"
 uuid = "639c3291-70d9-5ea2-8c5b-839eba1ee399"
 repo = "https://github.com/JuliaDynamics/RecurrenceAnalysis.jl.git"
-version = "2.0.3"
+version = "2.0.4"
 
 [deps]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"

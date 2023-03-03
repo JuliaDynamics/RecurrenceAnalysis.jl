@@ -114,14 +114,33 @@ macro histogram_params(keyword, description, hist_fun)
         fname = Symbol("$(keyword)_$(name)")
         _fname = Symbol("_$(keyword)_$(name)")
         fbody = function_bodies[name]
-        doc = """
-                $fname(R[; lmin=2, theiler])
+        if name == :entropy
+            doc = """
+                    $fname(R[; lmin=2, theiler])
 
-            Calculate the $(param) contained in the recurrence matrix `R`,
-            ruling out the lines shorter than `lmin` (2 by default) and all the
-            points inside the Theiler window (see [`rqa`](@ref) for the
-            default values and usage of the keyword argument `theiler`).
-            """
+                Calculate the $(param) contained in the recurrence matrix `R`,
+                ruling out the lines shorter than `lmin` (2 by default) and all the
+                points inside the Theiler window (see [`rqa`](@ref) for the
+                default values and usage of the keyword argument `theiler`).
+
+                Notes: This metric was first proposed in the paper "Exploiting Nonlinear Recurrence 
+                and Fractal Scaling Properties for Voice Disorder Detection" as Recurrence Period 
+                Density Entropy or Recurrence Probability Density Entropy (RPDE). 
+                It is a normalized dimensionless metric in the range [0,1]. 
+                In the 2018 article "Recurrence threshold selection for obtaining robust recurrence 
+                characteristics in different embedding dimensions", the indicator RPDE is explicitly 
+                called Recurrence Time Entropy (RTE). Here RPDE and RTE are clearly the same indicator.
+                """
+        else
+            doc = """
+                    $fname(R[; lmin=2, theiler])
+
+                Calculate the $(param) contained in the recurrence matrix `R`,
+                ruling out the lines shorter than `lmin` (2 by default) and all the
+                points inside the Theiler window (see [`rqa`](@ref) for the
+                default values and usage of the keyword argument `theiler`).
+                """
+        end
         push!(ret.args, quote
             @doc $doc ->
             $fname(R::ARM; kwargs...) = $_fname($hist_fun(R; kwargs...))
