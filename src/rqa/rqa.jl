@@ -55,15 +55,20 @@ Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 function recurrencerate(R::Union{ARM,AbstractMatrix}; theiler::Integer=deftheiler(R), kwargs...)::Float64
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
+    if R isa Union{ARM, SparseMatrix}
+        n_recs = nnz(R)
+    else
+        n_recs = count(R)
+    end
     if theiler == 0
-        return nnz(R)/length(R)
+        return n_recs/length(R)
     end
     diags_remove = -(theiler-1):(theiler-1)
     theiler_nz = 0
     for d in diags_remove
         theiler_nz += nnz(diag(R,d))
     end
-    return (nnz(R) - theiler_nz)/_rrdenominator(R; theiler=theiler, kwargs...)
+    return (n_recs - theiler_nz)/_rrdenominator(R; theiler=theiler, kwargs...)
 end
 
 # Calculate the denominator for the recurrence rate
