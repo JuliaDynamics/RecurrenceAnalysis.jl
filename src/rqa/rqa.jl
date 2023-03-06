@@ -55,7 +55,7 @@ Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 function recurrencerate(R::Union{ARM,AbstractMatrix}; theiler::Integer=deftheiler(R), kwargs...)::Float64
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
-    if R isa Union{ARM, SparseMatrix}
+    if R isa Union{ARM, SparseMatrixCSC}
         n_recs = nnz(R)
     else
         n_recs = count(R)
