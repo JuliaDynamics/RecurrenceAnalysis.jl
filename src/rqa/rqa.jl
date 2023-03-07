@@ -148,7 +148,7 @@ macro histogram_params(keyword, description, hist_fun)
         end
         push!(ret.args, quote
             @doc $doc ->
-            $fname(R::ARM; kwargs...) = $_fname($hist_fun(R; kwargs...))
+            $fname(R::Union{ARM,AbstractMatrix}; kwargs...) = $_fname($hist_fun(R::Union{ARM,AbstractMatrix}; kwargs...))
 
             function $_fname(hist::Vector{<:Integer})
                 $fbody
@@ -202,7 +202,7 @@ end
 Calculate the divergence of the recurrence matrix `R`
 (actually the inverse of [`dl_max`](@ref)).
 """
-divergence(R::Union{ARM,AbstractMatrix}; kwargs...) = ( 1.0/dl_max(R; kwargs...) )
+divergence(R::Union{ARM,AbstractMatrix}; kwargs...) = ( 1.0/dl_max(R::Union{ARM,AbstractMatrix}; kwargs...) )
 
 """
     trend(R[; border=10, theiler])
@@ -344,7 +344,7 @@ default values and usage of the keyword argument `theiler`).
 The trapping time is the average of the vertical line structures and thus equal
 to [`vl_average`](@ref).
 """
-trappingtime(R::Union{ARM,AbstractMatrix}; kwargs...) = vl_average(R; kwargs...)
+trappingtime(R::Union{ARM,AbstractMatrix}; kwargs...) = vl_average(R::Union{ARM,AbstractMatrix}; kwargs...)
 ###########################################################################################
 # 3. Based on recurrence times
 ###########################################################################################
@@ -362,7 +362,7 @@ default values and usage of the keyword argument `theiler`).
 
 Equivalent to [`rt_average`](@ref).
 """
-meanrecurrencetime(R::Union{ARM,AbstractMatrix}; kwargs...) = rt_average(R; kwargs...)
+meanrecurrencetime(R::Union{ARM,AbstractMatrix}; kwargs...) = rt_average(R::Union{ARM,AbstractMatrix}; kwargs...)
 
 """
     nmprt(R[; lmin=2, theiler])
