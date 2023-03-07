@@ -12,4 +12,5 @@ defaultname(file) = uppercasefirst(replace(splitext(basename(file))[1], '_' => '
     testfile("rmatrix_analytic.jl")
     testfile("rqa_rna_analytic.jl")
     testfile("skeletontest.jl")
+    testfile("windowtest.jl")
 end
