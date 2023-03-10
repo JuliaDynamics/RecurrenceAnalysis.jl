@@ -107,8 +107,8 @@ end
 
 deftheiler(x::Union{RecurrenceMatrix,JointRecurrenceMatrix}) = 1
 deftheiler(x::CrossRecurrenceMatrix) = 0
-deftheiler(x::SparseMatrixCSC) = 1
-function diagonalhistogram(x::Union{ARM,SparseMatrixCSC}; lmin::Integer=2, theiler::Integer=deftheiler(x), kwargs...)
+deftheiler(x::AbstractMatrix) = 1
+function diagonalhistogram(x::Union{ARM,AbstractMatrix}; lmin::Integer=2, theiler::Integer=deftheiler(x), kwargs...)
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
     (lmin < 1) && throw(ErrorException("lmin must be 1 or greater"))
@@ -153,7 +153,7 @@ function diagonalhistogram(x::Union{ARM,SparseMatrixCSC}; lmin::Integer=2, theil
 end
 
 
-function verticalhistograms(x::Union{ARM,SparseMatrixCSC};
+function verticalhistograms(x::Union{ARM,AbstractMatrix};
     lmin::Integer=2, theiler::Integer=deftheiler(x), distances=true, kwargs...)
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
@@ -212,7 +212,7 @@ estimator of the Poincaré recurrence times [2].
 recurrence quantifications", in: Webber, C.L. & N. Marwan (eds.), *Recurrence
 Quantification Analysis. Theory and Best Practices*, Springer, pp. 3-43 (2015).
 """
-function recurrencestructures(x::Union{ARM,SparseMatrixCSC};
+function recurrencestructures(x::Union{ARM,AbstractMatrix};
     diagonal=true, vertical=true, recurrencetimes=true,
     theiler=deftheiler(x), kwargs...)
 
