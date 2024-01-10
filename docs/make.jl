@@ -7,6 +7,7 @@ pages = [
     "rplots.md",
     "quantification.md",
     "networks.md",
+    "comparison.md",
 ]
 
 import Downloads
