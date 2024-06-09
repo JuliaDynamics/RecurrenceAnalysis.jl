@@ -27,7 +27,7 @@ rqa
 
 ---
 
-See also the [`@windowed`](@ref) macro for a windowed version of `rqa`.
+See also the [`windowed`] function for a windowed version of `rqa`.
 
 ## Example
 
