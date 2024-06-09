@@ -152,7 +152,7 @@ using RecurrenceAnalysis, DelayEmbeddings, CairoMakie
 data = sin.(2*π .* (0:400)./ 60)
 Y = embed(data, 3, 15)
 
-R = RecurrenceMatrix(Y, 0.25; fixedrate=true)
+R = RecurrenceMatrix(Y, GlobalRecurrenceRate(0.25))
 R_skel = skeletonize(R)
 
 fig = Figure(resolution = (1000,600))
