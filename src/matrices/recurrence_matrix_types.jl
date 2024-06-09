@@ -86,15 +86,18 @@ SparseArrays.SparseMatrixCSC(R::ARM) = SparseMatrixCSC(R.data)
 # Documentation strings and dispatch to `recurrence_matrix`
 ################################################################################
 """
-    RecurrenceMatrix(x, ε; metric = Euclidean(), parallel::Bool)
+    RecurrenceMatrix(x, rthres; metric = Euclidean(), parallel::Bool)
 
-Create a recurrence matrix from trajectory `x`
-and with recurrence threshold specification `ε`.
+Create a recurrence matrix from timeseries or trajectory `x`
+and with recurrence threshold `rthres`.
 `x` is either a [`StateSpaceSet`](@ref) for multivariate data
 or an `AbstractVector{<:Real}` for timeseries.
 
-If `ε::Real` is given, a [`RecurrenceThreshold`](@ref) is used to specify recurrences.
-Otherwise, any subtype of [`AbstractRecurrenceType`](@ref) may be given as `ε` instead.
+The variable `rthres` defines how recurrences are estimated.
+It can be any subtype of [`AbstractRecurrenceType`](@ref),
+and different types can specify recurrences differently.
+Alternatively, `rthres` can be a real number, which then becomes
+an instance of [`RecurrenceThreshold`](@ref).
 
 The keyword `metric`, if given, must be any subtype of `Metric` from
 [Distances.jl](https://github.com/JuliaStats/Distances.jl)
@@ -166,16 +169,16 @@ end
 
 
 """
-    CrossRecurrenceMatrix(x, y, ε; kwargs...)
+    CrossRecurrenceMatrix(x, y, rthres; kwargs...)
 
 Create a cross recurrence matrix from trajectories `x` and `y`.
-See [`RecurrenceMatrix`](@ref) for possible value for `ε` and `kwargs`.
+See [`RecurrenceMatrix`](@ref) for possible value for `rthres` and `kwargs`.
 
 The cross recurrence matrix is a bivariate extension of the recurrence matrix.
 For the time series `x`, `y`, of length `n` and `m`, respectively, it is a
 sparse `n×m` matrix of Boolean values.
 
-Note that cross recurrence matrices are generally not symmetric irrespectively of `ε`.
+Note that cross recurrence matrices are generally not symmetric irrespectively of `rthres`.
 """
 function CrossRecurrenceMatrix(x, y, ε;
         # DEPRECATED keywords. TODO: Remove them in next stable release.
@@ -203,10 +206,10 @@ function CrossRecurrenceMatrix(x, y, ε;
 end
 
 """
-    JointRecurrenceMatrix(x, y, ε; kwargs...)
+    JointRecurrenceMatrix(x, y, rthres; kwargs...)
 
 Create a joint recurrence matrix from trajectories `x` and `y`.
-See [`RecurrenceMatrix`](@ref) for possible values for `ε` and `kwargs`.
+See [`RecurrenceMatrix`](@ref) for possible values for `rthres` and `kwargs`.
 
 The joint recurrence matrix considers the recurrences of the trajectories
 of `x` and `y` separately, and looks for points where both recur
