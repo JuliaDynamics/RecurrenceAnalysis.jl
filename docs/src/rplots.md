@@ -57,6 +57,10 @@ X, t = trajectory(ro, N*Δt; Δt, Ttr = 10.0)
 # Make a recurrence matrix with fixed threshold
 R = RecurrenceMatrix(X, 5.0)
 recurrenceplot(R; ascii = true)
+
+# Or make a recurrence matrix with fixed (global) recurrence rate of 10%
+R = RecurrenceMatrix(X, GlobalRecurrenceRate(0.1))
+recurrenceplot(R; ascii = true)
 ```
 ```@example MAIN
 typeof(R)
