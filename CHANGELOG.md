@@ -1,5 +1,9 @@
 # RecurrenceAnalysis.jl changelog
 
+## v2.1.0
+
+Updated to StateSpaceSets.jl v2.
+
 ## v2.0.0
 
 - [**BREAKING**] The `@windowed` macro is removed. It was some incredibly complicated 250 lines of code that offer little benefit. Instead of using this macro, use the new `windowed` function. It does something simple: replaces
