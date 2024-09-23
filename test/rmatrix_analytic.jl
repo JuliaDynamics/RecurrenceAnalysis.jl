@@ -10,7 +10,7 @@ using Distances: Chebyshev
 t = range(0, 2π; length = 20) # length is crucial and decides distance and thresholds
 c = cos.(t)
 s = sin.(t)
-X = Dataset(c, s)
+X = StateSpaceSet(c, s)
 Y = X[1:10]
 
 dmat = distancematrix(X)

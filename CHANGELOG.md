@@ -1,5 +1,9 @@
 # RecurrenceAnalysis.jl changelog
 
+## v2.1.0
+
+Updated to StateSpaceSets.jl v2.
+
 ## v2.0.0
 
 - [**BREAKING**] The `@windowed` macro is removed. It was some incredibly complicated 250 lines of code that offer little benefit. Instead of using this macro, use the new `windowed` function. It does something simple: replaces
@@ -50,11 +54,11 @@
 - Now `AbstractRecurrenceMatrix` types have a parameter with the possible values:
     * `WithinRange`: when neighboring points are determined by a given distance in the phase space.
     * `NeighborNumber`: when each point has a determined number of neighbors.
-- Input arguments of `RecurrenceMatrix`, etc. are generalized to `AbstractDataset`.
+- Input arguments of `RecurrenceMatrix`, etc. are generalized to `AbstractStateSpaceSet`.
 
 ## v1.3.2
 - Bugfixes of `transitivity`
-- Deprecate `AbstractMatrix` inputs to `RecurrenceMatrix` etc., in favor of `Dataset`.
+- Deprecate `AbstractMatrix` inputs to `RecurrenceMatrix` etc., in favor of `StateSpaceSet`.
 
 ## v1.3.0
 - Increased performance of `RecurrenceMatrix`.
@@ -91,12 +95,12 @@
   create a dedicated struct for each kind of matrix.
 
 ## v0.6.0
-* Rework how `recurrencematrix` is computed: now a conversion to `Dataset` is done for small dimensions. In addition, the default metric is now `Euclidean`.
+* Rework how `recurrencematrix` is computed: now a conversion to `StateSpaceSet` is done for small dimensions. In addition, the default metric is now `Euclidean`.
 
 ## v0.5.0
 * With this update core functionality of delay embedding and estimating embedding dimension is moved (and used from) the Julia package `DelayEmbeddings`.
 * `RecurrenceAnalysis` is also joining JuliaDynamics and **DynamicalSystems.jl** from 0.5.0 onwards.
-* Extensions have been implemented so that most functionality works also with `Dataset`s.
+* Extensions have been implemented so that most functionality works also with `StateSpaceSet`s.
 
 ## 23-09-2018 - v0.4.0
 

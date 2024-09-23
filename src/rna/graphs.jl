@@ -34,7 +34,7 @@ Theory and Best Practices*, Springer, pp. 101-165 (2015).
 """
 function Graphs.SimpleGraphs.SimpleGraph(R::AbstractRecurrenceMatrix)
     graph = SimpleGraph(R.data)
-    delta = SimpleGraphFromIterator(Edge(v,v) for v in 1:size(graph, 1))
+    delta = SimpleGraphFromIterator(Edge(v,v) for v in 1:oldsize(graph, 1))
     graph = difference(graph, delta)
     return graph
 end

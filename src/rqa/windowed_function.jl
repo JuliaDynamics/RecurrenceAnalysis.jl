@@ -10,7 +10,7 @@ function windowed(rmat::Union{ARM,AbstractMatrix}, f::Function, width::Integer, 
         "Window width must be must be greater than or equal to 2"))
   (step < 1) && throw(ErrorException(
         "Step size must be greater than or equal to 1"))
-  windows = 1:step:(size(rmat, 1)-width+1)
+  windows = 1:step:(oldsize(rmat, 1)-width+1)
   map(1:length(windows)) do i
     f(rmat[windows[i]:(windows[i]+width-1), windows[i]:(windows[i]+width-1)]; kwargs...)
   end

@@ -32,7 +32,7 @@ function sorteddistances(x; theiler::Integer=0, scale=1, kwargs...)
     scale = (typeof(scale) <: Function) ? scale(dm) : scale
     dm /= scale
     # Browse upper triangle after Theiler window
-    n = size(x,1)
+    n = oldsize(x,1)
     nd = (n+1)*n/2
     ntheiler = theiler*n - theiler*(theiler-1)/2
     distarray = zeros(round(Int, nd-ntheiler))
