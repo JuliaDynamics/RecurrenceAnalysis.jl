@@ -24,7 +24,7 @@ end
 # Pretty printing:
 function Base.summary(R::AbstractRecurrenceMatrix)
     N = nnz(R.data)
-    return "$(oldsize(R.data)) $(nameof(typeof(R))) "*
+    return "$(size(R.data)) $(nameof(typeof(R))) "*
     "with $N recurrences of type $(nameof(typeof(R.recurrence_type)))."
 end
 Base.show(io::IO, R::AbstractRecurrenceMatrix) = println(io, summary(R))

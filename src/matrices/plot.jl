@@ -12,7 +12,7 @@ function coordinates(R::SparseMatrixCSC) # TODO: allow scan every ÷100 elements
    is = zeros(Int, nnz(R))
    js = zeros(Int, nnz(R))
    k = 1;
-   m, n = oldsize(R)
+   m, n = size(R)
    for j = 1:n
      for i in nzrange(R, j)
         is[k] = j
@@ -56,7 +56,7 @@ function recurrenceplot(io::IO, R::Union{ARM,SparseMatrixCSC}; minh = 25, maxh =
     end
 
     is, js = coordinates(R)
-    n, m = oldsize(R)
+    n, m = size(R)
 
     if ascii == true
         asciidef = (border = :ascii, canvas = DotCanvas)
@@ -121,7 +121,7 @@ end
 # Calculate the level of "gray" (0=white, 1=black) corresponding to a matrix block
 function block2grayscale(R, rind::Tuple{T,T}, cind::Tuple{T,T}) where T<:Integer
     submat = @view R[rind[1]:rind[2], cind[1]:cind[2]]
-    ratio = count(!iszero, submat)/prod(oldsize(submat))
+    ratio = count(!iszero, submat)/prod(size(submat))
 end
 
 """
@@ -161,7 +161,7 @@ function grayscale(R, bwcode::Tuple{TT,T}=(0.0,1.0);
         width = nothing, height = nothing, exactsize=false
     ) where {TT<:Real, T<:Real}
 
-    dims = oldsize(R)
+    dims = size(R)
     if !isnothing(width) && isnothing(height)
         height = round(Int, width*dims[2]/dims[1])
         return grayscale(R, bwcode; width=width, height=height)
