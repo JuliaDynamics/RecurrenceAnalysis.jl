@@ -25,8 +25,8 @@ neighbors = count(<(threshold), dmat)
     crmat = CrossRecurrenceMatrix(X, Y, ε; parallel = false)
     jrmat = JointRecurrenceMatrix(X, X, ε; parallel = false)
 
-    @test oldsize(rmat) == oldsize(rmat_p) == oldsize(jrmat) == (20, 20)
-    @test oldsize(crmat) == (20, 10)
+    @test size(rmat) == size(rmat_p) == size(jrmat) == (20, 20)
+    @test size(crmat) == (20, 10)
     @test count(rmat) == count(rmat_p) == neighbors
     @test count(jrmat) == neighbors
     @test count(crmat) == neighbors÷2
@@ -62,8 +62,8 @@ end
     rmat_p = RecurrenceMatrix(X, ε; parallel = true)
     crmat = CrossRecurrenceMatrix(X, Y, ε; parallel = false)
 
-    @test oldsize(rmat) == oldsize(rmat_p) == (20, 20)
-    @test oldsize(crmat) == (20, 10)
+    @test size(rmat) == size(rmat_p) == (20, 20)
+    @test size(crmat) == (20, 10)
     @test count(rmat) == count(rmat_p) == neighbors
     @test count(crmat) == neighbors÷2
 end
@@ -79,8 +79,8 @@ end
         crmat = CrossRecurrenceMatrix(X, Y, ε; parallel = false)
         # Alright, so I admit I am not sure why this doesn't give exactly 0.2*N^2
         # recurrences, but almost that.
-        @test oldsize(rmat) == oldsize(rmat_p) == (20, 20)
-        @test oldsize(crmat) == (20, 10)
+        @test size(rmat) == size(rmat_p) == (20, 20)
+        @test size(crmat) == (20, 10)
 
         expected = length(X)*length(X)*ratio
         # TODO: Fails:
@@ -105,13 +105,13 @@ end
         # TODO: It doesn't work
         # @test all(i -> d[i] ≈ d[i+1], 1:length(d) - 1)
         rmat = RecurrenceMatrix(X, ε; parallel = false)
-        @test oldsize(rmat) == (20, 20)
+        @test size(rmat) == (20, 20)
 
         # And each column of the matrix must have same count by definition
         # TODO: This also doesn't work...
         count1 = count(rmat[:, 1])
-        # @test all(i -> count(rmat[:, i]) == count1, 2:oldsize(rmat, 2))
+        # @test all(i -> count(rmat[:, i]) == count1, 2:size(rmat, 2))
         # But a less accurate test works
-        @test all(i -> 0.8count1 < count(rmat[:, i]) < 1.2count1, 2:oldsize(rmat, 2))
+        @test all(i -> 0.8count1 < count(rmat[:, i]) < 1.2count1, 2:size(rmat, 2))
     end
 end
