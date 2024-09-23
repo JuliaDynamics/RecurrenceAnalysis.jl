@@ -27,7 +27,7 @@ export RecurrenceMatrix, CrossRecurrenceMatrix, JointRecurrenceMatrix
 export embed,
        reconstruct,
        recurrence_threshold,
-       Dataset,
+       StateSpaceSet,
        distancematrix,
        textrecurrenceplot,
        recurrenceplot,
