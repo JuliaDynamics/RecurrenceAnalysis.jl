@@ -77,7 +77,7 @@ _rrdenominator(R::ARM; theiler=0, kwargs...) = length(R)
 function _rrdenominator(R::AbstractMatrix; theiler=0, kwargs...)
 
     (theiler == 0) && (return length(R))
-    k = size(R,1) - theiler
+    k = oldsize(R,1) - theiler
     return k*(k+1)
 end
 
@@ -85,7 +85,7 @@ function _rrdenominator(R::M; theiler=0, kwargs...) where
     M<:Union{RecurrenceMatrix,JointRecurrenceMatrix}
 
     (theiler == 0) && (return length(R))
-    k = size(R,1) - theiler
+    k = oldsize(R,1) - theiler
     return k*(k+1)
 end
 
@@ -128,12 +128,12 @@ macro histogram_params(keyword, description, hist_fun)
                 points inside the Theiler window (see [`rqa`](@ref) for the
                 default values and usage of the keyword argument `theiler`).
 
-                Notes: This metric was first proposed in the paper "Exploiting Nonlinear Recurrence 
-                and Fractal Scaling Properties for Voice Disorder Detection" as Recurrence Period 
-                Density Entropy or Recurrence Probability Density Entropy (RPDE). 
-                It is a normalized dimensionless metric in the range [0,1]. 
-                In the 2018 article "Recurrence threshold selection for obtaining robust recurrence 
-                characteristics in different embedding dimensions", the indicator RPDE is explicitly 
+                Notes: This metric was first proposed in the paper "Exploiting Nonlinear Recurrence
+                and Fractal Scaling Properties for Voice Disorder Detection" as Recurrence Period
+                Density Entropy or Recurrence Probability Density Entropy (RPDE).
+                It is a normalized dimensionless metric in the range [0,1].
+                In the 2018 article "Recurrence threshold selection for obtaining robust recurrence
+                characteristics in different embedding dimensions", the indicator RPDE is explicitly
                 called Recurrence Time Entropy (RTE). Here RPDE and RTE are clearly the same indicator.
                 """
         else
@@ -257,7 +257,7 @@ Compute the diagonalwise recurrence rate `τ-RR` from a recurrence matrix `R`.
 Note that this only works for squared recurrence matrices.
 """
 function tau_recurrence(R::Union{ARM,AbstractMatrix})
-    n = minimum(size(R))
+    n = minimum(oldsize(R))
     rv = rowvals(R)
     rr_τ = zeros(n)
     @inbounds for col in 1:n

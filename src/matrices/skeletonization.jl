@@ -27,7 +27,7 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
 
         # create a close returns map with horizontal lines represented by
         # numbers, equal to their lengths
-        X_vertical1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, size(X_cl1))
+        X_vertical1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, oldsize(X_cl1))
 
     else
         symm = false
@@ -47,8 +47,8 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
 
         # create close returns maps with horizontal lines represented by
         # numbers, equal to their lengths
-        X_vertical1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, size(X_cl1))
-        X_vertical2 = create_close_returns_map(lines_copy2t, lines_copy2l, lines_copy2c, size(X_cl2))
+        X_vertical1 = create_close_returns_map(lines_copy1t, lines_copy1l, lines_copy1c, oldsize(X_cl1))
+        X_vertical2 = create_close_returns_map(lines_copy2t, lines_copy2l, lines_copy2c, oldsize(X_cl2))
     end
 
     # scan the lines, start with the longest one and discard all adjacent lines
@@ -58,10 +58,10 @@ function skeletonize(X::Union{ARM,SparseMatrixCSC})
     if !symm
         lines_final2_t, lines_final2_l, lines_final2_c = get_final_line_matrix(lines2t, lines2l, lines2c, lines_copy2t, lines_copy2l, lines_copy2c, X_vertical2)
         # build RP based on the histogramm of the reduced lines
-        X_new = build_skeletonized_RP(lines_final_t, lines_final_l, lines_final_c, lines_final2_t, lines_final2_l, lines_final2_c, size(X_vertical1,1), size(X_vertical1,2))
+        X_new = build_skeletonized_RP(lines_final_t, lines_final_l, lines_final_c, lines_final2_t, lines_final2_l, lines_final2_c, oldsize(X_vertical1,1), oldsize(X_vertical1,2))
     else
         # build RP based on the histogramm of the reduced lines
-        X_new = build_skeletonized_RP(lines_final_t, lines_final_l, lines_final_c, size(X_vertical1,1), size(X_vertical1,2))
+        X_new = build_skeletonized_RP(lines_final_t, lines_final_l, lines_final_c, oldsize(X_vertical1,1), oldsize(X_vertical1,2))
     end
     return X_new
 end
@@ -70,7 +70,7 @@ end
 
 # Transforms the standard RP into a close returns map
 function create_close_returns_map(R::SparseMatrixCSC; triangle::Bool = true)
-    nr = size(R, 1)
+    nr = oldsize(R, 1)
     nrplus = nr+1
     rowvalues = rowvals(R)
     diagvalues = nrplus .+ colvals(R) .- rowvalues # LOI at nrplus (nr+1)
@@ -103,7 +103,7 @@ end
 
 # Transforms the reverted RP (close returns map) into a normal RP
 function revert_close_returns_map(R::SparseMatrixCSC; triangle::Bool = true)
-    nr = size(R, 1)
+    nr = oldsize(R, 1)
     rowvalues = rowvals(R)
     columnvalues = rowvalues .+ colvals(R) .- (nr + 1)
     if triangle
@@ -168,7 +168,7 @@ function get_final_line_matrix(lines1t::Vector{Int}, lines1l::Vector{Int},
     lines1c::Vector{Int}, lines_copy1t::Vector{Int}, lines_copy1l::Vector{Int},
     lines_copy1c::Vector{Int}, X_vertical1::SparseMatrixCSC)
 
-    N, M = size(X_vertical1)
+    N, M = oldsize(X_vertical1)
     # initialize final lines
     lines_final_t = Int[]
     lines_final_l = Int[]
@@ -309,7 +309,7 @@ function scan_lines!(XX::SparseMatrixCSC, l_vec1::AbstractVector{<:Integer}, l_v
 end
 
 function neighborindices(XX, i::T, li::T, co::T) where T<:Integer
-    N, M = size(XX)
+    N, M = oldsize(XX)
     for newli in (li+i .+ (-2:0)), newco in (co-1, co+1)
         if (1 ≤ newli ≤ N) && (1 ≤ newco ≤ M)
             (XX[newli, newco] != 0) && return (newli, newco)

@@ -112,7 +112,7 @@ function diagonalhistogram(x::Union{ARM,AbstractMatrix}; lmin::Integer=2, theile
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
     (lmin < 1) && throw(ErrorException("lmin must be 1 or greater"))
-    m,n = size(x)
+    m,n = oldsize(x)
     rv = rowvals(x)[:]
     dv = colvals(x) .- rowvals(x)
     loi_hist = Int[]
@@ -158,7 +158,7 @@ function verticalhistograms(x::Union{ARM,AbstractMatrix};
     (theiler < 0) && throw(ErrorException(
         "Theiler window length must be greater than or equal to 0"))
     (lmin < 1) && throw(ErrorException("lmin must be 1 or greater"))
-    m,n=size(x)
+    m,n=oldsize(x)
     rv = rowvals(x)
     cv = colvals(x)
     return _linehistograms(rv,cv,lmin,theiler,distances)
