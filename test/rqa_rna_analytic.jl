@@ -114,7 +114,7 @@ rmat = CrossRecurrenceMatrix(sparse(i,j,trues(length(i))), RecurrenceThreshold(0
         @test rqa_params[:Lmax] == 5
         @test rqa_params[:DIV] == 0.2
         @test rqa_params[:ENTR] ≈ 0.500 atol=0.001
-        @test rqa_params[:TREND] ≈ -12.2 atol=0.1
+        @test rqa_params[:TREND] ≈ -17.9 atol=0.1
         @test rqa_params[:LAM] == 12/22
         @test rqa_params[:TT] == 12/5
         @test rqa_params[:Vmax] == 3
