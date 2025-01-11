@@ -282,7 +282,7 @@ function _trend(rr_τ::Vector; theiler=1, border=10, kwargs...)::Float64
     numerator = denominator = 0.0
     mean_rr = mean(@view rr_τ[a:b])
     for d in a:b
-        δ = d - b/2
+        δ = d - (b+theiler)/2
         numerator += δ*(rr_τ[d] - mean_rr)
         denominator += δ*δ
     end

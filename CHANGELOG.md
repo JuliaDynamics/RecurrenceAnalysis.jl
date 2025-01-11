@@ -2,6 +2,10 @@
 
 ## v2.1.0
 
+- Bugfix: computation of `trend`, is made consistent with formula in http://www.recurrence-plot.tk/rqa.php
+
+## v2.1.0
+
 Updated to StateSpaceSets.jl v2.
 
 ## v2.0.0
