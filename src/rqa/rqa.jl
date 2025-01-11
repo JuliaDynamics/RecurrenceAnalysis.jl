@@ -220,13 +220,14 @@ the trend will have a negative value.
 It is calculated as:
 
 ```math
-TREND = 10^3\\frac{\\sum_{d=\\tau}^{\\tilde{N}}\\delta[d]\\left(RR[d]-\\langle RR[d]\\rangle\\right)}{\\sum_{d=\\tau}^{\\tilde{N}}\\delta[d]^2}
+TREND = 10^3\\frac{\\sum_{d=1+\\tau}^{\\tilde{N}}\\delta[d]\\left(RR[d]-\\langle RR[d]\\rangle\\right)}{\\sum_{d=1+\\tau}^{\\tilde{N}}\\delta[d]^2}
 ```
 
 where ``RR[d]`` is the local recurrence rate of the diagonal ``d``,
-``\\delta[d]`` is a balanced measure of the distance between that diagonal and the LOI,
-``\\tau`` is the Theiler window (number of central diagonals that are excluded), and
-``\\tilde{N}`` is the number of the outmost diagonal that is included.
+``\\tau`` is the Theiler window (number of central diagonals that are excluded),
+``\\tilde{N}`` is the number of the outmost diagonal that is included, and
+``\\delta[d]`` is a balanced measure of the distance between that diagonal and the LOI
+equal to ``d-(\\tilde{N}+\\tau)/2``.
 
 This parameter is expressed in units of variation recurrence rate every
 1000 data points, hence the factor ``10^3`` in the formula [1].
