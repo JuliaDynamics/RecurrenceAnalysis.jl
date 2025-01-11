@@ -4,7 +4,6 @@
 
 - Bugfix: computation of `trend` is changed to use balanced distance from diagonal [(#167)](https://github.com/JuliaDynamics/RecurrenceAnalysis.jl/issues/167)
 
-## v2.1.0
 
 Updated to StateSpaceSets.jl v2.
 
