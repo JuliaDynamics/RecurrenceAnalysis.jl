@@ -1,7 +1,9 @@
 #=
 This file benchmarks the parallel and serial computation of a recurrence matrix
 =#
-using DynamicalSystemsBase, RecurrenceAnalysis
+using RecurrenceAnalysis
+
+using DynamicalSystemsBase, PredefinedDynamicalSystems
 using Statistics, BenchmarkTools, Base.Threads
 
 function pretty_time(b::BenchmarkTools.Trial)
@@ -17,12 +19,12 @@ function pretty_time(b::BenchmarkTools.Trial)
 end
 
 Ns = round.(Int, 10.0 .^ (2:0.5:4.5))
-ro = Systems.roessler()
+ro = PredefinedDynamicalSystems.roessler()
 
 println("I am using $(nthreads()) threads.")
 for N in Ns
     # set up datasets
-    tr = trajectory(ro, N*0.1; dt = 0.1, Tr = 10.0)
+    tr, ts = trajectory(ro, N*0.1; Δt = 0.1, Ttr = 10.0)
     printstyled("For N = $(length(tr))..."; color = :blue, bold = true)
     println()
     x = tr[:, 1]
