@@ -62,26 +62,42 @@ end
 # Core function
 function recurrence_matrix(x::Vector_or_SSSet, y::Vector_or_SSSet, metric::Metric, ε, ::Val{true})
     @assert ε isa Real || length(ε) == length(y)
-    # We create an `Array` of `Array`s, for each thread to have its
+    # We create an `Array` of `Array`s, for each task to have its
     # own array to push to.  This avoids race conditions with
     # multiple threads pushing to the same `Array` (`Array`s are not atomic).
-    rowvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
-    colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+
+    # For load balancing reasons, we will use 2 tasks per CPU thread that we have
+    # available.
+    ntasks = Threads.nthreads() * 2
+    rowvals = [Vector{Int}() for _ in 1:ntasks]
+    colvals = [Vector{Int}() for _ in 1:ntasks]
 
     # This is the same logic as the serial function, but parallelized.
-    Threads.@threads for j in eachindex(y)
-        threadn = Threads.threadid()
-        nzcol = 0
-        for i in eachindex(x)
-            @inbounds if evaluate(metric, x[i], y[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
-                push!(rowvals[threadn], i) # push to the thread-specific row array
-                nzcol += 1
+    # We create all tasks in this array comprehension so we have them stored,
+    # but they are launched at the same time approximately.
+    # 
+    tasks = [
+        Threads.@spawn begin
+            for j in eachindex(y)
+                taskn = $i
+                nzcol = 0
+                for i in eachindex(x)
+                    @inbounds if evaluate(metric, x[i], y[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
+                        push!(rowvals[taskn], i) # push to the thread-specific row array
+                        nzcol += 1
+                    end
+                end
+                append!(colvals[taskn], fill(j, (nzcol,)))
             end
         end
-        append!(colvals[threadn], fill(j, (nzcol,)))
-    end
-    finalrows = vcat(rowvals...) # merge into one array
-    finalcols = vcat(colvals...) # merge into one array
+        for i in 1:ntasks
+    ]
+    # The array comprehension above scheduled the tasks...now we have to wait on them to make
+    # sure they are all complete before we access the results.
+    foreach(wait, tasks)
+    # Now that we know all tasks are complete, we can merge the results.
+    finalrows = reduce(vcat, rowvals) # merge into one array
+    finalcols = reduce(vcat, colvals) # merge into one array
     nzvals = fill(true, (length(finalrows),))
     return sparse(finalrows, finalcols, nzvals, length(x), length(y))
 end
@@ -91,25 +107,32 @@ function recurrence_matrix(x::Vector_or_SSSet, metric::Metric, ε, ::Val{true})
     # We create an `Array` of `Array`s, for each thread to have its
     # own array to push to.  This avoids race conditions with
     # multiple threads pushing to the same `Array` (`Array`s are not atomic).
-    rowvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
-    colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+
+    ntasks = Threads.nthreads() * 2
+
+    rowvals = [Vector{Int}() for _ in 1:ntasks]
+    colvals = [Vector{Int}() for _ in 1:ntasks]
 
     # This is the same logic as the serial function, but parallelized.
-    Threads.@threads for k in partition_indices(length(x))
-        threadn = Threads.threadid()
-        for j in k
-            nzcol = 0
-            for i in 1:j
-                @inbounds if evaluate(metric, x[i], x[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
-                    push!(rowvals[threadn], i) # push to the thread-specific row array
-                    nzcol += 1
+    tasks = [
+        Threads.@spawn begin
+            threadn = $i # note the `$` that does "interpolation" into the task
+            for j in $k
+                nzcol = 0
+                for i in 1:j
+                    @inbounds if evaluate(metric, x[i], x[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
+                        push!(rowvals[threadn], i) # push to the thread-specific row array
+                        nzcol += 1
+                    end
                 end
+                append!(colvals[threadn], fill(j, (nzcol,)))
             end
-            append!(colvals[threadn], fill(j, (nzcol,)))
         end
-    end
-    finalrows = vcat(rowvals...) # merge into one array
-    finalcols = vcat(colvals...) # merge into one array
+        for (i, k) in enumerate(partition_indices(length(x), ntasks))
+    ]
+    foreach(wait, tasks)
+    finalrows = reduce(vcat, rowvals) # merge into one array
+    finalcols = reduce(vcat, colvals) # merge into one array
     nzvals = fill(true, (length(finalrows),))
     return Symmetric(sparse(finalrows, finalcols, nzvals, length(x), length(x)), :U)
 end
