@@ -118,13 +118,13 @@ end
 # by utilizing the fact that the area is proportional to the square of the height.
 # It partitions the "triangle" which needs to be computed into "trapezoids",
 # which all have an equal area.
-function partition_indices(len)
-    indices = Vector{UnitRange{Int}}(undef, Threads.nthreads())
+function partition_indices(len, ntasks = Threads.nthreads())
+    indices = Vector{UnitRange{Int}}(undef, ntasks)
     length = len
     offset = 1
 
     # Here, we have to iterate in reverse, to get an equal area every time
-    for n in Threads.nthreads():-1:1
+    for n in ntasks:-1:1
         partition = round(Int, length / sqrt(n)) # length varies as square root of area
         indices[n] = offset:(partition .+ offset .- 1)
         length -= partition
