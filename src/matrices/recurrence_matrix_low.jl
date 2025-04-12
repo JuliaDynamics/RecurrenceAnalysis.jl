@@ -120,6 +120,7 @@ function recurrence_matrix(x::Vector_or_SSSet, metric::Metric, ε, ::Val{true})
             end
             append!(colvals, fill(j, (nzcol,)))
         end
+        put!(threadchannel, (rowvals, colvals))
     end
     # merge into one array
     finalrows = Int[]
