@@ -97,7 +97,7 @@ end
 
 # Again, we'll define the serial version first:
 function _distancematrix(x::Array_or_SSSet, metric::Metric, ::Val{false})
-    d = zeros(eltype(x), length(x), length(x))
+    d = zeros(eltype(eltype(x)), length(x), length(x))
     for j in 2:length(x)
         for i in 1:j-1 # all else is zero
             @inbounds d[i, j] = evaluate(metric, x[i], x[j])
