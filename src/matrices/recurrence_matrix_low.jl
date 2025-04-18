@@ -89,9 +89,8 @@ function recurrence_matrix(x::Vector_or_SSSet, y::Vector_or_SSSet, metric::Metri
     end
     close(threadchannel)
 
-    # merge into one array
-    finalrows = vcat(rowvals...) # merge into one array
-    finalcols = vcat(colvals...) # merge into one array
+    finalrows = reduce(vcat, rowvals) # merge into one array
+    finalcols = reduce(vcat, colvals) # merge into one array
     nzvals = fill(true, (length(finalrows),))
     return sparse(finalrows, finalcols, nzvals, length(x), length(y))
 end
@@ -127,9 +126,8 @@ function recurrence_matrix(x::Vector_or_SSSet, metric::Metric, ε, ::Val{true})
     end
     close(threadchannel)
     
-    # merge into one array
-    finalrows = vcat(rowvals...) # merge into one array
-    finalcols = vcat(colvals...) # merge into one array
+    finalrows = reduce(vcat, rowvals) # merge into one array
+    finalcols = reduce(vcat, colvals) # merge into one array
     nzvals = fill(true, (length(finalrows),))
     return Symmetric(sparse(finalrows, finalcols, nzvals, length(x), length(x)), :U)
 end
