@@ -67,10 +67,16 @@ function recurrence_matrix(x::Vector_or_SSSet, y::Vector_or_SSSet, metric::Metri
     # multiple threads pushing to the same `Array` (`Array`s are not atomic).
     rowvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
     colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+    # Channel to manage `Array`s to be used in each iteration
+    nbuffers = Threads.nthreads()
+    threadchannel = Channel{Int}(nbuffers) # for rows and columns
+    for i in 1:nbuffers
+        put!(threadchannel, i)
+    end
 
     # This is the same logic as the serial function, but parallelized.
     Threads.@threads for j in eachindex(y)
-        threadn = Threads.threadid()
+        threadn = take!(threadchannel)
         nzcol = 0
         for i in eachindex(x)
             @inbounds if evaluate(metric, x[i], y[j]) ≤ ( (ε isa Real) ? ε : ε[j] )
@@ -79,9 +85,12 @@ function recurrence_matrix(x::Vector_or_SSSet, y::Vector_or_SSSet, metric::Metri
             end
         end
         append!(colvals[threadn], fill(j, (nzcol,)))
+        put!(threadchannel, threadn)
     end
-    finalrows = vcat(rowvals...) # merge into one array
-    finalcols = vcat(colvals...) # merge into one array
+    close(threadchannel)
+
+    finalrows = reduce(vcat, rowvals) # merge into one array
+    finalcols = reduce(vcat, colvals) # merge into one array
     nzvals = fill(true, (length(finalrows),))
     return sparse(finalrows, finalcols, nzvals, length(x), length(y))
 end
@@ -93,10 +102,16 @@ function recurrence_matrix(x::Vector_or_SSSet, metric::Metric, ε, ::Val{true})
     # multiple threads pushing to the same `Array` (`Array`s are not atomic).
     rowvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
     colvals = [Vector{Int}() for _ in 1:Threads.nthreads()]
+    # Channel to manage `Array`s to be used in each iteration
+    nbuffers = Threads.nthreads()
+    threadchannel = Channel{Int}(nbuffers) # for rows and columns
+    for i in 1:nbuffers
+        put!(threadchannel, i)
+    end
 
     # This is the same logic as the serial function, but parallelized.
     Threads.@threads for k in partition_indices(length(x))
-        threadn = Threads.threadid()
+        threadn = take!(threadchannel)
         for j in k
             nzcol = 0
             for i in 1:j
@@ -107,9 +122,12 @@ function recurrence_matrix(x::Vector_or_SSSet, metric::Metric, ε, ::Val{true})
             end
             append!(colvals[threadn], fill(j, (nzcol,)))
         end
+        put!(threadchannel, threadn)
     end
-    finalrows = vcat(rowvals...) # merge into one array
-    finalcols = vcat(colvals...) # merge into one array
+    close(threadchannel)
+    
+    finalrows = reduce(vcat, rowvals) # merge into one array
+    finalcols = reduce(vcat, colvals) # merge into one array
     nzvals = fill(true, (length(finalrows),))
     return Symmetric(sparse(finalrows, finalcols, nzvals, length(x), length(x)), :U)
 end
