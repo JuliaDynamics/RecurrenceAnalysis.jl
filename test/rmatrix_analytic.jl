@@ -115,3 +115,14 @@ end
         @test all(i -> 0.8count1 < count(rmat[:, i]) < 1.2count1, 2:size(rmat, 2))
     end
 end
+
+@testset "max/mean custom for SSSET cases" begin
+    using Statistics
+    X = StateSpaceSet(rand(2000, 1))
+    rthres = RecurrenceThresholdScaled(0.4, maximum)
+    r = recurrence_threshold(rthres, X, Euclidean())
+    @test 0.38 < r < 0.4
+    rthres = RecurrenceThresholdScaled(1, mean)
+    r = recurrence_threshold(rthres, X, Euclidean())
+    @test 0.32 < r < 0.34
+end

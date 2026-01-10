@@ -80,12 +80,10 @@ end
 Return the calculated distance threshold `ε` for `rt`. The output is real, unless
 `rt isa LocalRecurrenceRate`, where `ε isa Vector`.
 """
-recurrence_threshold(rt, x::Array_or_SSSet, metric::Metric) =
+recurrence_threshold(rt, x::Array_or_SSSet, metric::Metric = Euclidean()) =
     recurrence_threshold(rt, x, x, metric)
 recurrence_threshold(rt, x::Array_or_SSSet, y::Array_or_SSSet) =
     recurrence_threshold(rt, x, y, Euclidean())
-recurrence_threshold(rt, x::Array_or_SSSet) =
-    recurrence_threshold(rt, x, x, Euclidean())
 
 recurrence_threshold(rt::Real, x, y, metric) = rt
 recurrence_threshold(rt::RecurrenceThreshold, x, y, metric) = rt.ε
@@ -122,7 +120,7 @@ end
 
 # specific methods to avoid making a `distancematrix`
 function scale_of_distmatrix(::typeof(maximum), x, y, metric::Metric)
-    maxvalue = zero(eltype(x))
+    maxvalue = zero(eltype(eltype(x)))
     if x===y
         @inbounds for i in 1:length(x)-1, j=(i+1):length(x)
             newvalue = evaluate(metric, x[i], y[j])
@@ -137,7 +135,7 @@ function scale_of_distmatrix(::typeof(maximum), x, y, metric::Metric)
     return maxvalue
 end
 function scale_of_distmatrix(::typeof(mean), x, y, metric::Metric)
-    meanvalue = 0.0
+    meanvalue = zero(eltype(eltype(x)))
     if x===y
         @inbounds for i in 1:length(x)-1, j=(i+1):length(x)
             meanvalue += evaluate(metric, x[i], y[j])
@@ -147,7 +145,7 @@ function scale_of_distmatrix(::typeof(mean), x, y, metric::Metric)
         @inbounds for xi in x, yj in y
             meanvalue += evaluate(metric, xi, yj)
         end
-        denominator = Float64(length(x)*length(y))
+        denominator = length(x)*length(y)
     end
     return meanvalue/denominator
 end
